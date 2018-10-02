@@ -2,6 +2,8 @@
 #include <Rmath.h>
 #include <math.h>
 
+// This is the C version of the maximum rank estimating euqation.
+// Equation (2.1) in the paper
 void rank(int *n, int *m, int *midx,
 	  double *tij, double *yi, double *xb, double *result) {
   int i, j, k, l; // id index
