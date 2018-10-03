@@ -2,44 +2,76 @@
 #include <Rmath.h>
 #include <math.h>
 
-double kernal(double x) {
-  double out = 0.0;
-  if (x <= 1 && x >= -1) {
-    out = (105 / 64) * (1 - 3 * x * x) * (1 - x * x) * (1 - x * x);
-  }
-  return(out);
-}
+// n is the # of sbjects
+// m is the # of recurrent events for each subject
+// midx is an integer id strings that indicates where t_ij starts
+// tij is the jth recurrent event time for the ith subject
+// yi is the censoring time for the ith subject
+// xb is a vector with the ith element being \beta^\top Z_i
 
-void Sn(int *n, int *p, int *m, int *midx,
-	double *tij, double *yi, double *xr, double *xb, double *X,
-	double *result) {
-  int i, j, k, r; // id index
-  double tmp;
-  double M = 0.0;
+// This function implements \hat{F}(t, x, \hat\beta)
+void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
+		double *x, double *t, double *result) {
+  int i, j, k, l;
+  double nu = 0.0;
   double de = 0.0;
-  double *nu = Calloc(*p, double);
   for (i = 0; i < *n; i++) {
     for (j = 0; j < m[i]; j++) {
+      de = 0.0;
+      nu = kernal(x - xb[i]);
       for (k = 0; k < *n; k++) {
-	if (yi[k] >= tij[midx[i] + j]) {
-	    tmp = xb[k] - xb[i];
-	    de += xr[k] * kernal(tmp);
-	  for (r = 0; r < *p; r++) {
-	    nu[r] += X[*n * r + k] * xr[k] * kernal(tmp);
-	  }
+	for (l = 0; l < m[k]; l++) {
+	  if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+	    de += kernal(x - xb[j]);
 	}
-      } // end for k
-      for (r = 0; r < *p; r++) {
-	if (de > 0) result[r] += X[*n * r + i] - nu[r] / de;
-	if (de == 0) result[r] += X[*n * r + i];
-	nu[r] = 0;
       }
-      de = 0;
+      if (de > 0) result[0] += nu / de; 
     }
   }
-  Free(nu);
-  result;
 }
+
+void shapeEq(int *n, int *m, int *midx, double *tij, double *yi, double *xb, double *xr,
+	     double *result) {
+  int i, j, k, l;
+  for (i = 0; i < *n; i++) {
+    for (j = 0; j < *n; j++) {
+      if (xr[i] > xr[j]) {
+	tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i], 0);
+	if (tmp > 0) result[0] += m[i] / tmp;
+      }
+    }
+  }
+}
+
+/* void Sn(int *n, int *p, int *m, int *midx, */
+/* 	double *tij, double *yi, double *xr, double *xb, double *X, */
+/* 	double *result) { */
+/*   int i, j, k, r; // id index */
+/*   double tmp; */
+/*   double de = 0.0; */
+/*   double *nu = Calloc(*p, double); */
+/*   for (i = 0; i < *n; i++) { */
+/*     for (j = 0; j < m[i]; j++) { */
+/*       for (k = 0; k < *n; k++) { */
+/* 	if (yi[k] >= tij[midx[i] + j]) { */
+/* 	  tmp = xb[k] - xb[i]; */
+/* 	  de += xr[k] * kernal(tmp); */
+/* 	  for (r = 0; r < *p; r++) { */
+/* 	    nu[r] += X[*n * r + k] * xr[k] * kernal(tmp); */
+/* 	  } */
+/* 	} */
+/*       } // end for k */
+/*       for (r = 0; r < *p; r++) { */
+/* 	if (de > 0) result[r] += X[*n * r + i] - nu[r] / de; */
+/* 	if (de == 0) result[r] += X[*n * r + i]; */
+/* 	nu[r] = 0; */
+/*       } */
+/*       de = 0; */
+/*     } */
+/*   } */
+/*   Free(nu); */
+/*   result; */
+/* } */
 
 // gives \tau_n(\theta) in the variance estimation (Section 2.3)
 void tauN(int *n, int *m, int *midx,
@@ -69,5 +101,13 @@ void tauN(int *n, int *m, int *midx,
   }
   Free(e1);
   Free(e2);
-  result;
+  return(result);
+}
+
+double kernal(double *x) {
+  double out = 0.0;
+  if (*x <= 1 && *x >= -1) {
+    out = (105 / 64) * (1 - 3 * *x * *x) * (1 - *x * *x) * (1 - *x * *x);
+  }
+  return(out);
 }

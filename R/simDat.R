@@ -8,7 +8,16 @@
 #'   \item{\code{type = "M3"}}{generates recurrent event data from the two-sample model.}
 #'   \item{\code{type = "M4"}}{generates recurrent event data from the likelihood ratio model.}
 #' }
-#' 
+#' The data frame is similar to the one used in \code{reReg}.
+#' The data consists of the following columns:
+#' \describe{
+#'   \item{id}{Patient ID}
+#'   \item{t}{Patient's event time; this column consists of both the recurrent event time and the terminal event time}
+#'   \item{m}{The observed number of recurrent events}
+#'   \item{x1, x2}{Baseline covariates}
+#'   \item{event}{recurrent event indicator; 1 = recurrent event, 0 = not a recurrent event}
+#'   \item{status}{censoring indicator; this is only meanful for when event = 0}
+#' }
 simDat <- function(n, model) {
     beta0 <- c(1, -.5)
     gamma0 <- c(-.5, -1)

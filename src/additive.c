@@ -4,7 +4,7 @@
 
 // The estimating equations used in Douglas et al. (2006)
 // Un equation
-void Douglas.Un(int *n, int *p, int *m, int *midx,
+void DouglasUn(int *n, int *p, int *m, int *midx,
 	double *tij, double *yi, double *X,
 	double *result) {
   int i, j, k, r; // id index
@@ -33,7 +33,7 @@ void Douglas.Un(int *n, int *p, int *m, int *midx,
 }
 
 // An equation
-void Douglas.An(int *n, int *p, int *m, int *midx,
+void DouglasAn(int *n, int *p, int *m, int *midx,
 	double *tij, double *yi, double *X, double *dY,
 	double *result) {
   int i, j, k, r; // id index

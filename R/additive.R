@@ -10,13 +10,13 @@ Douglas06 <- function(dat) {
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat, event == 0, select = c(x1, x2)))
     p <- ncol(X)
-    U0 <- .C("Douglas.Un", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
+    U0 <- .C("DouglasUn", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
              as.double(tij), as.double(yi), as.double(X), res = double(p))$res
     dY <- rep(NA, length(yi))
     dY0 <- diff(c(0, sort(yi)))
     ## dY0[which(dY0 == 0)] <- dY0[pmax(which(dY0 == 0) - 1, 0)]
     dY[order(yi)] <- cumsum(dY0)
-    A0 <- .C("Douglas.An", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
+    A0 <- .C("DouglasAn", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
              as.double(tij), as.double(yi), as.double(X), as.double(dY), res = double(p^2))$res
     list(U = U0, A = matrix(A0, p), b0 = as.numeric(solve(matrix(A0, p)) %*% U0))
 }
