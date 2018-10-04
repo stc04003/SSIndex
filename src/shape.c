@@ -9,34 +9,48 @@
 // yi is the censoring time for the ith subject
 // xb is a vector with the ith element being \beta^\top Z_i
 
+double kernal(double x) {
+  double out = 0.0;
+  if (x <= 1 && x >= -1) {
+    out = (105 / 64) * (1 - 3 * x * x) * (1 - x * x) * (1 - x * x);
+  }
+  return(out);
+}
+
 // This function implements \hat{F}(t, x, \hat\beta)
-void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
-		double *x, double *t, double *result) {
+double shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
+	      double x, double t) {
   int i, j, k, l;
+  double tmp = 0.0;
   double nu = 0.0;
   double de = 0.0;
+  double out = 0.0;
   for (i = 0; i < *n; i++) {
-    for (j = 0; j < m[i]; j++) {
-      de = 0.0;
-      nu = kernal(x - xb[i]);
-      for (k = 0; k < *n; k++) {
-	for (l = 0; l < m[k]; l++) {
-	  if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-	    de += kernal(x - xb[j]);
+    for (k = 0; k < m[i]; k++) {
+      if (tij[midx[i] + k] > t) {
+	de = 0.0;
+	nu = kernal(x - xb[i]);
+	for (j = 0; j < *n; j++) {
+	  for (l = 0; l < m[j]; l++) {
+	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+	      de += kernal(x - xb[j]);
+	  }
 	}
+	if (de > 0) out += nu / de; 
       }
-      if (de > 0) result[0] += nu / de; 
     }
   }
+  return(out);
 }
 
 void shapeEq(int *n, int *m, int *midx, double *tij, double *yi, double *xb, double *xr,
 	     double *result) {
   int i, j, k, l;
+  double tmp;
   for (i = 0; i < *n; i++) {
     for (j = 0; j < *n; j++) {
       if (xr[i] > xr[j]) {
-	tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i], 0);
+	tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);
 	if (tmp > 0) result[0] += m[i] / tmp;
       }
     }
@@ -101,13 +115,4 @@ void tauN(int *n, int *m, int *midx,
   }
   Free(e1);
   Free(e2);
-  return(result);
-}
-
-double kernal(double *x) {
-  double out = 0.0;
-  if (*x <= 1 && *x >= -1) {
-    out = (105 / 64) * (1 - 3 * *x * *x) * (1 - *x * *x) * (1 - *x * *x);
-  }
-  return(out);
 }

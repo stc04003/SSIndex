@@ -18,9 +18,15 @@
 #'   \item{event}{recurrent event indicator; 1 = recurrent event, 0 = not a recurrent event}
 #'   \item{status}{censoring indicator; this is only meanful for when event = 0}
 #' }
+#'
+#' @export
+#'
+#' @importFrom MASS mvrnorm
+#' @importFrom tibble as.tibble
 simDat <- function(n, model) {
-    beta0 <- c(1, -.5)
-    gamma0 <- c(-.5, -1)
+    dat <- NULL
+    beta0 <- c(.6, .8)
+    gamma0 <- c(-.8, -.6)
     for (i in 1:n) {
         x0 <- 100
         while (abs(x0) > 1 ) {
@@ -46,9 +52,9 @@ simDat <- function(n, model) {
         } else {
             tmp <- cbind(id = i, t = y, m = m, x1 = x[1], x2 = x[2], event = 0, status = 1)
         }
-        simDat1 <- rbind(simDat1, tmp)
+        dat <- rbind(dat, tmp)
     }
-    return(simDat1)
+    return(as.tibble(dat))
 }
 
 #' Cumulative rate function
@@ -69,7 +75,7 @@ Lam.f <- function(t, r, b, model){
 #' @keywords internal
 invLam.f <- function (t, r, b, model) {
     mapply(t, FUN = function(u) {  
-        uf <- function (x) u - Lam.f (x, r, b)
+        uf <- function (x) u - Lam.f (x, r, b, model)
         uniroot(uf, c(0, 100))$root
     })
 }

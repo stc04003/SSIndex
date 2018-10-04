@@ -1,6 +1,8 @@
 #' This function implements the additive model in Douglas et al. (2006).
 #'
 #' Implementations are done in C
+#'
+#' @export
 
 Douglas06 <- function(dat) {
     n <- length(unique(dat$id))
