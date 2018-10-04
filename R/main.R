@@ -5,7 +5,9 @@
 #' 
 #' @param dat data frame generated from \code{simDat}.
 #'
-#' @importFrom BB BBoptim
+#' @importFrom BB spg
+#'
+#' @useDynLib GSM, .registration = TRUE
 #' @export
 gsm <- function(dat) {
     ## assuming data is generated from simDat
@@ -23,7 +25,7 @@ gsm <- function(dat) {
             as.double(tij), as.double(yi), as.double(X %*% b),
             result = double(1), PACKAGE = "GSM")$result
     }
-    bhat <- BBoptim(par = double(2), fn = Cn)$par
+    bhat <- spg(par = double(2), fn = Cn, quiet = TRUE)$par
     bhat <- bhat / sqrt(sum(bhat^2))
     ## The estimating equation Sn needs Yi even for the m = 0's
     n <- length(unique(dat$id))
@@ -39,7 +41,7 @@ gsm <- function(dat) {
         tmp <- -.C("shapeEq", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
                   as.double(X %*% bhat), as.double(X %*% r), result = double(1), PACKAGE = "GSM")$result
     }
-    rhat <- BBoptim(par = double(2), fn = Sn)$par
+    rhat <- spg(par = double(2), fn = Sn, quiet = TRUE)$par
     rhat <- rhat / sqrt(sum(rhat^2))
     ## rhat <- optimize(f = Sn, interval = c(-10, 10))$minimum
     list(b0 = bhat, r0 = rhat)

@@ -26,7 +26,7 @@
 simDat <- function(n, model) {
     dat <- NULL
     beta0 <- c(.6, .8)
-    gamma0 <- c(-.8, -.6)
+    gamma0 <- c(7, 24) / 25
     for (i in 1:n) {
         x0 <- 100
         while (abs(x0) > 1 ) {

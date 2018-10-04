@@ -48,9 +48,9 @@ void shapeEq(int *n, int *m, int *midx, double *tij, double *yi, double *xb, dou
   int i, j, k, l;
   double tmp;
   for (i = 0; i < *n; i++) {
+    tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);
     for (j = 0; j < *n; j++) {
       if (xr[i] > xr[j]) {
-	tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);
 	if (tmp > 0) result[0] += m[i] / tmp;
       }
     }

@@ -3,6 +3,7 @@
 export(Douglas06)
 export(gsm)
 export(simDat)
-importFrom(BB,BBoptim)
+importFrom(BB,spg)
 importFrom(MASS,mvrnorm)
 importFrom(tibble,as.tibble)
+useDynLib(GSM, .registration = TRUE)
