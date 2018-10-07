@@ -12,7 +12,8 @@
 double kernal(double x) {
   double out = 0.0;
   if (x <= 1 && x >= -1) {
-    out = (105 / 64) * (1 - 3 * x * x) * (1 - x * x) * (1 - x * x);
+    // out = (105 / 64) * (1 - 3 * x * x) * (1 - x * x) * (1 - x * x);
+    out = (15 / 16) * (1 - x * x) * (1 - x * x);
   }
   return(out);
 }
@@ -21,7 +22,6 @@ double kernal(double x) {
 double shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 	      double x, double t) {
   int i, j, k, l;
-  double tmp = 0.0;
   double nu = 0.0;
   double de = 0.0;
   double out = 0.0;
@@ -45,7 +45,7 @@ double shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 
 void shapeEq(int *n, int *m, int *midx, double *tij, double *yi, double *xb, double *xr,
 	     double *result) {
-  int i, j, k, l;
+  int i, j;
   double tmp;
   for (i = 0; i < *n; i++) {
     tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);
@@ -91,7 +91,6 @@ void shapeEq(int *n, int *m, int *midx, double *tij, double *yi, double *xb, dou
 void tauN(int *n, int *m, int *midx,
 	  double *tij, double *yi, double *xb, double *result) {
   int i, j, k, l; // id index
-  double M = 0.0;
   double *e1 = Calloc(*n, double);
   double *e2 = Calloc(*n, double);
   for (i = 0; i < *n; i++) {

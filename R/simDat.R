@@ -37,13 +37,13 @@ simDat <- function(n, model) {
         x_beta <- as.numeric(x %*% beta0)
         x_gamma <- as.numeric(x %*% gamma0)
         len <- 0  # max of recurrent times
-        tmpt <- NULL # recurrent times 
+        tmpt <- NULL # recurrent times
         inx <- 0   # number of recurrent times
         while( len < Lam.f(y, x_gamma, x_beta, model)) {
 	    tmpt <- c(tmpt, rexp(1))
-	    len <- sum (tmpt) 
+	    len <- sum(tmpt)
 	    inx <- inx + 1
-        }   
+        }
         m <- ifelse(inx > 0, inx - 1, 0)
         if (m > 0)  {
             tt <- invLam.f(cumsum(tmpt[1:m]), x_gamma, x_beta, model)
@@ -60,7 +60,7 @@ simDat <- function(n, model) {
 #' Cumulative rate function
 #' @noRd
 #' @keywords internal
-Lam.f <- function(t, r, b, model){ 
+Lam.f <- function(t, r, b, model){
     if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))
     if (model == "M2") return((exp(t / 10) * 10 + t * b - 10) * exp(r) / 2)
     if (model == "M3") return((exp(t / 10) * 10 + t * b - 10))
@@ -74,7 +74,7 @@ Lam.f <- function(t, r, b, model){
 #' @noRd
 #' @keywords internal
 invLam.f <- function (t, r, b, model) {
-    mapply(t, FUN = function(u) {  
+    mapply(t, FUN = function(u) {
         uf <- function (x) u - Lam.f (x, r, b, model)
         uniroot(uf, c(0, 100))$root
     })
