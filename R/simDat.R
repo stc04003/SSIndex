@@ -1,12 +1,24 @@
 #' Function to generate simulated data
 #'
-#' The function \code{simDat} generates simulated recurrent event data from the following model:
+#' We formulate the proposed rate function as
+#' \deqn{\mu(t|Z) = f(t, \beta_0^\top Z) g(\gamma_0^\top Z), 0\le t \le \tau}.
+#' See Details.
+#'
+#' 
+#' The function \code{simDat} generates simulated recurrent event data from our model's special cases.
+#' The following model are implemented.
 #' \describe{
-#'   \item{\code{type = "M1"}}{generates recurrent event data from the transformation model.}
-#'   \item{\code{type = "M2"}}{generates recurrent event data from the additive model.}
-#'   \item{\code{type = "M3"}}{generates recurrent event data from the additive model with \deqn{\gamma = 0}.}
-#'   \item{\code{type = "M3"}}{generates recurrent event data from the two-sample model.}
-#'   \item{\code{type = "M4"}}{generates recurrent event data from the likelihood ratio model.}
+#'   \item{\code{type = "M1"}}{generates recurrent event data from the proportional rate model.
+#'     \deqn{\mu(t|Z) = \mu_0(t) e^{\gamma_0^\top Z}.}
+#'      This model implies \eqn{\beta_0 = 0}.}
+#'   \item{\code{type = "M2"}}{generates recurrent event data from the additive model.
+#'     \deqn{\mu(t|Z) = \mu_0(t) + \alpha_0^\top Z.}
+#'      This model implies \eqn{\beta_0 = \gamma_0}.}
+#'   \item{\code{type = "M3"}}{generates recurrent event data from the accelerated rate model.
+#'     \deqn{\mu(t|Z) = \mu_0(t e^{\alpha_0^\top Z}).}
+#'      This model implies \eqn{\beta_0 = \gamma_0}.}
+#'   \item{\code{type = "M4"}}{generates recurrent event data from the two-sample model.
+#'     \deqn{\mu(t|Z) = \mu_0(t e^{\beta_0^\top Z})e^{\gamma_0^\top Z}.}}
 #' }
 #' The data frame is similar to the one used in \code{reReg}.
 #' The data consists of the following columns:
@@ -18,7 +30,9 @@
 #'   \item{event}{recurrent event indicator; 1 = recurrent event, 0 = not a recurrent event}
 #'   \item{status}{censoring indicator; this is only meanful for when event = 0}
 #' }
-#'
+#' For all scenarios, we set \eqn{\tau = 10}, \eqn{\beta_0 = (0.6, 0.8)} and \eqn{\gamma_0 = (7/25, 24/25)}.
+#' We also set \eqn{\mu_0(t) = \frac{2}{1 + t}}, then \eqn{m_0(t) = 2\log(1 + t)}.
+#' 
 #' @export
 #'
 #' @importFrom MASS mvrnorm
@@ -33,7 +47,7 @@ simDat <- function(n, model) {
             x <- mvrnorm(1, c(0,0), diag(2))
             x0 <-  sum(x * beta0)
         }
-        y <- min(rexp(1, 1 / (10 * (1 + abs(x[1])))), 5)
+        y <- min(rexp(1, 1 / (10 * (1 + abs(x[1])))), 10)
         x_beta <- as.numeric(x %*% beta0)
         x_gamma <- as.numeric(x %*% gamma0)
         len <- 0  # max of recurrent times
@@ -58,14 +72,25 @@ simDat <- function(n, model) {
 }
 
 #' Cumulative rate function
+#'
+#' @param t is time
+#' @param r is \eqn{\gamma_0^\top Z}
+#' @param b is \eqn{\beta_0^\top Z}
+#' @param model is the model indicator
+#' 
 #' @noRd
 #' @keywords internal
 Lam.f <- function(t, r, b, model){
-    if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))
-    if (model == "M2") return((exp(t / 10) * 10 + t * b - 10) * exp(r) / 2)
-    if (model == "M3") return((exp(t / 10) * 10 + t * b - 10))
-    if (model == "M4") return(2 * log(1 + exp(b) * t ^1.5) * exp(r)/ 3)
-    if (model == "M5") return((exp(t * b) - 1) * exp(r) / b)
+    if (model == "M1") return(2 * log(1 + t) * exp(r))
+    if (model == "M2") return(exp(t / 10) * 10 + t * b - 10)
+    if (model == "M3") return(2 * log(1 + t * exp(b)))
+    if (model == "M4") return(2 * log(1 + t * exp(b)) * exp(r))
+    ## Old settings, under Pico's draft
+    ## if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))
+    ## if (model == "M2") return((exp(t / 10) * 10 + t * b - 10) * exp(r) / 2)
+    ## if (model == "M3") return((exp(t / 10) * 10 + t * b - 10))
+    ## if (model == "M4") return(2 * log(1 + exp(b) * t ^1.5) * exp(r)/ 3)
+    ## if (model == "M5") return((exp(t * b) - 1) * exp(r) / b)
     ## 5 * t / (1 + t)^2 + t * b
     ## (t / (t + 1) - 1 + t * b)
 }
@@ -75,7 +100,7 @@ Lam.f <- function(t, r, b, model){
 #' @keywords internal
 invLam.f <- function (t, r, b, model) {
     mapply(t, FUN = function(u) {
-        uf <- function (x) u - Lam.f (x, r, b, model)
+        uf <- function(x) u - Lam.f(x, r, b, model) ## / Lam.f(10, r, b, model)
         uniroot(uf, c(0, 100))$root
     })
 }

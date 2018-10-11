@@ -39,14 +39,20 @@ gsm <- function(dat) {
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat, event == 0, select = c(x1, x2)))
     p <- ncol(X)
+    Fhat <- unlist(mapply(FUN = function(x, y)
+        .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
+           as.double(X %*% bhat), as.double(x), as.double(y), result = double(1), PACKAGE = "GSM")$result,
+        X %*% bhat, yi))
+    Fhat <- exp(-Fhat)
     Sn <- function(r) {
         ## len <- sqrt(sum(r^2))
         ## if (len != 0) r <- r / len
-        tmp <- -.C("shapeEq", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-                  as.double(X %*% bhat), as.double(X %*% r), result = double(1), PACKAGE = "GSM")$result
+        ## -.C("shapeEq", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
+        ##     as.double(X %*% bhat), as.double(X %*% r), result = double(1), PACKAGE = "GSM")$result
+        -.C("shapeEq", as.integer(n), as.double(X %*% r), as.double(mm / Fhat), result = double(1), PACKAGE = "GSM")$result
     }
     tmp1 <- spg(par = double(2), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
-    tmp2 <- optim(par = double(2), fn = Cn)
+    tmp2 <- optim(par = double(2), fn = Sn)
     if (tmp1$value < tmp2$value) rhat <- tmp1$par
     else rhat <- tmp2$par
     rhat <- rhat / sqrt(sum(rhat^2))
