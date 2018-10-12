@@ -46,10 +46,6 @@ gsm <- function(dat) {
         X %*% bhat, yi))
     Fhat <- exp(-Fhat)
     Sn <- function(r) {
-        ## len <- sqrt(sum(r^2))
-        ## if (len != 0) r <- r / len
-        ## -.C("shapeEq", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-        ##     as.double(X %*% bhat), as.double(X %*% r), result = double(1), PACKAGE = "GSM")$result
         -.C("shapeEq", as.integer(n), as.double(X %*% r), as.double(mm / Fhat), result = double(1), PACKAGE = "GSM")$result
     }
     tmp1 <- spg(par = double(2), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
