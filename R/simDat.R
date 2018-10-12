@@ -84,7 +84,7 @@ Lam.f <- function(t, r, b, model){
     if (model == "M1") return(2 * log(1 + t) * exp(r))
     if (model == "M2") return(exp(t / 10) * 10 + t * b - 10)
     if (model == "M3") return(2 * log(1 + t * exp(b)))
-    if (model == "M4") return(2 * log(1 + t * exp(b)) * exp(r))
+    if (model == "M4") return(2 * log(1 + exp(b) * t ^1.5) * exp(r)/ 3)
     ## Old settings, under Pico's draft
     ## if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))
     ## if (model == "M2") return((exp(t / 10) * 10 + t * b - 10) * exp(r) / 2)
