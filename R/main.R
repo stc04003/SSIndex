@@ -28,8 +28,8 @@ gsm <- function(dat) {
     ## which one gives the absolution min?
     tmp1 <- spg(par = double(2), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
     tmp2 <- optim(par = double(2), fn = Cn)
-    if (tmp1$value < tmp2$value) bhat <- tmp1$par
-    else bhat <- tmp2$par
+    if (tmp1$value < tmp2$value) bhat <- bhat0 <- tmp1$par
+    else bhat <- bhat0 <- tmp2$par
     bhat <- bhat / sqrt(sum(bhat^2))
     ## The estimating equation Sn needs Yi even for the m = 0's
     n <- length(unique(dat$id))
@@ -41,7 +41,8 @@ gsm <- function(dat) {
     p <- ncol(X)
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-           as.double(X %*% bhat), as.double(x), as.double(y), result = double(1), PACKAGE = "GSM")$result,
+           as.double(X %*% bhat), as.double(x), as.double(y),
+           result = double(1), PACKAGE = "GSM")$result,
         X %*% bhat, yi))
     Fhat <- exp(-Fhat)
     Sn <- function(r) {
@@ -53,9 +54,9 @@ gsm <- function(dat) {
     }
     tmp1 <- spg(par = double(2), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
     tmp2 <- optim(par = double(2), fn = Sn)
-    if (tmp1$value < tmp2$value) rhat <- tmp1$par
-    else rhat <- tmp2$par
+    if (tmp1$value < tmp2$value) rhat <- rhat0 <- tmp1$par
+    else rhat <- rhat0 <- tmp2$par
     rhat <- rhat / sqrt(sum(rhat^2))
     ## rhat <- optimize(f = Sn, interval = c(-10, 10))$minimum
-    list(b0 = bhat, r0 = rhat)
+    list(b0 = bhat, r0 = rhat, b00 = bhat0, r00 = rhat0)
 }
