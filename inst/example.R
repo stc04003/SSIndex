@@ -12,6 +12,8 @@ do <- function(n, model) {
     unlist(gsm(dat))
 }
 
+do(200, "M2")
+
 sim1 <- t(replicate(100, do(200, "M1")))
 sim2 <- t(replicate(100, do(200, "M2")))
 sim3 <- t(replicate(100, do(200, "M3")))
@@ -54,3 +56,9 @@ summary(sim4)
 ##  Max.   : 0.2988   Max.   : 0.3511   Max.   : 0.05221   Max.   : 0.9999  
 
 Douglas06(simDat(100, "M2")) ## confirms data generation
+
+
+do(200, "M1")
+do(200, "M2")
+do(200, "M3")
+do(200, "M4")
