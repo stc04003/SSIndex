@@ -12,7 +12,8 @@
 double kernal(double dx) {
   double out;
   if (dx <= 1 && dx >= -1) {
-    out = 15 * (1 - dx * dx) * (1 - dx * dx) / 16; 
+    // out = 15 * (1 - dx * dx) * (1 - dx * dx) / 16; // Quartic/biweight
+    out = 3 * (1 - dx * dx) / 4; // Epanechnikov
   }
   return(out);
 }
@@ -35,7 +36,7 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
   	      de += kernal(x[0] - xb[j]);
   	  }
   	}
-	result[0] = nu / de;
+	result[0] += nu / de;
       }
     }
   }

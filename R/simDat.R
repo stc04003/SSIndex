@@ -47,7 +47,9 @@ simDat <- function(n, model) {
             x <- mvrnorm(1, c(0,0), diag(2))
             x0 <-  sum(x * beta0)
         }
-        y <- min(rexp(1, 1 / (10 * (1 + abs(x[1])))), 10)
+        if (model == "M4") tau <- 1
+        else tau <- 10
+        y <- min(rexp(1, 1 / (10 * (1 + abs(x[1])))), tau)
         x_beta <- as.numeric(x %*% beta0)
         x_gamma <- as.numeric(x %*% gamma0)
         len <- 0  # max of recurrent times
@@ -73,6 +75,8 @@ simDat <- function(n, model) {
 
 #' Cumulative rate function
 #'
+#' M1 ~ M3 assume \eqn{\tau = 10}, M4 assumes \eqn{\tau = 1}.
+#' 
 #' @param t is time
 #' @param r is \eqn{\gamma_0^\top Z}
 #' @param b is \eqn{\beta_0^\top Z}
@@ -84,8 +88,7 @@ Lam.f <- function(t, r, b, model){
     if (model == "M1") return(2 * log(1 + t) * exp(r))
     if (model == "M2") return(exp(t / 10) * 10 + t * b - 10)
     if (model == "M3") return((1 - exp(-t * exp(b))) * exp(-b))
-        ## return(2 * log(1 + t * exp(b)) * exp(-b))
-    if (model == "M4") return((1 - exp(-t * exp(b))) * exp(-b) * exp(r))
+    if (model == "M4") return(pbeta(t, 2, 1 + exp(b)) * exp(r))
     ## Old settings, under Pico's draft
     ## if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))
     ## if (model == "M2") return((exp(t / 10) * 10 + t * b - 10) * exp(r) / 2)

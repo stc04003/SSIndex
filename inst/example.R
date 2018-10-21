@@ -7,12 +7,14 @@ dim(simDat(100, "M4"))
 
 c(7, 24) / 25
 
-do <- function(n, model) {
+do <- function(n, model, shp.ind = FALSE) {
     dat <- simDat(n, model)
-    unlist(gsm(dat))
+    unlist(gsm(dat, shp.ind))
 }
 
+do(200, "M1")
 do(200, "M2")
+do(200, "M3")
 
 sim1 <- t(replicate(100, do(200, "M1")))
 sim2 <- t(replicate(100, do(200, "M2")))
@@ -20,45 +22,83 @@ sim3 <- t(replicate(100, do(200, "M3")))
 sim4 <- t(replicate(100, do(200, "M4")))
 
 summary(sim1)
-##      b01               b02               r01              r02        
-## Min.   :-0.9996   Min.   :-1.0000   Min.   :0.1063   Min.   :0.9140  
-## 1st Qu.:-0.4778   1st Qu.:-0.4956   1st Qu.:0.2424   1st Qu.:0.9501  
-## Median : 0.3819   Median : 0.4404   Median :0.2760   Median :0.9611  
-## Mean   : 0.1879   Mean   : 0.2056   Mean   :0.2738   Mean   :0.9601  
-## 3rd Qu.: 0.7694   3rd Qu.: 0.8214   3rd Qu.:0.3121   3rd Qu.:0.9702  
-## Max.   : 1.0000   Max.   : 1.0000   Max.   :0.4056   Max.   :0.9943  
-
 summary(sim2)
-##       b01               b02               r01              r02        
-##  Min.   :-0.9992   Min.   :-0.9998   Min.   :0.3832   Min.   :0.6246  
-##  1st Qu.:-0.6802   1st Qu.:-0.8523   1st Qu.:0.5701   1st Qu.:0.7566  
-##  Median :-0.6073   Median :-0.7945   Median :0.6143   Median :0.7891  
-##  Mean   :-0.5882   Mean   :-0.7549   Mean   :0.6139   Mean   :0.7852  
-##  3rd Qu.:-0.5231   3rd Qu.:-0.7331   3rd Qu.:0.6538   3rd Qu.:0.8215  
-##  Max.   : 0.4551   Max.   : 0.4454   Max.   :0.7809   Max.   :0.9237 
-
 summary(sim3)
-##       b01               b02               r01               r02         
-##  Min.   :-0.9984   Min.   :-0.9991   Min.   :-0.7811   Min.   :-0.9328  
-##  1st Qu.:-0.6610   1st Qu.:-0.8424   1st Qu.:-0.6500   1st Qu.:-0.8314  
-##  Median :-0.6075   Median :-0.7943   Median :-0.6040   Median :-0.7970  
-##  Mean   :-0.5849   Mean   :-0.7709   Mean   :-0.6011   Mean   :-0.7938  
-##  3rd Qu.:-0.5389   3rd Qu.:-0.7504   3rd Qu.:-0.5556   3rd Qu.:-0.7599  
-##  Max.   : 0.3865   Max.   : 0.4133   Max.   :-0.3605   Max.   :-0.6244  
-
 summary(sim4)
-##       b01               b02               r01                r02         
-##  Min.   :-0.9996   Min.   :-1.0000   Min.   :-1.00000   Min.   :-0.2680  
-##  1st Qu.:-0.6576   1st Qu.:-0.8425   1st Qu.:-0.87818   1st Qu.: 0.4783  
-##  Median :-0.5974   Median :-0.8019   Median :-0.76504   Median : 0.6440  
-##  Mean   :-0.5877   Mean   :-0.7745   Mean   :-0.71497   Mean   : 0.6197  
-##  3rd Qu.:-0.5386   3rd Qu.:-0.7534   3rd Qu.:-0.60696   3rd Qu.: 0.7947  
-##  Max.   : 0.2988   Max.   : 0.3511   Max.   : 0.05221   Max.   : 0.9999  
 
 Douglas06(simDat(100, "M2")) ## confirms data generation
 
+set.seed(1);round(do(200, "M1"), 3) # 0.986 -0.168  0.180  0.984  0.181 -0.031  0.022  0.120 
+set.seed(1);round(do(200, "M2"), 3) # -0.598 -0.801  0.641  0.767 -1.308 -1.752  0.128  0.154 
+set.seed(1);round(do(200, "M3"), 3) # -0.650 -0.760 -0.554 -0.832 -2.989 -3.496 -1.780 -2.674 
+set.seed(1);round(do(200, "M4"), 3) # -0.609 -0.793  0.328  0.945 -0.807 -1.050  0.050  0.143 
 
-do(200, "M1")
-do(200, "M2")
-do(200, "M3")
-do(200, "M4")
+## Parallel computing on 1000 replications
+library(parallel)
+library(xtable)
+
+sim1 <- sim1.2 <- sim2 <- sim3 <- NULL
+cl <- makePSOCKcluster(8)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, c('do')))
+invisible(clusterEvalQ(NULL, library(GSM)))
+set.seed(1)
+sim1 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M1"))), 8))
+set.seed(1)
+sim1.2 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M1", TRUE))), 8))
+sim2 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M2"))), 8))
+sim3 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M3"))), 8))
+sim4 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M4"))), 8))
+stopCluster(cl)
+
+makeTab <- function(dat) {
+    cbind(colMeans(dat)[1:4], apply(dat, 2, sd)[1:4])
+}
+
+tab <- cbind(makeTab(sim1), makeTab(sim1.2), makeTab(sim2), makeTab(sim3), makeTab(sim4))
+
+print(xtable(tab, digits = 3), math.style.negative = TRUE)
+
+
+
+## Testing \beta_0 = 0
+library(tidyverse)
+
+dat <- simDat(100, "M1")
+
+tilde.mu <- function(x) {
+    Ft <- exp(-unlist(mapply(FUN = function(x, y)
+        .C("shapeFun", 
+           as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
+           as.double(yi2), as.double(X2 %*% tilde.b), as.double(x), as.double(y), 
+           result = double(1), PACKAGE = "GSM")$result, rep(x, length(u)), u)))
+    sum(diff(c(0, Ft)) * u)
+}
+
+b.test <- function(dat) {
+    n <- length(unique(dat$id))
+    ind <- sample(1:n)[1:round(n/2)]
+    dat1 <- subset(dat, id %in% ind)
+    dat2 <- subset(dat, !(id %in% ind))
+    tilde.b <- gsm(dat1)$b0
+    n <- length(unique(dat$id))
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    tij <- subset(dat, event == 1)$t
+    yi <- subset(dat, event == 0)$t
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    X <- as.matrix(subset(dat, event == 0, select = c(x1, x2)))
+    p <- ncol(X)
+    n2 <- length(unique(dat2$id))
+    mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
+    tij2 <- subset(dat2, event == 1)$t
+    yi2 <- subset(dat2, event == 0)$t
+    midx2 <- c(0, cumsum(mm2)[-length(mm2)])
+    X2 <- as.matrix(subset(dat2, event == 0, select = c(x1, x2)))
+    u <- unique(sort(c(tij, yi)))
+    xb <- X %*% tilde.b
+    d1 <- sapply(xb[xb <= median(xb)], function(z) tilde.mu(z))
+    d2 <- sapply(xb[xb > median(xb)], function(z) tilde.mu(z))
+    return((sum(d1) - sum(d2)) / n)
+}
+
+system.time(d <- replicate(200, b.test(dat)))

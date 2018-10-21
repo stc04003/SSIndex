@@ -9,28 +9,32 @@
 #'
 #' @useDynLib GSM, .registration = TRUE
 #' @export
-gsm <- function(dat) {
+gsm <- function(dat, shp.ind = FALSE) {
     ## assuming data is generated from simDat
     ## estimate \beta first
-    dat0 <- subset(dat, m > 0)
-    n <- length(unique(dat0$id))
-    mm <- aggregate(event ~ id, dat0, sum)[,2]
-    dat0$id <- rep(1:n, mm + 1)
-    tij <- subset(dat0, event == 1)$t
-    yi <- subset(dat0, event == 0)$t
-    midx <- c(0, cumsum(mm)[-length(mm)])
-    X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
-    Cn <- function(b) {
-        -.C("rank", as.integer(n), as.integer(mm), as.integer(midx),
-            as.double(tij), as.double(yi), as.double(X %*% b),
-            result = double(1), PACKAGE = "GSM")$result
+    if (!shp.ind) {
+        dat0 <- subset(dat, m > 0)
+        n <- length(unique(dat0$id))
+        mm <- aggregate(event ~ id, dat0, sum)[,2]
+        dat0$id <- rep(1:n, mm + 1)
+        tij <- subset(dat0, event == 1)$t
+        yi <- subset(dat0, event == 0)$t
+        midx <- c(0, cumsum(mm)[-length(mm)])
+        X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
+        Cn <- function(b) {
+            -.C("rank", as.integer(n), as.integer(mm), as.integer(midx),
+                as.double(tij), as.double(yi), as.double(X %*% b),
+                result = double(1), PACKAGE = "GSM")$result
+        }
+        ## which one gives the absolution min?
+        tmp1 <- spg(par = double(2), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = double(2), fn = Cn)
+        if (tmp1$value < tmp2$value) bhat <- bhat0 <- tmp1$par
+        else bhat <- bhat0 <- tmp2$par
+        bhat <- bhat / sqrt(sum(bhat^2))
+    } else {
+        bhat <- bhat0 <- double(2)
     }
-    ## which one gives the absolution min?
-    tmp1 <- spg(par = double(2), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-    tmp2 <- optim(par = double(2), fn = Cn)
-    if (tmp1$value < tmp2$value) bhat <- bhat0 <- tmp1$par
-    else bhat <- bhat0 <- tmp2$par
-    bhat <- bhat / sqrt(sum(bhat^2))
     ## The estimating equation Sn needs Yi even for the m = 0's
     n <- length(unique(dat$id))
     mm <- aggregate(event ~ id, dat, sum)[,2]

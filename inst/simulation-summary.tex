@@ -1,0 +1,187 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumerate}
+\usepackage{multicol}
+\usepackage{tikz, geometry}
+\usepackage{xcolor, color, booktabs}	
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{rotating}
+\usepackage{wrapfig,lipsum}
+\usepackage[font=scriptsize, position=top]{caption, subfig}
+\graphicspath{{fig/}}
+\usepackage{lscape}
+\usepackage{alphalph}
+\renewcommand\thesubfigure{\alphalph{\value{subfigure}}}
+
+\title{Simulation results}
+\author{}
+\date{}
+
+\newcommand\solidrule[1][0.5cm]{\rule[0.8ex]{#1}{1.5pt}}
+\newcommand\dashedrule{\mbox{%
+  \solidrule[1mm]\hspace{1mm}\solidrule[1mm]\hspace{1mm}\solidrule[1mm]}}
+\newcommand\doubledashedrule{\mbox{%
+  \solidrule[0.5mm]\hspace{0.5mm}\solidrule[0.5mm]\hspace{0.5mm}\solidrule[0.5mm]\hspace{0.5mm}\solidrule[0.5mm]\hspace{0.5mm}\solidrule[0.5mm]}}
+\newcommand\dotdashdotrule{\mbox{%
+  \solidrule[0.5mm]\hspace{1mm}\solidrule[2mm]\hspace{1mm}\solidrule[0.5mm]\hspace{0.5mm}}}
+
+\setlength{\textheight}{11in}
+\setlength{\textwidth}{6.5in}
+\setlength{\topmargin}{-0.8in}
+\setlength{\oddsidemargin}{-.3in}
+\setlength{\evensidemargin}{-.3in}
+\setlength{\headsep}{0in}
+
+\definecolor{OliveGreen}{rgb}{0,0.6,0}
+\newcommand{\bigbrk}{\vspace*{1.55in}}
+\newcommand{\smallbrk}{\vspace*{.3in}}
+\newcommand{\dif}{\mathrm{d}}%
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\purple}[1]{{\color{purple}#1}}
+\newcommand{\pink}[1]{{\color{pink}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+\newcommand{\green}[1]{{\color{OliveGreen}#1}}
+\newcommand{\brown}[1]{{\color{brown}#1}}
+\newcommand{\lgray}[1]{{\color{lightgray}#1}}
+\DeclareMathOperator{\logit}{logit}
+\DeclareMathOperator{\Cov}{Cov}
+\usetikzlibrary{calc}
+\def\j{\mathbf j}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty} 
+\pagestyle{empty}
+
+\noindent
+General model:
+\begin{equation*}
+\mu(t|Z) = f(t, \beta_0^\top Z)g(\gamma_0^\top Z),
+\end{equation*}
+where for fixed $x\in\mathbb{R}$,
+$f(\cdot, x)$ is an unspecified density function on $[0, \tau]$, 
+and $g(x)$ is unknown but monotone in $x$.
+We assume $\|\beta_0\|=\|\gamma_0\|=1$.\newline
+
+\textbf{Simulation settings used in the paper:} 
+\begin{itemize}
+\item $Z$ is generated from a multivariate truncated normal distribution 
+satisfying $Z\sim N_2(0, I_2)$ and $\|Z\|\le1$.
+\item Censoring time is an exponential distribution with mean $10\cdot(1 + |z_1|)$.
+\item Recurrent event times are generated from Poisson process with rate functions:
+\begin{description}
+\item[M1:] $\mu(t|Z) = \mu_0(t) \exp(\gamma_0^\top Z)$
+\begin{description}
+\item[$\bullet$] $\mu_0(t) = \frac{2}{1 + t}$.
+\item[$\bullet$] $\beta_0 = (\beta_1, \beta_2) = (0, 0)$, $\gamma_0 = (\gamma_1, \gamma_2) = (0.28, 0.96)$.
+\end{description}
+\item[M2:] $\mu(t|Z) = \mu_0(t) + \alpha_0^\top Z$
+\begin{description}
+\item[$\bullet$] $\mu_0(t) = e^{0.1t}$.
+\item[$\bullet$] $\beta_0 = \gamma_0 = \alpha_0 = (0.6, 0.8)$.
+\end{description}
+\item[M3:] $\mu(t|Z) = \mu_0\{t\exp(\alpha_0^\top Z)\}$
+\begin{description}
+\item[$\bullet$] $\mu_0(t) = e^{-t}$.
+\item[$\bullet$] $\beta_0 = \gamma_0 = \alpha_0 = (0.6, 0.8)$.
+\end{description}
+\item[M4:] $\mu(t|Z) = \mu_0\{t, \exp(\beta_0^\top Z)\}\exp(\gamma_0^\top Z)$
+\begin{description}
+\item[$\bullet$] $\mu_0(t, x) = \frac{t\cdot(1 - t)^{1+x}}{B(2, 1+x)}$
+\item[$\bullet$] $\beta_0 = (0.6, 0.8)$, $\gamma_0 = (0.28, 0.96)$
+\end{description}
+\end{description}
+\item Set $\tau = 10$ for \textbf{M1, M2, M3} and $\tau = 1$ for \textbf{M4}.
+
+\end{itemize}
+
+\begin{table}[ht]
+\centering
+%\renewcommand\tabcolsep{2pt}
+\caption{Point estimator (PE) and empirical standard error (ESE) for \textbf{M1} to \textbf{M4}.
+Sample size is $n = 200$, with 1000 replications.
+\textbf{M1-ind} assumes $\beta_0 = (0, 0)$ and shape-independence.}
+\begin{tabular}{rrrrrrrrrrr}
+\toprule
+& \multicolumn{2}{c}{\textbf{M1}}
+& \multicolumn{2}{c}{\textbf{M1-ind}}
+& \multicolumn{2}{c}{\textbf{M2}}
+& \multicolumn{2}{c}{\textbf{M3}}
+& \multicolumn{2}{c}{\textbf{M4}}\\
+\cmidrule(l){2-3}\cmidrule(l){4-5}\cmidrule(l){6-7}\cmidrule(l){8-9}\cmidrule(l){10-11}
+& PE & ESE & PE & ESE & PE & ESE & PE & ESE & PE & ESE \\
+\midrule
+\textbf{$\beta_1$} & 0.192 & 0.669 & 0.000 & 0.000 & $-$0.584 & 0.219 & $-$0.584 & 0.185 & $-$0.585 & 0.238 \\ 
+\textbf{$\beta_2$} & 0.204 & 0.689 & 0.000 & 0.000 & $-$0.761 & 0.208 & $-$0.778 & 0.177 & $-$0.770 & 0.249 \\ 
+\textbf{$\gamma_1$} & 0.273 & 0.054 & 0.272 & 0.052 & 0.608 & 0.062 & $-$0.603 & 0.070 & 0.279 & 0.087 \\ 
+\textbf{$\gamma_2$} & 0.961 & 0.015& 0.961 & 0.014  & 0.789 & 0.048 & $-$0.793 & 0.054 & 0.956 & 0.025 \\ 
+\bottomrule
+\end{tabular}
+\end{table}
+
+%\begin{table}[ht]
+%\centering
+%%\renewcommand\tabcolsep{2pt}
+%\caption{Bias and empirical standard error (ESE) for $\beta_2$ in the above models.
+%Sample size is $n = 200$, with 500 replications.}
+%\begin{tabular}{rrrrrrrrrr}
+%\toprule
+%& \multicolumn{2}{c}{Proposed}
+%& \multicolumn{2}{c}{Schaubel (2006)}
+%& \multicolumn{2}{c}{Ghosh (2003)}\\
+%\cmidrule(l){2-3}\cmidrule(l){4-5}\cmidrule(l){6-7}
+%Model & Bias & ESE & Bias & ESE & Bias & ESE \\
+%\midrule
+%\textbf{M1} & -0.003 & 0.039 & -0.726 & 0.285 & 1.078 & 0.082 \\
+%\textbf{M2} & -0.079 & 0.347 & -1.103 & 0.272 & 1.838 & 0.118 \\
+%\textbf{M3} & -0.055 & 0.219 & -0.251 & 0.130 & 1.347 & 0.077 \\
+%\textbf{M4} & -0.001 & 0.026 & -11.305 & 3.272 & 2.633 & 0.136 \\
+%\textbf{M5} & -0.041 & 0.322 & 0.006 & 0.047 & 1.588 & 1.865 \\
+%%\textbf{M6} & -0.016 & 0.185 & 0.270 & 0.028 & 0.893 & 0.045 \\
+%\textbf{M6} & -0.070 & 0.803 & -0.200 & 0.059 & 2.676 & 0.571 \\
+%%\textbf{M8} & 0.009 & 0.143 & -0.544 & 0.084 & 2.614 & 0.447 \\
+%\textbf{M7} & -0.001 & 0.045 & 0.937 & 0.050 & 0.017 & 0.059 \\
+%\bottomrule
+%\end{tabular}
+%\end{table}
+
+\begin{table}[ht]
+\centering
+%\renewcommand\tabcolsep{2pt}
+\caption{Bias and empirical standard error (ESE) for $(\gamma_1, \gamma_2)$ in the above models.
+Sample size is $n = 100$, with 500 replications.}
+\begin{tabular}{rrrrrrrrrr}
+\toprule
+&& \multicolumn{2}{c}{Proposed}
+& \multicolumn{2}{c}{coxph}\\
+\cmidrule(l){3-4}\cmidrule(l){5-6}
+Model  & & Bias & ESE & Bias & ESE \\
+\midrule
+\textbf{M1} & $\gamma_1$ & 0.002 & 0.042 & -2.319 & 0.050 \\ 
+ & $\gamma_2$ & 0.010 & 0.028 & -0.094 & 0.034 \\ 
+\textbf{M2} & $\gamma_1$ & 0.043 & 0.130 & -0.687 & 0.059 \\ 
+ & $\gamma_2$ & 0.107 & 0.360 & -0.908 & 0.042 \\ 
+\textbf{M3} & $\gamma_1$ & -0.010 & 0.118 & -1.107 & 0.076 \\ 
+ & $\gamma_2$ & 0.051 & 0.142 & -0.700 & 0.055 \\ 
+\textbf{M4} & $\gamma_1$ & 0.010 & 0.049 & 1.502 & 0.107 \\ 
+ & $\gamma_2$ & 0.021 & 0.104 & -1.983 & 0.073 \\ 
+\textbf{M5} & $\gamma_1$ & 0.048 & 0.096 & -0.184 & 0.058 \\ 
+ & $\gamma_2$ & 0.014 & 0.159 & 0.092 & 0.042 \\ 
+%\textbf{M6} & $\gamma_1$ & 0.038 & 0.158 & 2.178 & 0.222 \\ 
+% & $\gamma_2$ & 0.023 & 0.311 & -1.086 & 0.134 \\ 
+\textbf{M6} & $\gamma_1$ & 0.099 & 0.357 & 0.002 & 0.058 \\ 
+ & $\gamma_2$ & -0.086 & 0.369 & -0.002 & 0.035 \\ 
+%\textbf{M8} & $\gamma_1$ & 0.002 & 0.050 & 0.349 & 0.060 \\ 
+% & $\gamma_2$ & -0.007 & 0.119 & -0.173 & 0.036 \\ 
+\textbf{M7} & $\gamma_1$ & 0.000 & 0.018 & -1.815 & 0.060 \\ 
+ & $\gamma_2$ & 0.002 & 0.037 & 0.902 & 0.041 \\ 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}
