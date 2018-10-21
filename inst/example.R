@@ -77,10 +77,6 @@ tilde.mu <- function(x) {
 
 b.test <- function(dat) {
     n <- length(unique(dat$id))
-    ind <- sample(1:n)[1:round(n/2)]
-    dat1 <- subset(dat, id %in% ind)
-    dat2 <- subset(dat, !(id %in% ind))
-    tilde.b <- gsm(dat1)$b0
     n <- length(unique(dat$id))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     tij <- subset(dat, event == 1)$t
@@ -88,6 +84,10 @@ b.test <- function(dat) {
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat, event == 0, select = c(x1, x2)))
     p <- ncol(X)
+    ind <- sample(1:n)[1:round(n/2)]
+    dat1 <- subset(dat, id %in% ind)
+    dat2 <- subset(dat, !(id %in% ind))
+    tilde.b <- gsm(dat1)$b0
     n2 <- length(unique(dat2$id))
     mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
     tij2 <- subset(dat2, event == 1)$t
