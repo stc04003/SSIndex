@@ -11,6 +11,7 @@ extern void DouglasUn(void *, void *, void *, void *, void *, void *, void *, vo
 extern void rank(void *, void *, void *, void *, void *, void *, void *);
 extern void shapeEq(void *, void *, void *, void *);
 extern void shapeFun(void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void shapeFun2(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 
 static const R_CMethodDef CEntries[] = {
     {"DouglasAn", (DL_FUNC) &DouglasAn, 9},
@@ -18,6 +19,7 @@ static const R_CMethodDef CEntries[] = {
     {"rank",      (DL_FUNC) &rank,      7},
     {"shapeEq",   (DL_FUNC) &shapeEq,   4},
     {"shapeFun",  (DL_FUNC) &shapeFun,  9},
+    {"shapeFun2", (DL_FUNC) &shapeFun2, 10},
     {NULL, NULL, 0}
 };
 

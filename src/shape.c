@@ -19,6 +19,7 @@ double kernal(double dx) {
 }
 
 // This function implements \hat{F}(t, x, \hat\beta)
+// returns one value at \hat{F}(t, x, \hat\beta)
 void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 	      double *x, double *t, double *result) {
   int i, j, k, l;
@@ -37,6 +38,34 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
   	  }
   	}
 	result[0] += nu / de;
+      }
+    }
+  }
+}
+
+// This function implements \hat{F}(t, x, \hat\beta)
+// returns a vector at \hat{F(t, x, \hat\beta) for t = t_{(0)}, \ldots, t_{(n)}
+// assumes fixed x
+void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
+	       double *x, double *t, int *nt, double *result) {
+  int i, j, k, l, tind;
+  double nu = 0.0;
+  double de = 0.0;
+  for (i = 0; i < *n; i++) {
+    for (k = 0; k < m[i]; k++) {
+      for (tind = 0; tind < *nt; tind++) {
+	if (tij[midx[i] + k] > t[tind]) {
+	  de = 0.0;
+	  nu = 0.0;
+	  nu = kernal(x[0] - xb[i]);
+	  for (j = 0; j < *n; j++) {
+	    for (l = 0; l < m[j]; l++) {
+	      if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+		de += kernal(x[0] - xb[j]);
+	    }
+	  }
+	  result[tind] += nu / de;
+	}
       }
     }
   }

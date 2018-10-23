@@ -99,11 +99,16 @@ getd <- function(dat2, tilde.b) {
     xb <- X2 %*% tilde.b
     u <- unique(sort(c(tij2, yi2)))
     tilde.mu <- function(z) {
-        Ft <- exp(-unlist(mapply(FUN = function(x, y)
-            .C("shapeFun", 
-               as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
-               as.double(yi2), as.double(X2 %*% tilde.b), as.double(x), as.double(y), 
-               result = double(1), PACKAGE = "GSM")$result, rep(z, length(u)), u)))
+        ## Ft0 <- exp(-unlist(mapply(FUN = function(x, y)
+        ##     .C("shapeFun", 
+        ##        as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
+        ##        as.double(yi2), as.double(X2 %*% tilde.b), as.double(x), as.double(y), 
+        ##        result = double(1), PACKAGE = "GSM")$result, rep(z, length(u)), u)))
+        Ft <- exp(-.C("shapeFun2", 
+                      as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
+                      as.double(yi2), as.double(X2 %*% tilde.b), as.double(z), as.double(u),
+                      as.integer(length(u)), 
+                      result = double(length(u)), PACKAGE = "GSM")$result)
         sum(diff(c(0, Ft)) * u)
     }
     d1 <- sapply(xb[xb <= median(xb)], function(z) tilde.mu(z))
