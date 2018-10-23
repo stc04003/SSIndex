@@ -4,10 +4,14 @@
 \alias{gsm}
 \title{Main estimation function}
 \usage{
-gsm(dat)
+gsm(dat, shp.ind = FALSE, B)
 }
 \arguments{
 \item{dat}{data frame generated from \code{simDat}.}
+
+\item{shp.ind}{a character string indicating either to proceed with shape independence assumption.}
+
+\item{B}{a numerical value specifying number of bootstrap in shape independence testing.}
 }
 \description{
 This function assumes the input data is generated from \code{simDat}.
