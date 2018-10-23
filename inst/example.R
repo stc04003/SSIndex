@@ -79,3 +79,62 @@ system.time(f3 <- gsm(simDat(100, "M2"), "test"))
 system.time(f4 <- gsm(simDat(100, "M2"), "test"))
 
 e
+
+
+sqrt(50) * with(f1, d / sd(dstar))
+sqrt(50) * with(f2, d / sd(dstar))
+sqrt(50) * with(f3, d / sd(dstar))
+sqrt(50) * with(f4, d / sd(dstar))
+sqrt(50) * with(f5, d / sd(dstar))
+sqrt(50) * with(f6, d / sd(dstar))
+
+library(GSM)
+
+set.seed(2)
+system.time(f1 <- gsm(simDat(100, "M1"), "test"))
+
+f1$d
+sd(f1$dstar)
+sqrt(50) * with(f1, d / sd(dstar))
+
+set.seed(2)
+system.time(f1 <- gsm(simDat(100, "M1"), "test"))
+
+debug(gsm)
+debug(getd)
+
+
+Ft0 <- exp(-unlist(mapply(FUN = function(x, y)
+    .C("shapeFun", 
+       as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
+       as.double(yi2), as.double(X2 %*% tilde.b), as.double(x), 
+       as.double(y), result = double(1), PACKAGE = "GSM")$result, 
+    rep(.6, length(u)), u)))
+
+Ft <- exp(-.C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
+              as.double(tij2), as.double(yi2), as.double(X2 %*% tilde.b), 
+              as.double(.6), as.double(u), as.integer(length(u)),
+              result = double(length(u)),
+              PACKAGE = "GSM")$result)
+
+
+##
+
+do <- function(n, model) {
+    dat <- simDat(n, model)
+    tmp <- gsm(dat, "test")
+    c(tmp$b0, tmp$r0, sqrt(round(n / 2)) * tmp$d / sd(tmp$dstar))
+}
+
+do(100, "M2")
+
+library(parallel)
+library(xtable)
+
+sim1 <- sim1.2 <- sim2 <- sim3 <- sim4 <- NULL
+cl <- makePSOCKcluster(8)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, c('do')))
+invisible(clusterEvalQ(NULL, library(GSM)))
+sim2 <- t(matrix(unlist(parLapply(NULL, 1:20, function(z) do(100, "M2"))), 5))
+sim1 <- t(matrix(unlist(parLapply(NULL, 1:200, function(z) do(100, "M1"))), 5))
