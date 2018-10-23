@@ -104,11 +104,11 @@ getd <- function(dat2, tilde.b) {
         ##        as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
         ##        as.double(yi2), as.double(X2 %*% tilde.b), as.double(x), as.double(y), 
         ##        result = double(1), PACKAGE = "GSM")$result, rep(z, length(u)), u)))
-        Ft <- exp(-.C("shapeFun2", 
-                      as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
-                      as.double(yi2), as.double(X2 %*% tilde.b), as.double(z), as.double(u),
-                      as.integer(length(u)), 
-                      result = double(length(u)), PACKAGE = "GSM")$result)
+        Ri <- .C("shapeFun2", 
+                 as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
+                 as.double(yi2), as.double(X2 %*% tilde.b), as.double(z), 
+                 result = double(sum(mm2)), PACKAGE = "GSM")$result
+        Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
         sum(diff(c(0, Ft)) * u)
     }
     d1 <- sapply(xb[xb <= median(xb)], function(z) tilde.mu(z))

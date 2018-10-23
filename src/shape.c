@@ -27,7 +27,7 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
   double de = 0.0;
   for (i = 0; i < *n; i++) {
     for (k = 0; k < m[i]; k++) {
-      if (tij[midx[i] + k] > t[0]) {
+      if (tij[midx[i] + k] >= t[0]) {
   	de = 0.0;
   	nu = 0.0;
   	nu = kernal(x[0] - xb[i]);
@@ -44,32 +44,34 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 }
 
 // This function implements \hat{F}(t, x, \hat\beta)
-// returns a vector at \hat{F(t, x, \hat\beta) for t = t_{(0)}, \ldots, t_{(n)}
 // assumes fixed x
+// returns a vector for
+// \frac{K_h(\beta_0^\top Z_i - x)}{\sum_{j=1}^n\sum_{l=1}^{m_i}K_h(\beta_0^\top Z_j - x) I(T_{jl} \le T_{ik} \le C_j)}
+// for unique(tij)
 void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
-	       double *x, double *t, int *nt, double *result) {
+	       double *x, double *result) {
   int i, j, k, l, tind;
   double nu = 0.0;
   double de = 0.0;
+  tind = 0;
   for (i = 0; i < *n; i++) {
     for (k = 0; k < m[i]; k++) {
-      for (tind = 0; tind < *nt; tind++) {
-	if (tij[midx[i] + k] > t[tind]) {
-	  de = 0.0;
-	  nu = 0.0;
-	  nu = kernal(x[0] - xb[i]);
-	  for (j = 0; j < *n; j++) {
-	    for (l = 0; l < m[j]; l++) {
-	      if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-		de += kernal(x[0] - xb[j]);
-	    }
+	de = 0.0;
+	nu = 0.0;
+	nu = kernal(x[0] - xb[i]);
+	for (j = 0; j < *n; j++) {
+	  for (l = 0; l < m[j]; l++) {
+	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+	      de += kernal(x[0] - xb[j]);
 	  }
-	  result[tind] += nu / de;
 	}
-      }
+	result[tind] += nu / de;
+    tind += 1;
     }
   }
 }
+
+
 
 void shapeEq(int *n, double *xr, double *mFhat, double *result) {
   int i, j;

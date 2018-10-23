@@ -126,15 +126,16 @@ do <- function(n, model) {
     c(tmp$b0, tmp$r0, sqrt(round(n / 2)) * tmp$d / sd(tmp$dstar))
 }
 
-do(100, "M2")
+system.time(print(do(100, "M2")))
 
 library(parallel)
 library(xtable)
 
-sim1 <- sim1.2 <- sim2 <- sim3 <- sim4 <- NULL
-cl <- makePSOCKcluster(8)
+sim2 <- sim3 <- sim4 <- NULL
+cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do')))
 invisible(clusterEvalQ(NULL, library(GSM)))
-sim2 <- t(matrix(unlist(parLapply(NULL, 1:20, function(z) do(100, "M2"))), 5))
-sim1 <- t(matrix(unlist(parLapply(NULL, 1:200, function(z) do(100, "M1"))), 5))
+sim2 <- parSapply(NULL, 1:200, function(z) do(100, "M2"))
+stopCluster(cl)
+
