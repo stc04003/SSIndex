@@ -113,7 +113,8 @@ getd <- function(dat2, tilde.b) {
     }
     d1 <- sapply(xb[xb <= median(xb)], function(z) tilde.mu(z))
     d2 <- sapply(xb[xb > median(xb)], function(z) tilde.mu(z))
-    (sum(d1) - sum(d2)) / n2
+    mean(d1) - mean(d2)
+    ## (sum(d1) - sum(d2)) / n2
 }
 
 boot.d <- function(dat2, tilde.b) {

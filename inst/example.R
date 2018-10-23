@@ -83,3 +83,5 @@ sim1 <- parSapply(NULL, 1:500, function(z) do(100, "M1"))
 sim2 <- parSapply(NULL, 1:500, function(z) do(100, "M2"))
 stopCluster(cl)
 
+sum(abs(sim1[5,]) > qnorm(.975)) / 500
+sum(abs(sim2[5,]) > qnorm(.975)) / 500
