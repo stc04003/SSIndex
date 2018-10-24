@@ -66,7 +66,7 @@ print(xtable(tab, digits = 3), math.style.negative = TRUE)
 do <- function(n, model) {
     dat <- simDat(n, model)
     tmp <- gsm(dat, "test")
-    c(tmp$b0, tmp$r0, sqrt(round(n / 2)) * tmp$d / sd(tmp$dstar))
+    c(tmp$b0, tmp$r0, tmp$d / sd(tmp$dstar))
 }
 
 system.time(print(do(100, "M2")))
@@ -75,13 +75,17 @@ library(parallel)
 library(xtable)
 
 sim1 <- sim2 <- NULL
-cl <- makePSOCKcluster(16)
+cl <- makePSOCKcluster(8)
+## cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do')))
 invisible(clusterEvalQ(NULL, library(GSM)))
-sim1 <- parSapply(NULL, 1:500, function(z) do(100, "M1"))
-sim2 <- parSapply(NULL, 1:500, function(z) do(100, "M2"))
+sim1 <- parSapply(NULL, 1:100, function(z) do(100, "M1"))
+sim2 <- parSapply(NULL, 1:100, function(z) do(200, "M2"))
 stopCluster(cl)
 
 sum(abs(sim1[5,]) > qnorm(.975)) / 500
 sum(abs(sim2[5,]) > qnorm(.975)) / 500
+
+set.seed(123)
+system.time(print(do(200, "M2")))
