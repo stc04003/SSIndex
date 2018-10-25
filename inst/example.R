@@ -64,28 +64,66 @@ print(xtable(tab, digits = 3), math.style.negative = TRUE)
 ## -------------------------------------------------------------------------------------
 
 do <- function(n, model) {
+    seed <- sample(1:1e7, 1)
+    set.seed(seed)
     dat <- simDat(n, model)
-    tmp <- gsm(dat, "test")
-    c(tmp$b0, tmp$r0, tmp$d / sd(tmp$dstar))
+    set.seed(seed)
+    tmp <- tryCatch(gsm(dat, "test"), error = function(e) NA)
+    if (any(is.na(tmp)))
+        return(c(rep(NA, 5), seed))
+    else
+        c(tmp$b0, tmp$r0, tmp$d / sd(tmp$dstar), seed)
 }
 
-system.time(print(do(100, "M2")))
+system.time(print(do(300, "M2")))
+system.time(print(do(300, "M3")))
 
 library(parallel)
 library(xtable)
 
-sim1 <- sim2 <- NULL
-cl <- makePSOCKcluster(8)
-## cl <- makePSOCKcluster(16)
+sim1 <- sim2 <- sim3 <- NULL
+## cl <- makePSOCKcluster(8)
+cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do')))
 invisible(clusterEvalQ(NULL, library(GSM)))
-sim1 <- parSapply(NULL, 1:100, function(z) do(100, "M1"))
-sim2 <- parSapply(NULL, 1:100, function(z) do(200, "M2"))
+sim1 <- t(parSapply(NULL, 1:100, function(z) do(300, "M1")))
+sim2 <- t(parSapply(NULL, 1:100, function(z) do(300, "M2")))
+sim3 <- t(parSapply(NULL, 1:100, function(z) do(500, "M3")))
 stopCluster(cl)
 
-sum(abs(sim1[5,]) > qnorm(.975)) / 500
-sum(abs(sim2[5,]) > qnorm(.975)) / 500
+sum(abs(sim1[,5]) > qnorm(.975)) / 500
+sum(abs(sim2[,5]) > qnorm(.975)) / 500
+sum(abs(sim3[,5]) > qnorm(.975)) / 500
 
 set.seed(123)
 system.time(print(do(200, "M2")))
+
+
+summary(t(sim3))
+which(is.na(sim3[5,]))
+sim3[6, which(is.na(sim3[5,]))]
+
+set.seed(3223348)
+dat <- simDat(500, "M3")
+gsm(dat, "test")
+
+
+gsm(dat, TRUE)
+gsm(dat, FALSE)
+
+
+
+
+set.seed(3223348)
+dat <- simDat(500, "M3")
+tryCatch(gsm(dat, "test"), error = function(e) NA)
+
+
+out <- matrix(NA, 100, 109)
+for (i in 1:100) {
+    set.seed(i + 3000)
+    dat <- simDat(500, "M3")
+    tmp <- gsm(dat, "test")
+    out[i,] <- unlist(tmp)
+}

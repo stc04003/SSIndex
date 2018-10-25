@@ -39,7 +39,7 @@ gsm <- function(dat, shp.ind = FALSE, B = 100) {
         mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
         d <- getd(dat2, tilde.b)
         dstar <- replicate(B, boot.d(dat2, tilde.b))
-        if (abs(d / sd(dstar)) < qnorm(.975)) {
+        if (abs(d / sd(dstar)) > qnorm(.975)) {
             tmp <- getb0(dat)
             bhat <- tmp$bhat
             bhat0 <- tmp$bhat0
