@@ -63,18 +63,23 @@ print(xtable(tab, digits = 3), math.style.negative = TRUE)
 ## Testing \beta_0 = 0
 ## -------------------------------------------------------------------------------------
 
-do <- function(n, model) {
+do <- function(n, model, shp.ind = "test") {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model)
     set.seed(seed)
-    tmp <- tryCatch(gsm(dat, "test"), error = function(e) NA)
-    if (any(is.na(tmp)))
-        return(c(rep(NA, 5), seed))
-    else
-        c(tmp$b0, tmp$r0, tmp$d / sd(tmp$dstar), seed)
+    tmp <- tryCatch(gsm(dat, shp.ind), error = function(e) NA)
+    if (is.character(shp.ind)) {
+        if (any(is.na(tmp)))
+            return(c(rep(NA, 5), seed))
+        else
+            return(c(tmp$b0, tmp$r0, tmp$d / sd(tmp$dstar), seed))
+    }
+    return(c(tmp$b0, tmp$r0))
 }
 
+system.time(print(do(300, "M1")))
+system.time(print(do(300, "M1", FALSE)))
 system.time(print(do(300, "M2")))
 system.time(print(do(300, "M3")))
 
@@ -88,8 +93,10 @@ setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do')))
 invisible(clusterEvalQ(NULL, library(GSM)))
 sim1 <- t(parSapply(NULL, 1:100, function(z) do(300, "M1")))
+sim1 <- t(parSapply(NULL, 1:1000, function(z)
+    tryCatch(do(300, "M1", FALSE), error = function(e) rep(NA, 4))))
 sim2 <- t(parSapply(NULL, 1:100, function(z) do(300, "M2")))
-sim3 <- t(parSapply(NULL, 1:100, function(z) do(500, "M3")))
+sim3 <- t(parSapply(NULL, 1:100, function(z) do(300, "M3")))
 stopCluster(cl)
 
 sum(abs(sim1[,5]) > qnorm(.975)) / 500
