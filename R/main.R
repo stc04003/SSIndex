@@ -89,6 +89,7 @@ getb0 <- function(dat) {
     list(bhat = bhat, bhat0 = bhat0)
 }
 
+#' @export
 getd <- function(dat2, tilde.b) {
     n2 <- length(unique(dat2$id))
     mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
@@ -99,17 +100,13 @@ getd <- function(dat2, tilde.b) {
     xb <- X2 %*% tilde.b
     u <- unique(sort(c(tij2, yi2)))
     tilde.mu <- function(z) {
-        ## Ft0 <- exp(-unlist(mapply(FUN = function(x, y)
-        ##     .C("shapeFun", 
-        ##        as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
-        ##        as.double(yi2), as.double(X2 %*% tilde.b), as.double(x), as.double(y), 
-        ##        result = double(1), PACKAGE = "GSM")$result, rep(z, length(u)), u)))
         Ri <- .C("shapeFun2", 
                  as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
                  as.double(yi2), as.double(X2 %*% tilde.b), as.double(z), 
                  result = double(sum(mm2)), PACKAGE = "GSM")$result
         Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
-        sum(diff(c(0, Ft)) * u)
+        ## sum(diff(c(0, Ft)) * u)
+        sum(diff(c(0, u)) * (1 - Ft))
     }
     d1 <- sapply(xb[xb <= median(xb)], function(z) tilde.mu(z))
     d2 <- sapply(xb[xb > median(xb)], function(z) tilde.mu(z))

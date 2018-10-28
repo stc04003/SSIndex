@@ -4,7 +4,7 @@
 \alias{gsm}
 \title{Main estimation function}
 \usage{
-gsm(dat, shp.ind = FALSE, B)
+gsm(dat, shp.ind = FALSE, B = 100)
 }
 \arguments{
 \item{dat}{data frame generated from \code{simDat}.}

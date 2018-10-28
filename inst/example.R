@@ -62,6 +62,7 @@ print(xtable(tab, digits = 3), math.style.negative = TRUE)
 ## -------------------------------------------------------------------------------------
 ## Testing \beta_0 = 0
 ## -------------------------------------------------------------------------------------
+library(GSM)
 
 do <- function(n, model, shp.ind = "test") {
     seed <- sample(1:1e7, 1)
@@ -82,6 +83,7 @@ system.time(print(do(300, "M1")))
 system.time(print(do(300, "M1", FALSE)))
 system.time(print(do(300, "M2")))
 system.time(print(do(300, "M3")))
+system.time(print(do(300, "M4")))
 
 library(parallel)
 library(xtable)
@@ -99,38 +101,45 @@ sim2 <- t(parSapply(NULL, 1:100, function(z) do(300, "M2")))
 sim3 <- t(parSapply(NULL, 1:100, function(z) do(300, "M3")))
 stopCluster(cl)
 
-sum(abs(sim1[,5]) > qnorm(.975)) / 500
-sum(abs(sim2[,5]) > qnorm(.975)) / 500
-sum(abs(sim3[,5]) > qnorm(.975)) / 500
-
-set.seed(123)
-system.time(print(do(200, "M2")))
+sum(abs(sim1[,5]) > qnorm(.975)) / nrow(sim1)
+sum(abs(sim2[,5]) > qnorm(.975)) / nrow(sim2)
+sum(abs(sim3[,5]) > qnorm(.975)) / nrow(sim3)
 
 
-summary(t(sim3))
-which(is.na(sim3[5,]))
-sim3[6, which(is.na(sim3[5,]))]
+## Debug area
+debug(getd)
+system.time(print(do(1000, "M4")))
 
-set.seed(3223348)
-dat <- simDat(500, "M3")
-gsm(dat, "test")
-
-
-gsm(dat, TRUE)
-gsm(dat, FALSE)
-
-
-
-
-set.seed(3223348)
-dat <- simDat(500, "M3")
-tryCatch(gsm(dat, "test"), error = function(e) NA)
-
-
-out <- matrix(NA, 100, 109)
-for (i in 1:100) {
-    set.seed(i + 3000)
-    dat <- simDat(500, "M3")
-    tmp <- gsm(dat, "test")
-    out[i,] <- unlist(tmp)
+tilde.mu <- function(z) {
+    Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
+             as.double(tij2), as.double(yi2), as.double(X2 %*% tilde.b), 
+             as.double(z), result = double(sum(mm2)), PACKAGE = "GSM")$result
+    Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
+    sum(diff(c(0, u)) * (1 - Ft))
 }
+
+tilde.mu2 <- function(z) {
+    Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
+             as.double(tij2), as.double(yi2), as.double(X2 %*% tilde.b), 
+             as.double(z), result = double(sum(mm2)), PACKAGE = "GSM")$result
+    Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
+    sum(diff(c(0, Ft)) * u)
+}
+
+summary(xb)
+
+tmp1 <- sapply(xb, tilde.mu)
+tmp2 <- sapply(xb, tilde.mu2)
+plot(xb, tmp1, "p", cex = .5, pch = 16)
+points(xb, tmp2, col = 2, cex = .5, pch = 16)
+summary(tmp1)
+summary(tmp2)
+
+
+## M4 true mu is 2 / (3 + exp(xb))
+
+tmp3 <- 2 / (3 + exp(xb))
+
+plot(xb, tmp1, "p", cex = .5, pch = 16, ylim = range(tmp3))
+points(xb, tmp2, col = 2, cex = .5, pch = 16)
+points(xb, tmp3, col = 3, cex = .5, pch = 16)
