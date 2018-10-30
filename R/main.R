@@ -47,14 +47,19 @@ gsm <- function(dat, shp.ind = FALSE, B = 100) {
         else bhat <- bhat0 <- double(2)
     }
     ## The estimating equation Sn needs Yi even for the m = 0's
+    xb <- X %*% bhat
+    ## h <- 1.06 * sd(xb) * n^-.2
+    h <- 2.78 * sd(xb) * n^-.2
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-           as.double(X %*% bhat), as.double(x), as.double(y),
+           as.double(xb), as.double(x), as.double(y), as.double(h), 
            result = double(1), PACKAGE = "GSM")$result,
         X %*% bhat, yi))
     Fhat <- exp(-Fhat)
     Sn <- function(r) {
-        -.C("shapeEq", as.integer(n), as.double(X %*% r), as.double(mm / Fhat),
+        xr <- X %*% r
+        h <- 1.06 * sd(xr) * n^-.2 
+        -.C("shapeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
             result = double(1), PACKAGE = "GSM")$result
     }
     tmp1 <- spg(par = double(2), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
@@ -98,11 +103,13 @@ getd <- function(dat2, tilde.b) {
     midx2 <- c(0, cumsum(mm2)[-length(mm2)])
     X2 <- as.matrix(subset(dat2, event == 0, select = c(x1, x2)))
     xb <- X2 %*% tilde.b
+    ## h <- 1.06 * sd(xb) * n2^-.2
+    h <- 2.78 * sd(xb) * n2^-.2
     u <- unique(sort(c(tij2, yi2)))
     tilde.mu <- function(z) {
         Ri <- .C("shapeFun2", 
                  as.integer(n2), as.integer(mm2), as.integer(midx2), as.double(tij2), 
-                 as.double(yi2), as.double(X2 %*% tilde.b), as.double(z), 
+                 as.double(yi2), as.double(xb), as.double(z), as.double(h), 
                  result = double(sum(mm2)), PACKAGE = "GSM")$result
         Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
         ## sum(diff(c(0, Ft)) * u)

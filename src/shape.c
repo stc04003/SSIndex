@@ -21,7 +21,7 @@ double kernal(double dx) {
 // This function implements \hat{F}(t, x, \hat\beta)
 // returns one value at \hat{F}(t, x, \hat\beta)
 void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
-	      double *x, double *t, double *result) {
+	      double *x, double *t, double *h, double *result) {
   int i, j, k, l;
   double nu = 0.0;
   double de = 0.0;
@@ -30,11 +30,11 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
       if (tij[midx[i] + k] >= t[0]) {
   	de = 0.0;
   	nu = 0.0;
-  	nu = kernal(x[0] - xb[i]);
+  	nu = kernal((x[0] - xb[i]) / h[0]);
   	for (j = 0; j < *n; j++) {
   	  for (l = 0; l < m[j]; l++) {
   	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-  	      de += kernal(x[0] - xb[j]);
+  	      de += kernal((x[0] - xb[j]) / h[0]);
   	  }
   	}
 	result[0] += nu / de;
@@ -49,7 +49,7 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 // \frac{K_h(\beta_0^\top Z_i - x)}{\sum_{j=1}^n\sum_{l=1}^{m_i}K_h(\beta_0^\top Z_j - x) I(T_{jl} \le T_{ik} \le C_j)}
 // for unique(tij)
 void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
-	       double *x, double *result) {
+	       double *x, double *h, double *result) {
   int i, j, k, l, tind;
   double nu = 0.0;
   double de = 0.0;
@@ -58,11 +58,11 @@ void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
     for (k = 0; k < m[i]; k++) {
 	de = 0.0;
 	nu = 0.0;
-	nu = kernal(x[0] - xb[i]);
+	nu = kernal((x[0] - xb[i]) / h[0]);
 	for (j = 0; j < *n; j++) {
 	  for (l = 0; l < m[j]; l++) {
 	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-	      de += kernal(x[0] - xb[j]);
+	      de += kernal((x[0] - xb[j]) / h[0]);
 	  }
 	}
 	result[tind] += nu / de;

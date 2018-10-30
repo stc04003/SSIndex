@@ -79,6 +79,11 @@ do <- function(n, model, shp.ind = "test") {
     return(c(tmp$b0, tmp$r0))
 }
 
+set.seed(1);round(do(100, "M1"), 3) # 0.000       0.000       0.341       0.940       0.946 2655087.000
+set.seed(1);round(do(100, "M2"), 3) # -0.670      -0.742       0.614       0.789      -2.980 2655087.000
+set.seed(1);round(do(100, "M3"), 3) # 0.000       0.000      -0.593      -0.805      -0.740 2655087.000
+set.seed(1);round(do(100, "M4"), 3) # 0.165      -0.986       0.335       0.942      -2.485 2655087.000
+
 system.time(print(do(300, "M1")))
 system.time(print(do(300, "M1", FALSE)))
 system.time(print(do(300, "M2")))
@@ -106,40 +111,78 @@ sum(abs(sim2[,5]) > qnorm(.975)) / nrow(sim2)
 sum(abs(sim3[,5]) > qnorm(.975)) / nrow(sim3)
 
 
+## ------------------------------------------------------------------------------------
 ## Debug area
+## ------------------------------------------------------------------------------------
+
 debug(getd)
+system.time(print(do(1000, "M1")))
 system.time(print(do(1000, "M4")))
+
 
 tilde.mu <- function(z) {
     Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
-             as.double(tij2), as.double(yi2), as.double(X2 %*% tilde.b), 
-             as.double(z), result = double(sum(mm2)), PACKAGE = "GSM")$result
+             as.double(tij2), as.double(yi2), as.double(xb), as.double(z), 
+             as.double(h), result = double(sum(mm2)), PACKAGE = "GSM")$result
     Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
     sum(diff(c(0, u)) * (1 - Ft))
 }
 
 tilde.mu2 <- function(z) {
     Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
-             as.double(tij2), as.double(yi2), as.double(X2 %*% tilde.b), 
-             as.double(z), result = double(sum(mm2)), PACKAGE = "GSM")$result
+             as.double(tij2), as.double(yi2), as.double(xb), as.double(z), 
+             as.double(h), result = double(sum(mm2)), PACKAGE = "GSM")$result
     Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
     sum(diff(c(0, Ft)) * u)
 }
 
-summary(xb)
+tilde.mu(.3)
+tilde.mu2(.3)
+tilde.mu(.5)
+tilde.mu2(.5)
+tilde.mu(.6)
+tilde.mu2(.6)
 
 tmp1 <- sapply(xb, tilde.mu)
 tmp2 <- sapply(xb, tilde.mu2)
-plot(xb, tmp1, "p", cex = .5, pch = 16)
+tmp3 <- 2 / (3 + exp(xb))
+
+
+plot(xb, tmp1, "p", cex = .5, pch = 16, ylim = range(c(tmp1, tmp2, tmp3)))
 points(xb, tmp2, col = 2, cex = .5, pch = 16)
+points(xb, tmp3, col = 3, cex = .5, pch = 16)
+
 summary(tmp1)
 summary(tmp2)
 
 
 ## M4 true mu is 2 / (3 + exp(xb))
 
-tmp3 <- 2 / (3 + exp(xb))
+summary(xb)
 
-plot(xb, tmp1, "p", cex = .5, pch = 16, ylim = range(tmp3))
-points(xb, tmp2, col = 2, cex = .5, pch = 16)
-points(xb, tmp3, col = 3, cex = .5, pch = 16)
+h <- 0.1682727
+
+h <- .16
+z <- 1
+
+Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
+         as.double(tij2), as.double(yi2), as.double(xb), 
+         as.double(z), as.double(h), result = double(sum(mm2)), PACKAGE = "GSM")$result
+Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
+
+plot(u, Ft, 's')
+lines(u, pbeta(u, 2, 1 + exp(z)), col = 2, lwd = 2)
+lines(u, bcdf(u, exp(z)), col = 3, lwd = 1)
+
+bcdf <- function(t, x) {
+    ((x + 1) * (1 - t)^(x + 2) - (x + 2) * (1 - t)^(x + 1) + 1)
+}
+
+
+x <- exp(rnorm(1))
+t0 <- sort(runif(1e4))
+summary(bcdf(t0, x) - pbeta(t0, 2, 1 + x))
+
+2 / (3 + x)
+sum((1 - bcdf(t0, x)) * diff(c(0, t0)))
+sum(t0 * diff(c(0, bcdf(t0, x))))
