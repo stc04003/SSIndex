@@ -38,7 +38,7 @@ library(parallel)
 library(xtable)
 
 sim1 <- sim1.2 <- sim2 <- sim3 <- sim4 <- NULL
-cl <- makePSOCKcluster(8)
+cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do')))
 invisible(clusterEvalQ(NULL, library(GSM)))
