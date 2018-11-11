@@ -29,7 +29,6 @@ void DouglasUn(int *n, int *p, int *m, int *midx,
     } // end for j
   }
   Free(nu);
-  result;
 }
 
 // An equation
@@ -60,5 +59,4 @@ void DouglasAn(int *n, int *p, int *m, int *midx,
     de = 0;
   }
   Free(nu);
-  result;
 }

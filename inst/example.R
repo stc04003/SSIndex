@@ -115,38 +115,14 @@ sum(abs(sim3[,5]) > qnorm(.975)) / nrow(sim3)
 ## Debug area
 ## ------------------------------------------------------------------------------------
 
+dat <- simDat(100, "M4")
+gsm(dat)
+
+gsm(dat, "test")
 debug(getd)
+
 system.time(print(do(1000, "M1")))
 system.time(print(do(1000, "M4")))
-
-
-tilde.mu <- function(z) {
-    Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
-             as.double(tij2), as.double(yi2), as.double(xb), as.double(z), 
-             as.double(h), result = double(sum(mm2)), PACKAGE = "GSM")$result
-    Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
-    sum(diff(c(0, u)) * (1 - Ft))
-}
-
-tilde.mu2 <- function(z) {
-    Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
-             as.double(tij2), as.double(yi2), as.double(xb), as.double(z), 
-             as.double(h), result = double(sum(mm2)), PACKAGE = "GSM")$result
-    Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
-    sum(diff(c(0, Ft)) * u)
-}
-
-tilde.mu(.3)
-tilde.mu2(.3)
-tilde.mu(.5)
-tilde.mu2(.5)
-tilde.mu(.6)
-tilde.mu2(.6)
-
-tmp1 <- sapply(xb, tilde.mu)
-tmp2 <- sapply(xb, tilde.mu2)
-tmp3 <- 2 / (3 + exp(xb))
-
 
 plot(xb, tmp1, "p", cex = .5, pch = 16, ylim = range(c(tmp1, tmp2, tmp3)))
 points(xb, tmp2, col = 2, cex = .5, pch = 16)
@@ -155,15 +131,12 @@ points(xb, tmp3, col = 3, cex = .5, pch = 16)
 summary(tmp1)
 summary(tmp2)
 
-
-## M4 true mu is 2 / (3 + exp(xb))
-
 summary(xb)
 
 h <- 0.1682727
 
 h <- .16
-z <- 1
+z <- 1 ## which xb to evaluate
 
 Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
          as.double(tij2), as.double(yi2), as.double(xb), 
@@ -186,3 +159,34 @@ summary(bcdf(t0, x) - pbeta(t0, 2, 1 + x))
 2 / (3 + x)
 sum((1 - bcdf(t0, x)) * diff(c(0, t0)))
 sum(t0 * diff(c(0, bcdf(t0, x))))
+
+## new test
+library(GSM)
+set.seed(123)
+
+do <- function(n, model) {
+    dat <- simDat(n, model) 
+    f1 <- gsm(dat)
+    k0 <- getk(dat, f1$b0)
+    kb <- replicate(500, boot.k(dat, f1$b0))
+    k0 / sd(kb)
+}
+
+
+library(parallel)
+
+f1 <- f2 <- f3 <- f4 <- NULL
+
+cl <- makePSOCKcluster(8)
+## cl <- makePSOCKcluster(16)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, c('do')))
+invisible(clusterEvalQ(NULL, library(GSM)))
+
+f1 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M1")))
+f5 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M4")))
+f3 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M2")))
+f4 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M3")))
+f2 <- c(parSapply(NULL, 1:1000, function(z) do(400, "M1")))
+
+stopCluster(cl)

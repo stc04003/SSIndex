@@ -66,7 +66,7 @@ void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 	  }
 	}
 	result[tind] += nu / de;
-    tind += 1;
+	tind += 1;
     }
   }
 }
