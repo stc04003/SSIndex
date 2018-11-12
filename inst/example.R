@@ -204,17 +204,11 @@ mean(f3 > qnorm(.95))
 mean(f4 > qnorm(.95))
 mean(f5 > qnorm(.95))
 
-mean(f1 * sqrt(200) < qnorm(.95))
-mean(f2 * sqrt(400) < qnorm(.95))
-mean(f3 * sqrt(200) < qnorm(.95))
-mean(f4 * sqrt(200) < qnorm(.95))
-mean(f5 * sqrt(200) < qnorm(.95))
-
-mean(f1 * sqrt(200) > -qnorm(.95))
-mean(f2 * sqrt(400) > -qnorm(.95))
-mean(f3 * sqrt(200) > -qnorm(.95))
-mean(f4 * sqrt(200) > -qnorm(.95))
-mean(f5 * sqrt(200) > -qnorm(.95))
+mean(f1 * sqrt(200) > qnorm(.95))
+mean(f2 * sqrt(400) > qnorm(.95))
+mean(f3 * sqrt(200) > qnorm(.95))
+mean(f4 * sqrt(200) > qnorm(.95))
+mean(f5 * sqrt(200) > qnorm(.95))
 
 
 dat <- simDat(1000, "M1")
