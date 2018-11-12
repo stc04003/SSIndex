@@ -52,6 +52,6 @@ void kappa(int *n, int *m, int *midx,
       } // end k
     }
   }
-  result[0] = result[0] / *n / (*n - 1);
+  result[0] = result[0] / n[0] / (n[0] - 1);
 }
 

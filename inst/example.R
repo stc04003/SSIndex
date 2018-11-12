@@ -168,10 +168,9 @@ do <- function(n, model) {
     dat <- simDat(n, model) 
     f1 <- gsm(dat)
     k0 <- getk(dat, f1$b0)
-    kb <- replicate(500, boot.k(dat, f1$b0))
+    kb <- replicate(1000, boot.k(dat, f1$b0))
     k0 / sd(kb)
 }
-
 
 library(parallel)
 
@@ -184,9 +183,44 @@ invisible(clusterExport(NULL, c('do')))
 invisible(clusterEvalQ(NULL, library(GSM)))
 
 f1 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M1")))
+f2 <- c(parSapply(NULL, 1:1000, function(z) do(100, "M1")))
+
 f5 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M4")))
 f3 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M2")))
 f4 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M3")))
 f2 <- c(parSapply(NULL, 1:1000, function(z) do(400, "M1")))
 
 stopCluster(cl)
+
+mean(f1 > -qnorm(.95))
+mean(f2 > -qnorm(.95))
+mean(f3 > -qnorm(.95))
+mean(f4 > -qnorm(.95))
+mean(f5 > -qnorm(.95))
+
+mean(f1 > qnorm(.95))
+mean(f2 > qnorm(.95))
+mean(f3 > qnorm(.95))
+mean(f4 > qnorm(.95))
+mean(f5 > qnorm(.95))
+
+mean(f1 * sqrt(200) < qnorm(.95))
+mean(f2 * sqrt(400) < qnorm(.95))
+mean(f3 * sqrt(200) < qnorm(.95))
+mean(f4 * sqrt(200) < qnorm(.95))
+mean(f5 * sqrt(200) < qnorm(.95))
+
+mean(f1 * sqrt(200) > -qnorm(.95))
+mean(f2 * sqrt(400) > -qnorm(.95))
+mean(f3 * sqrt(200) > -qnorm(.95))
+mean(f4 * sqrt(200) > -qnorm(.95))
+mean(f5 * sqrt(200) > -qnorm(.95))
+
+
+dat <- simDat(1000, "M1")
+b0 <- gsm(dat)$b0
+getk(dat, b0)
+bb <- replicate(1000, boot.k(dat, b0))
+
+summary(bb)
+mean(bb < 0)
