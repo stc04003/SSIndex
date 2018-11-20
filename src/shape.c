@@ -9,9 +9,11 @@
 // yi is the censoring time for the ith subject
 // xb is a vector with the ith element being \beta^\top Z_i
 
+
 double kernal(double dx) {
-  double out;
-  if (dx <= 1 && dx >= -1) {
+  // I added "= 0.0", not sure if this matters or not
+  double out=0.0;
+  if ((dx <= 1.0) && (dx >= -1.0)) {
     // out = 15 * (1 - dx * dx) * (1 - dx * dx) / 16; // Quartic/biweight
     out = 3 * (1 - dx * dx) / 4; // Epanechnikov
   }
@@ -37,11 +39,17 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
   	      de += kernal((x[0] - xb[j]) / h[0]);
   	  }
   	}
-	result[0] += nu / de;
+  	if(de == 0)
+  	{
+  	  result[0] += 0;
+  	}else{
+  	  result[0] += nu / de;
+  	}
       }
     }
   }
 }
+
 
 // This function implements \hat{F}(t, x, \hat\beta)
 // assumes fixed x
@@ -49,29 +57,27 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 // \frac{K_h(\beta_0^\top Z_i - x)}{\sum_{j=1}^n\sum_{l=1}^{m_i}K_h(\beta_0^\top Z_j - x) I(T_{jl} \le T_{ik} \le C_j)}
 // for unique(tij)
 void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
-	       double *x, double *h, double *result) {
+               double *x, double *h, double *result) {
   int i, j, k, l, tind;
   double nu = 0.0;
   double de = 0.0;
   tind = 0;
   for (i = 0; i < *n; i++) {
     for (k = 0; k < m[i]; k++) {
-	de = 0.0;
-	nu = 0.0;
-	nu = kernal((x[0] - xb[i]) / h[0]);
-	for (j = 0; j < *n; j++) {
-	  for (l = 0; l < m[j]; l++) {
-	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-	      de += kernal((x[0] - xb[j]) / h[0]);
-	  }
-	}
-	result[tind] += nu / de;
-	tind += 1;
+      de = 0.0;
+      nu = 0.0;
+      nu = kernal((x[0] - xb[i]) / h[0]);
+      for (j = 0; j < *n; j++) {
+        for (l = 0; l < m[j]; l++) {
+          if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+            de += kernal((x[0] - xb[j]) / h[0]);
+        }
+      }
+      result[tind] += nu / de;
+      tind += 1;
     }
   }
 }
-
-
 
 void shapeEq(int *n, double *xr, double *mFhat, double *result) {
   int i, j;
@@ -80,6 +86,38 @@ void shapeEq(int *n, double *xr, double *mFhat, double *result) {
     for (j = 0; j < *n; j++) {
       if (xr[i] > xr[j]) {
 	result[0] += mFhat[i];
+      }
+    }
+  }
+}
+
+// return \hat r(t,x,\beta)
+// h2 is the bandwidth for smoothing on the time scale
+// I think this function can be improved 
+void shapeFun3(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
+               double *x, double *t, double *h, double *h2, double *result) {
+  int i, j, k, l;
+  double nu = 0.0;
+  double de = 0.0;
+
+  for (i = 0; i < *n; i++) {
+    for (k = 0; k < m[i]; k++) {
+      de = 0.0;
+      nu = 0.0;
+      nu = kernal((x[0] - xb[i]) / h[0]);
+      nu = nu* kernal((tij[midx[i]+k] - t[0]) / h2[0]);
+
+      for (j = 0; j < *n; j++) {
+        for (l = 0; l < m[j]; l++) {
+          if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+            de += kernal((x[0] - xb[j]) / h[0]);
+        }
+      }
+      if(de == 0)
+      {
+        result[0] += 0;
+      }else{
+        result[0] += nu / de;
       }
     }
   }

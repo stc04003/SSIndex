@@ -9,6 +9,10 @@ extern void rank(void *, void *, void *, void *, void *, void *, void *);
 extern void shapeEq(void *, void *, void *, void *);
 extern void shapeFun(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void shapeFun2(void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void shapeFun3(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void kernal(void*);
+
+
 
 static const R_CMethodDef CEntries[] = {
     {"DouglasAn", (DL_FUNC) &DouglasAn,  9},
@@ -18,6 +22,8 @@ static const R_CMethodDef CEntries[] = {
     {"shapeEq",   (DL_FUNC) &shapeEq,    4},
     {"shapeFun",  (DL_FUNC) &shapeFun,  10},
     {"shapeFun2", (DL_FUNC) &shapeFun2,  9},
+    {"shapeFun3", (DL_FUNC) &shapeFun3,  11},
+    {"kernal", (DL_FUNC) &kernal,  1},
     {NULL, NULL, 0}
 };
 
