@@ -1,4 +1,4 @@
-#' Testing H_0: \beta_0 = 0
+#' Testing \eqn{H_0: \beta_0 = 0}
 #' @export
 getd <- function(dat2, tilde.b) {
     n2 <- length(unique(dat2$id))

@@ -64,6 +64,13 @@ print(xtable(tab, digits = 3), math.style.negative = TRUE)
 ## -------------------------------------------------------------------------------------
 library(GSM)
 
+set.seed(1)
+dat <- simDat(n = 100, model = "M1")
+
+system.time(f1 <- gsm(dat, shp.ind = TRUE))
+system.time(f2 <- gsm(dat, shp.ind = FALSE))
+system.time(f3 <- gsm(dat, shp.ind = "test"))
+
 do <- function(n, model, shp.ind = "test") {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
@@ -79,10 +86,10 @@ do <- function(n, model, shp.ind = "test") {
     return(c(tmp$b0, tmp$r0))
 }
 
-set.seed(1);round(do(100, "M1"), 3) # 0.000       0.000       0.341       0.940       0.946 2655087.000
-set.seed(1);round(do(100, "M2"), 3) # -0.670      -0.742       0.614       0.789      -2.980 2655087.000
-set.seed(1);round(do(100, "M3"), 3) # 0.000       0.000      -0.593      -0.805      -0.740 2655087.000
-set.seed(1);round(do(100, "M4"), 3) # 0.165      -0.986       0.335       0.942      -2.485 2655087.000
+set.seed(1);round(do(100, "M1"), 3)
+set.seed(1);round(do(100, "M2"), 3)
+set.seed(1);round(do(100, "M3"), 3)
+set.seed(1);round(do(100, "M4"), 3)
 
 system.time(print(do(300, "M1")))
 system.time(print(do(300, "M1", FALSE)))

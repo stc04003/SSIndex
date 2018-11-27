@@ -2,10 +2,10 @@
 % Please edit documentation in R/test.R
 \name{getd}
 \alias{getd}
-\title{Testing H_0: \beta_0 = 0}
+\title{Testing \eqn{H_0: \beta_0 = 0}}
 \usage{
 getd(dat2, tilde.b)
 }
 \description{
-Testing H_0: \beta_0 = 0
+Testing \eqn{H_0: \beta_0 = 0}
 }

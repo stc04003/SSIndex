@@ -39,10 +39,9 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
   	      de += kernal((x[0] - xb[j]) / h[0]);
   	  }
   	}
-  	if(de == 0)
-  	{
+  	if(de == 0) {
   	  result[0] += 0;
-  	}else{
+  	} else {
   	  result[0] += nu / de;
   	}
       }
@@ -73,7 +72,11 @@ void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
             de += kernal((x[0] - xb[j]) / h[0]);
         }
       }
-      result[tind] += nu / de;
+      if (de == 0) {
+	result[tind] += 0;
+      } else { 
+	result[tind] += nu / de;
+      }
       tind += 1;
     }
   }
