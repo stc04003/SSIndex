@@ -91,7 +91,7 @@ void shapeEq(int *n, double *xr, double *mFhat, double *result) {
   }
 }
 
-// return \hat r(t,x,\beta)
+// return \hat r(t,x,\beta) from SS1117 (paper #2)
 // h2 is the bandwidth for smoothing on the time scale
 // I think this function can be improved 
 void shapeFun3(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
@@ -105,8 +105,8 @@ void shapeFun3(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
       de = 0.0;
       nu = 0.0;
       nu = kernal((x[0] - xb[i]) / h[0]);
-      nu = nu* kernal((tij[midx[i]+k] - t[0]) / h2[0]);
-
+      // new addition:
+      nu = nu * kernal((tij[midx[i]+k] - t[0]) / h2[0]);
       for (j = 0; j < *n; j++) {
         for (l = 0; l < m[j]; l++) {
           if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
