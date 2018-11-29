@@ -225,3 +225,28 @@ bb <- replicate(1000, boot.k(dat, b0))
 
 summary(bb)
 mean(bb < 0)
+
+#######
+
+sumSim <- function(n, model) {
+    fname <- paste("output-", n, "-", model, "-test", sep = "")
+    if (file.exists(fname)) dat <- read.table(fname)
+    else stop("file name does not exist")
+    ## dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, nrow(dat) / 50))))
+    dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, 6))))
+    mean(dat[,5] > qnorm(.95))
+}
+
+sumSim(100, "M1")
+sumSim(500, "M1")
+
+sumSim(100, "M2")
+sumSim(500, "M2")
+
+sumSim(100, "M3")
+sumSim(500, "M3")
+sumSim(1000, "M3")
+sumSim(2000, "M3")
+
+
+
