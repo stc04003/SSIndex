@@ -117,115 +117,35 @@ sum(abs(sim1[,5]) > qnorm(.975)) / nrow(sim1)
 sum(abs(sim2[,5]) > qnorm(.975)) / nrow(sim2)
 sum(abs(sim3[,5]) > qnorm(.975)) / nrow(sim3)
 
-
 ## ------------------------------------------------------------------------------------
-## Debug area
+## Testing \beta_0 = 0 with grid approach
 ## ------------------------------------------------------------------------------------
-
-dat <- simDat(100, "M4")
-gsm(dat)
-
-gsm(dat, "test")
-debug(getd)
-
-system.time(print(do(1000, "M1")))
-system.time(print(do(1000, "M4")))
-
-plot(xb, tmp1, "p", cex = .5, pch = 16, ylim = range(c(tmp1, tmp2, tmp3)))
-points(xb, tmp2, col = 2, cex = .5, pch = 16)
-points(xb, tmp3, col = 3, cex = .5, pch = 16)
-
-summary(tmp1)
-summary(tmp2)
-
-summary(xb)
-
-h <- 0.1682727
-
-h <- .16
-z <- 1 ## which xb to evaluate
-
-Ri <- .C("shapeFun2", as.integer(n2), as.integer(mm2), as.integer(midx2), 
-         as.double(tij2), as.double(yi2), as.double(xb), 
-         as.double(z), as.double(h), result = double(sum(mm2)), PACKAGE = "GSM")$result
-Ft <- exp(-colSums((Ri * outer(tij2, u, ">="))))
-
-plot(u, Ft, 's')
-lines(u, pbeta(u, 2, 1 + exp(z)), col = 2, lwd = 2)
-lines(u, bcdf(u, exp(z)), col = 3, lwd = 1)
-
-bcdf <- function(t, x) {
-    ((x + 1) * (1 - t)^(x + 2) - (x + 2) * (1 - t)^(x + 1) + 1)
-}
-
-
-x <- exp(rnorm(1))
-t0 <- sort(runif(1e4))
-summary(bcdf(t0, x) - pbeta(t0, 2, 1 + x))
-
-2 / (3 + x)
-sum((1 - bcdf(t0, x)) * diff(c(0, t0)))
-sum(t0 * diff(c(0, bcdf(t0, x))))
-
-## new test
+#'
+#' Testing for 2 dimensional
+#' 
+#' @param B is the bootstrap size
+#' @param len is the length of segments used for uniform sample
 library(GSM)
-set.seed(123)
+set.seed(1)
+dat <- simDat(n = 100, model = "M1")
 
-do <- function(n, model) {
-    dat <- simDat(n, model) 
-    f1 <- gsm(dat)
-    k0 <- getk(dat, f1$b0)
-    kb <- replicate(1000, boot.k(dat, f1$b0))
-    k0 / sd(kb)
+b0 <- getb0(dat)
+getk0(dat, b0$bhat)
+
+getBootk <- function(dat) {
+    n <- length(unique(dat$id))
+    ind <- sample(1:n, replace = TRUE)
+    dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    dat0$id <- rep(1:n, mm[ind] + 1)
+    bi <- seq(0, pi/2, length = 500)
+    max(sapply(bi, function(x) getk0(dat0, c(sin(x), cos(x)))))
 }
 
-library(parallel)
+system.time(tmp <- replicate(500, getBootk(dat)))
+tmp
 
-f1 <- f2 <- f3 <- f4 <- NULL
-
-cl <- makePSOCKcluster(8)
-## cl <- makePSOCKcluster(16)
-setDefaultCluster(cl)
-invisible(clusterExport(NULL, c('do')))
-invisible(clusterEvalQ(NULL, library(GSM)))
-
-f1 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M1")))
-f2 <- c(parSapply(NULL, 1:1000, function(z) do(100, "M1")))
-
-f5 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M4")))
-f3 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M2")))
-f4 <- c(parSapply(NULL, 1:1000, function(z) do(200, "M3")))
-f2 <- c(parSapply(NULL, 1:1000, function(z) do(400, "M1")))
-
-stopCluster(cl)
-
-mean(f1 > -qnorm(.95))
-mean(f2 > -qnorm(.95))
-mean(f3 > -qnorm(.95))
-mean(f4 > -qnorm(.95))
-mean(f5 > -qnorm(.95))
-
-mean(f1 > qnorm(.95))
-mean(f2 > qnorm(.95))
-mean(f3 > qnorm(.95))
-mean(f4 > qnorm(.95))
-mean(f5 > qnorm(.95))
-
-mean(f1 * sqrt(200) > qnorm(.95))
-mean(f2 * sqrt(400) > qnorm(.95))
-mean(f3 * sqrt(200) > qnorm(.95))
-mean(f4 * sqrt(200) > qnorm(.95))
-mean(f5 * sqrt(200) > qnorm(.95))
-
-
-dat <- simDat(1000, "M1")
-b0 <- gsm(dat)$b0
-getk(dat, b0)
-bb <- replicate(1000, boot.k(dat, b0))
-
-summary(bb)
-mean(bb < 0)
-
+e
 #######
 
 sumSim <- function(n, model) {
@@ -247,6 +167,3 @@ sumSim(100, "M3")
 sumSim(500, "M3")
 sumSim(1000, "M3")
 sumSim(2000, "M3")
-
-
-

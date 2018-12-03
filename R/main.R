@@ -72,6 +72,7 @@ gsm <- function(dat, shp.ind = FALSE, B = 100) {
     list(b0 = bhat, r0 = rhat, b00 = bhat0, r00 = rhat0, d = d, dstar = dstar)
 }
 
+#' @export
 getb0 <- function(dat) {
     dat0 <- subset(dat, m > 0)
     n <- length(unique(dat0$id))
@@ -93,4 +94,22 @@ getb0 <- function(dat) {
     else bhat <- bhat0 <- tmp2$par
     bhat <- bhat / sqrt(sum(bhat^2))
     list(bhat = bhat, bhat0 = bhat0)
+}
+
+#' @export
+getk0 <- function(dat, b) {
+    dat0 <- subset(dat, m > 0)
+    n <- length(unique(dat0$id))
+    mm <- aggregate(event ~ id, dat0, sum)[,2]
+    dat0$id <- rep(1:n, mm + 1)
+    tij <- subset(dat0, event == 1)$t
+    yi <- subset(dat0, event == 0)$t
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
+    Cn <- function(b) {
+        -.C("rank", as.integer(n), as.integer(mm), as.integer(midx),
+            as.double(tij), as.double(yi), as.double(X %*% b),
+            result = double(1), PACKAGE = "GSM")$result
+    }
+    Cn(b)
 }
