@@ -127,26 +127,25 @@ sum(abs(sim3[,5]) > qnorm(.975)) / nrow(sim3)
 #' @param len is the length of segments used for uniform sample
 library(GSM)
 
-do <- function(n, model) {
+do <- function(n, model, B = 200) {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model)
-    ## bi <- seq(0, pi, length = 100)
-    bi <- seq(0, pi / 2, length = 100)
+    bi <- seq(0, pi, length = 100)
     b0 <- getb0(dat)
     k0 <- sapply(bi, function(x) -getk0(dat, c(cos(x), sin(x))))
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
     getBootk <- function(dat) {
         n <- length(unique(dat$id))
         ind <- sample(1:n, replace = TRUE)
         dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-        mm <- aggregate(event ~ id, dat, sum)[, 2]
         dat0$id <- rep(1:n, mm[ind] + 1)
         max(sapply(1:100, function(x) -getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x]))
     }
-    tmp <- replicate(200, getBootk(dat))
-    c(b0$bhat, max(k0), tmp)
+    tmp <- replicate(B, getBootk(dat))
+    c(max(k0 + getk0(dat, b0$bhat)), tmp)
+    ## c(b0$bhat, max(k0), tmp)
 }
-
 
 do2 <- function(n, model) {
     seed <- sample(1:1e7, 1)
@@ -158,22 +157,12 @@ do2 <- function(n, model) {
     c(b0$bhat, -getk0(dat, b0$bhat), tmp)
 }
 
-system.time(foo1 <- do(1000, "M1"))
-foo1[3]
-summary(foo1[4:203])
-
-system.time(foo4 <- do(100, "M4"))
-
-system.time(print(foo1 <- do(100, "M1")))
-system.time(print(foo4 <- do(100, "M4")))
-
-
 library(parallel)
 library(xtable)
 
 sim1 <- sim2 <- sim3 <- sim4 <- NULL
-cl <- makePSOCKcluster(8)
-## cl <- makePSOCKcluster(16)
+## cl <- makePSOCKcluster(8)
+cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do', 'do2')))
 invisible(clusterEvalQ(NULL, library(GSM)))
@@ -183,41 +172,10 @@ sim3 <- t(parSapply(NULL, 1:200, function(z) do(100, "M3")))
 sim4 <- t(parSapply(NULL, 1:200, function(z) do(100, "M4")))
 stopCluster(cl)
 
-apply(sim1, 1, function(x) mean(x[3] < x[4:503]))
-apply(sim2, 1, function(x) mean(x[3] < x[4:503]))
-apply(sim3, 1, function(x) mean(x[3] < x[4:503]))
-apply(sim4, 1, function(x) mean(x[3] < x[4:503]))
-
-apply(sim1, 1, function(x) mean(x[3] > x[4:503]))
-
-apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:503], .95)))
-apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:503], .95)))
-
-
-apply(sim1, 1, function(x) mean(x[3] < x[4:203]))
-apply(sim2, 1, function(x) mean(x[3] < x[4:203]))
-apply(sim3, 1, function(x) mean(x[3] < x[4:203]))
-apply(sim4, 1, function(x) mean(x[3] < x[4:203]))
-
-apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-apply(sim2, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-apply(sim3, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-
-apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
-apply(sim2, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
-apply(sim3, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
-apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
-
-apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-apply(sim2, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-apply(sim3, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
-
-apply(sim1, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
-apply(sim2, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
-apply(sim3, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
-apply(sim4, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
+apply(sim1, 1, function(x) mean(x[1] < x[-1]))
+apply(sim2, 1, function(x) mean(x[1] < x[-1]))
+apply(sim3, 1, function(x) mean(x[1] < x[-1]))
+apply(sim4, 1, function(x) mean(x[1] < x[-1]))
 
 e
 #######
