@@ -177,10 +177,10 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do', 'do2')))
 invisible(clusterEvalQ(NULL, library(GSM)))
-sim1 <- t(parSapply(NULL, 1:100, function(z) do(100, "M1")))
-sim2 <- t(parSapply(NULL, 1:100, function(z) do(100, "M2")))
-sim3 <- t(parSapply(NULL, 1:100, function(z) do(100, "M3")))
-sim4 <- t(parSapply(NULL, 1:100, function(z) do(100, "M4")))
+sim1 <- t(parSapply(NULL, 1:200, function(z) do(100, "M1")))
+sim2 <- t(parSapply(NULL, 1:200, function(z) do(100, "M2")))
+sim3 <- t(parSapply(NULL, 1:200, function(z) do(100, "M3")))
+sim4 <- t(parSapply(NULL, 1:200, function(z) do(100, "M4")))
 stopCluster(cl)
 
 apply(sim1, 1, function(x) mean(x[3] < x[4:503]))
@@ -200,10 +200,24 @@ apply(sim3, 1, function(x) mean(x[3] < x[4:203]))
 apply(sim4, 1, function(x) mean(x[3] < x[4:203]))
 
 apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+apply(sim2, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+apply(sim3, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
 apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
 
 apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
+apply(sim2, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
+apply(sim3, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
 apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
+
+apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+apply(sim2, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+apply(sim3, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+
+apply(sim1, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
+apply(sim2, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
+apply(sim3, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
+apply(sim4, 1, function(x) mean(x[3] < quantile(x[4:203] - x[3], .05)))
 
 e
 #######
