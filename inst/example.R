@@ -126,24 +126,84 @@ sum(abs(sim3[,5]) > qnorm(.975)) / nrow(sim3)
 #' @param B is the bootstrap size
 #' @param len is the length of segments used for uniform sample
 library(GSM)
-set.seed(1)
-dat <- simDat(n = 100, model = "M1")
 
-b0 <- getb0(dat)
-getk0(dat, b0$bhat)
-
-getBootk <- function(dat) {
-    n <- length(unique(dat$id))
-    ind <- sample(1:n, replace = TRUE)
-    dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-    mm <- aggregate(event ~ id, dat, sum)[, 2]
-    dat0$id <- rep(1:n, mm[ind] + 1)
-    bi <- seq(0, pi/2, length = 500)
-    max(sapply(bi, function(x) getk0(dat0, c(sin(x), cos(x)))))
+do <- function(n, model) {
+    seed <- sample(1:1e7, 1)
+    set.seed(seed)
+    dat <- simDat(n, model)
+    ## bi <- seq(0, pi, length = 100)
+    bi <- seq(0, pi / 2, length = 100)
+    b0 <- getb0(dat)
+    k0 <- sapply(bi, function(x) -getk0(dat, c(cos(x), sin(x))))
+    getBootk <- function(dat) {
+        n <- length(unique(dat$id))
+        ind <- sample(1:n, replace = TRUE)
+        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+        mm <- aggregate(event ~ id, dat, sum)[, 2]
+        dat0$id <- rep(1:n, mm[ind] + 1)
+        max(sapply(1:100, function(x) -getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x]))
+    }
+    tmp <- replicate(200, getBootk(dat))
+    c(b0$bhat, max(k0), tmp)
 }
 
-system.time(tmp <- replicate(500, getBootk(dat)))
-tmp
+
+do2 <- function(n, model) {
+    seed <- sample(1:1e7, 1)
+    set.seed(seed)
+    dat <- simDat(n, model)
+    b0 <- getb0(dat)
+    bi <- seq(0, pi, length = 100)
+    tmp <- sapply(bi, function(x) -getk0(dat, c(sin(x), cos(x))))
+    c(b0$bhat, -getk0(dat, b0$bhat), tmp)
+}
+
+system.time(foo1 <- do(1000, "M1"))
+foo1[3]
+summary(foo1[4:203])
+
+system.time(foo4 <- do(100, "M4"))
+
+system.time(print(foo1 <- do(100, "M1")))
+system.time(print(foo4 <- do(100, "M4")))
+
+
+library(parallel)
+library(xtable)
+
+sim1 <- sim2 <- sim3 <- sim4 <- NULL
+cl <- makePSOCKcluster(8)
+## cl <- makePSOCKcluster(16)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, c('do', 'do2')))
+invisible(clusterEvalQ(NULL, library(GSM)))
+sim1 <- t(parSapply(NULL, 1:100, function(z) do(100, "M1")))
+sim2 <- t(parSapply(NULL, 1:100, function(z) do(100, "M2")))
+sim3 <- t(parSapply(NULL, 1:100, function(z) do(100, "M3")))
+sim4 <- t(parSapply(NULL, 1:100, function(z) do(100, "M4")))
+stopCluster(cl)
+
+apply(sim1, 1, function(x) mean(x[3] < x[4:503]))
+apply(sim2, 1, function(x) mean(x[3] < x[4:503]))
+apply(sim3, 1, function(x) mean(x[3] < x[4:503]))
+apply(sim4, 1, function(x) mean(x[3] < x[4:503]))
+
+apply(sim1, 1, function(x) mean(x[3] > x[4:503]))
+
+apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:503], .95)))
+apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:503], .95)))
+
+
+apply(sim1, 1, function(x) mean(x[3] < x[4:203]))
+apply(sim2, 1, function(x) mean(x[3] < x[4:203]))
+apply(sim3, 1, function(x) mean(x[3] < x[4:203]))
+apply(sim4, 1, function(x) mean(x[3] < x[4:203]))
+
+apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203], .95)))
+
+apply(sim1, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
+apply(sim4, 1, function(x) mean(x[3] > quantile(x[4:203] - x[3], .95)))
 
 e
 #######
