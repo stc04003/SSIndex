@@ -207,10 +207,20 @@ sim250 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M2")))
 sim350 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M3")))
 sim450 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M4")))
 
+save(sim150, file = "sim150.RData")
+save(sim250, file = "sim250.RData")
+save(sim350, file = "sim350.RData")
+save(sim450, file = "sim450.RData")
+
 sim1100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M1")))
 sim2100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M2")))
 sim3100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M3")))
 sim4100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M4")))
+
+save(sim1100, file = "sim1100.RData")
+save(sim2100, file = "sim2100.RData")
+save(sim3100, file = "sim3100.RData")
+save(sim4100, file = "sim4100.RData")
 
 sim1200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M1")))
 sim2200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M2")))
@@ -218,12 +228,11 @@ sim3200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M3")))
 sim4200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M4")))
 stopCluster(cl)
 
-apply(sim1, 1, function(x) mean(x[1] < x[-1]))
-apply(sim2, 1, function(x) mean(x[1] < x[-1]))
-apply(sim3, 1, function(x) mean(x[1] < x[-1]))
-apply(sim4, 1, function(x) mean(x[1] < x[-1]))
+save(sim1200, file = "sim1200.RData")
+save(sim2200, file = "sim2200.RData")
+save(sim3200, file = "sim3200.RData")
+save(sim4200, file = "sim4200.RData")
 
-e
 #######
 
 sumSim <- function(n, model) {
@@ -247,6 +256,7 @@ sumSim(1000, "M3")
 sumSim(2000, "M3")
 
 
+################################################################################################################################################
 ################################################################################################################################################
 
 set.seed(2)
