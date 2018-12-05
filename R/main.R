@@ -107,7 +107,7 @@ getk0 <- function(dat, b) {
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
     Cn <- function(b) {
-        -.C("rank", as.integer(n), as.integer(mm), as.integer(midx),
+        .C("kappa", as.integer(n), as.integer(mm), as.integer(midx),
             as.double(tij), as.double(yi), as.double(X %*% b),
             result = double(1), PACKAGE = "GSM")$result
     }
