@@ -168,19 +168,54 @@ do2 <- function(n, model, B = 200) {
     1 * (max(k0) > quantile(tmp, .95))
 }
 
+do3 <- function(n, model, B = 200) {
+    seed <- sample(1:1e7, 1)
+    set.seed(seed)
+    dat <- simDat(n, model)
+    bi <- seq(0, pi, length = 100)
+    b0 <- getb0(dat)
+    k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    getBootk <- function(dat) {
+        n <- length(unique(dat$id))
+        ind <- sample(1:n, replace = TRUE)
+        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+        dat0$id <- rep(1:n, mm[ind] + 1)
+        tmp <- sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])
+        max(tmp, -tmp)
+    }
+    tmp <- replicate(B, getBootk(dat))
+    1 * (max(k0, -k)0 > quantile(tmp, .95))
+}
+
+system.time(print(do2(100, "M1")))
+
 library(parallel)
 library(xtable)
 
-sim1 <- sim2 <- sim3 <- sim4 <- NULL
+sim150 <- sim250 <- sim350 <- sim450 <- NULL
+sim1100 <- sim2100 <- sim3100 <- sim4100 <- NULL
+sim1200 <- sim2200 <- sim3200 <- sim4200 <- NULL
 ## cl <- makePSOCKcluster(8)
 cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do', 'do2')))
 invisible(clusterEvalQ(NULL, library(GSM)))
-sim1 <- t(parSapply(NULL, 1:100, function(z) do2(100, "M1")))
-sim2 <- t(parSapply(NULL, 1:100, function(z) do2(100, "M2")))
-sim3 <- t(parSapply(NULL, 1:100, function(z) do2(100, "M3")))
-sim4 <- t(parSapply(NULL, 1:100, function(z) do2(100, "M4")))
+
+sim150 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M1")))
+sim250 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M2")))
+sim350 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M3")))
+sim450 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M4")))
+
+sim1100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M1")))
+sim2100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M2")))
+sim3100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M3")))
+sim4100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M4")))
+
+sim1200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M1")))
+sim2200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M2")))
+sim3200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M3")))
+sim4200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M4")))
 stopCluster(cl)
 
 apply(sim1, 1, function(x) mean(x[1] < x[-1]))
