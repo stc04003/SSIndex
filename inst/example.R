@@ -165,7 +165,7 @@ do2 <- function(n, model, B = 200) {
         max(sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x]))
     }
     tmp <- replicate(B, getBootk(dat))
-    1 * (max(k0) > quantile(tmp, .95))
+    c(b0$bhat, 1 * (max(k0) > quantile(tmp, .95)), 1 * (max(k0) > sqrt(n) * quantile(tmp, .95)))
 }
 
 do3 <- function(n, model, B = 200) {
