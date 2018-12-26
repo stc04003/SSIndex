@@ -103,51 +103,67 @@ satisfying $Z\sim N_2(0, I_2)$ and $\|Z\|\le1$.
 \begin{table}[ht]
 \centering
 %\renewcommand\tabcolsep{2pt}
-\caption{Point estimator (PE) and empirical standard error (ESE) for \textbf{M1} to \textbf{M4}.
-Sample size is $n = 200$, with 1000 replications.
-\textbf{M1-ind} assumes $\beta_0 = (0, 0)$ and shape-independence.}
-\begin{tabular}{rrrrrrrrrrr}
+\caption{Point estimator (PE), empirical standard error (ESE) and asymptotic standard error (ASE) for \textbf{M1}--\textbf{M4} with 1000 replications.}
+\begin{tabular}{r rrr rrr rrr rrr}
 \toprule
-& \multicolumn{2}{c}{\textbf{M1}}
-& \multicolumn{2}{c}{\textbf{M1-ind}}
-& \multicolumn{2}{c}{\textbf{M2}}
-& \multicolumn{2}{c}{\textbf{M3}}
-& \multicolumn{2}{c}{\textbf{M4}}\\
-\cmidrule(l){2-3}\cmidrule(l){4-5}\cmidrule(l){6-7}\cmidrule(l){8-9}\cmidrule(l){10-11}
-& PE & ESE & PE & ESE & PE & ESE & PE & ESE & PE & ESE \\
+& \multicolumn{3}{c}{$n=50$} & \multicolumn{3}{c}{$n=100$} & \multicolumn{3}{c}{$n=200$} & \multicolumn{3}{c}{$n=500$}\\
+\cmidrule(l){2-4}\cmidrule(l){5-7}\cmidrule(l){8-10}\cmidrule(l){11-13}
+& PE & ESE & ASE & PE & ESE & ASE & PE & ESE & ASE & PE & ESE & ASE \\
 \midrule
-\textbf{$\beta_1$} & 0.187 & 0.655 & & & $-$0.583 & 0.208 & $-$0.584 & 0.170 & $-$0.578 & 0.274 \\ 
-\textbf{$\beta_2$} & 0.215 & 0.701 & & & $-$0.788 & 0.206 & $-$0.791 & 0.189 & $-$0.774 & 0.267 \\ 
-\textbf{$\gamma_1$} & 0.278 & 0.057 & 0.277 & 0.051 & 0.592 & 0.062 & $-$0.595 & 0.119 & 0.276 & 0.090 \\ 
-\textbf{$\gamma_2$} & 0.959 & 0.016 & 0.959 & 0.014 & 0.801 & 0.055 & $-$0.787 & 0.114 & 0.957 & 0.025 \\ 
+& \multicolumn{12}{c}{Scenario \textbf{M1}; without assuming shape-independent.}\\
+[1ex]
+$\beta_1$ & 0.302 & 0.626 & 0.488 & 0.196 & 0.662 & 0.502 & 0.151 & 0.667 & 0.515 & 0.102 & 0.679 & 0.520 \\ 
+$\beta_2$ & 0.300 & 0.654 & 0.493 & 0.276 & 0.670 & 0.515 & 0.264 & 0.681 & 0.526 & 0.152 & 0.712 & 0.539 \\ 
+$\gamma_1$ & 0.273 & 0.114 & 0.133 & 0.276 & 0.082 & 0.087 & 0.274 & 0.076 & 0.060 & 0.279 & 0.037 & 0.036 \\ 
+$\gamma_2$ & 0.955 & 0.032 & 0.038 & 0.957 & 0.025 & 0.025 & 0.958 & 0.029 & 0.018 & 0.960 & 0.010 & 0.011 \\ 
+[1ex]
+& \multicolumn{12}{c}{Scenario \textbf{M1}; assuming shape-independent.}\\
+[1ex]
+$\gamma_1$ & 0.264 & 0.118 & 0.141 & 0.272 & 0.077 & 0.089 & 0.276 & 0.054 & 0.059 & 0.275 & 0.033 & 0.035 \\ 
+$\gamma_2$ & 0.957 & 0.031 & 0.038 & 0.959 & 0.021 & 0.023 & 0.960 & 0.015 & 0.016 & 0.961 & 0.009 & 0.010 \\ 
+[1ex]
+& \multicolumn{12}{c}{Scenario \textbf{M2}.}\\
+[1ex]
+$\beta_1$ & $-$0.194 & 0.655 & 0.566 & $-$0.435 & 0.456 & 0.522 & $-$0.592 & 0.197 & 0.379 & $-$0.597 & 0.073 & 0.099 \\ 
+$\beta_2$ & $-$0.296 & 0.669 & 0.567 & $-$0.606 & 0.486 & 0.520 & $-$0.743 & 0.245 & 0.396 & $-$0.797 & 0.054 & 0.094 \\ 
+$\gamma_1$ & 0.591 & 0.116 & 0.132 & 0.599 & 0.086 & 0.092 & 0.593 & 0.076 & 0.067 & 0.597 & 0.051 & 0.047 \\ 
+$\gamma_2$ & 0.792 & 0.099 & 0.109 & 0.793 & 0.068 & 0.078 & 0.800 & 0.052 & 0.053 & 0.797 & 0.085 & 0.036 \\ 
+[1ex]
+& \multicolumn{12}{c}{Scenario \textbf{M3}.}\\
+[1ex]
+$\beta_1$ & $-$0.080 & 0.670 & 0.576 & $-$0.376 & 0.513 & 0.545 & $-$0.584 & 0.172 & 0.407 & $-$0.602 & 0.057 & 0.088 \\ 
+$\beta_2$ & $-$0.304 & 0.673 & 0.570 & $-$0.594 & 0.492 & 0.528 & $-$0.775 & 0.170 & 0.388 & $-$0.795 & 0.042 & 0.083 \\ 
+$\gamma_1$ & $-$0.415 & 0.493 & 0.531 & $-$0.561 & 0.220 & 0.397 & $-$0.594 & 0.083 & 0.150 & $-$0.599 & 0.047 & 0.050 \\ 
+$\gamma_2$ & $-$0.567 & 0.514 & 0.522 & $-$0.765 & 0.225 & 0.371 & $-$0.798 & 0.055 & 0.140 & $-$0.797 & 0.056 & 0.039 \\ 
+[1ex]
+& \multicolumn{12}{c}{Scenario \textbf{M4}.}\\
+[1ex]
+$\beta_1$ & $-$0.070 & 0.672 & 0.569 & $-$0.312 & 0.548 & 0.547 & $-$0.556 & 0.269 & 0.445 & $-$0.597 & 0.063 & 0.132 \\ 
+$\beta_2$ & $-$0.271 & 0.686 & 0.570 & $-$0.534 & 0.564 & 0.533 & $-$0.743 & 0.259 & 0.419 & $-$0.798 & 0.047 & 0.125 \\ 
+$\gamma_1$ & 0.251 & 0.217 & 0.231 & 0.266 & 0.142 & 0.153 & 0.274 & 0.094 & 0.102 & 0.280 & 0.059 & 0.062 \\ 
+$\gamma_2$ & 0.941 & 0.068 & 0.078 & 0.953 & 0.041 & 0.042 & 0.957 & 0.025 & 0.029 & 0.958 & 0.017 & 0.019 \\ 
 \bottomrule
 \end{tabular}
 \end{table}
 
-%\begin{table}[ht]
-%\centering
-%%\renewcommand\tabcolsep{2pt}
-%\caption{Bias and empirical standard error (ESE) for $\beta_2$ in the above models.
-%Sample size is $n = 200$, with 500 replications.}
-%\begin{tabular}{rrrrrrrrrr}
-%\toprule
-%& \multicolumn{2}{c}{Proposed}
-%& \multicolumn{2}{c}{Schaubel (2006)}
-%& \multicolumn{2}{c}{Ghosh (2003)}\\
-%\cmidrule(l){2-3}\cmidrule(l){4-5}\cmidrule(l){6-7}
-%Model & Bias & ESE & Bias & ESE & Bias & ESE \\
-%\midrule
-%\textbf{M1} & -0.003 & 0.039 & -0.726 & 0.285 & 1.078 & 0.082 \\
-%\textbf{M2} & -0.079 & 0.347 & -1.103 & 0.272 & 1.838 & 0.118 \\
-%\textbf{M3} & -0.055 & 0.219 & -0.251 & 0.130 & 1.347 & 0.077 \\
-%\textbf{M4} & -0.001 & 0.026 & -11.305 & 3.272 & 2.633 & 0.136 \\
-%\textbf{M5} & -0.041 & 0.322 & 0.006 & 0.047 & 1.588 & 1.865 \\
-%%\textbf{M6} & -0.016 & 0.185 & 0.270 & 0.028 & 0.893 & 0.045 \\
-%\textbf{M6} & -0.070 & 0.803 & -0.200 & 0.059 & 2.676 & 0.571 \\
-%%\textbf{M8} & 0.009 & 0.143 & -0.544 & 0.084 & 2.614 & 0.447 \\
-%\textbf{M7} & -0.001 & 0.045 & 0.937 & 0.050 & 0.017 & 0.059 \\
-%\bottomrule
-%\end{tabular}
-%\end{table}
+\begin{table}[ht]
+\centering
+\caption{Summary of rejection proportions based on the simulation scenarios \textbf{M1}--\textbf{M4}.
+The rejection proportions are computed based on $n=50, 100, 200, 500$ observations with 1000 replications at $\alpha = 0.05$.
+The resampling size is 200. 
+}
+\begin{tabular}{rrrrr}
+\toprule
+& \multicolumn{4}{c}{$n$}\\
+\cmidrule(l){2-5}
+& 50 & 100 & 200 & 500 \\
+\midrule
+\textbf{M1} & 0.031 & 0.037 & 0.046 & 0.052 \\ 
+\textbf{M2} & 0.281 & 0.700 & 0.960 & 1.000 \\ 
+\textbf{M3} & 0.382 & 0.831 & 0.996 & 1.000 \\ 
+\textbf{M4} & 0.287 & 0.686 & 0.963 & 1.000 \\ 
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}
