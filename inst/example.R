@@ -1,5 +1,12 @@
 library(GSM)
 
+## example
+
+dat <- simDat(100, "M1")
+head(dat)
+
+## simulation and checks
+
 dim(simDat(100, "M1"))
 dim(simDat(100, "M2"))
 dim(simDat(100, "M3"))
@@ -154,7 +161,7 @@ do2 <- function(n, model, B = 200) {
     set.seed(seed)
     dat <- simDat(n, model)
     bi <- seq(0, 2 * pi, length = 100)
-    b0 <- getb0(dat)
+    fit <- gsm(dat)
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     getBootk <- function(dat) {
@@ -162,10 +169,21 @@ do2 <- function(n, model, B = 200) {
         ind <- sample(1:n, replace = TRUE)
         dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
         dat0$id <- rep(1:n, mm[ind] + 1)
-        max(sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x]))
+        fit0 <- gsm(dat0)
+        fit1 <- gsm(dat0, TRUE)
+        c(max(sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])),
+          fit0$b0, fit0$r0, fit1$b0, fit1$r0)
     }
     tmp <- replicate(B, getBootk(dat))
-    c(b0$bhat, 1 * (max(k0) > quantile(tmp, .95)), 1 * (max(k0) > sqrt(n) * quantile(tmp, .95)))
+    ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0?,
+    ## (4:5) \hat\gamma,
+    ## (6:7) bootstrap sd for \hat\beta, (8:9) bootstrap sd for \hat\gamma
+    ## (10:11) bootstrap sd for \hat\beta, (12:13) bootstrap sd for \hat\gamma; these assumes indep.
+    c(fit$b0, 1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0,
+      sqrt(diag(var(t(tmp[2:3,])))),
+      sqrt(diag(var(t(tmp[4:5,])))),
+      sqrt(diag(var(t(tmp[6:7,])))),
+      sqrt(diag(var(t(tmp[8:9,])))))
 }
 
 do3 <- function(n, model, B = 200) {
@@ -202,10 +220,10 @@ setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do', 'do2')))
 invisible(clusterEvalQ(NULL, library(GSM)))
 
-sim150 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M1")))
-sim250 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M2")))
-sim350 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M3")))
-sim450 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M4")))
+sim150 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M1")))
+sim250 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M2")))
+sim350 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M3")))
+sim450 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M4")))
 
 save(sim150, file = "sim150.RData")
 save(sim250, file = "sim250.RData")

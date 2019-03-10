@@ -42,7 +42,7 @@ void kappa(int *n, int *m, int *midx,
 		if (xb[i] > xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
 		  result[0] += 1;
 		}
-		if (xb[i] <= xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
+		if (xb[i] < xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
 		  result[0] -= 1;
 		}
 	      }

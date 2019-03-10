@@ -4,16 +4,17 @@
 \alias{gsm}
 \title{Main estimation function}
 \usage{
-gsm(dat, shp.ind = FALSE, B = 100)
+gsm(formula, data, shp.ind = FALSE, B = 100)
 }
 \arguments{
-\item{dat}{data frame generated from \code{simDat}.}
+\item{formula}{a formula object, with the response on the left of a '~' operator.}
+
+\item{data}{an optional argument for data.}
 
 \item{shp.ind}{a character string indicating either to proceed with shape independence assumption.}
 
 \item{B}{a numerical value specifying number of bootstrap in shape independence testing.}
 }
 \description{
-This function assumes the input data is generated from \code{simDat}.
-The suage can be generated to take formula form.
+Fits general rate model. The formula takes `reSurv` from `reReg`.
 }

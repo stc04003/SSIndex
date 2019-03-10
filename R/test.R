@@ -6,7 +6,7 @@ getd <- function(dat2, tilde.b) {
     tij2 <- subset(dat2, event == 1)$t
     yi2 <- subset(dat2, event == 0)$t
     midx2 <- c(0, cumsum(mm2)[-length(mm2)])
-    X2 <- as.matrix(subset(dat2, event == 0, select = c(x1, x2)))
+    X2 <- as.matrix(subset(dat2, event == 0, select = -c(Time, id, m, event, status)))
     xb <- X2 %*% tilde.b
     ## h <- 1.06 * sd(xb) * n2^-.2
     h <- 2.78 * sd(xb) * n2^-.2
