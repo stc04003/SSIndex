@@ -1,8 +1,13 @@
 library(GSM)
-
+library(reReg)
 ## example
 
+
 dat <- simDat(100, "M1")
+gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = FALSE)
+gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = TRUE)
+gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = "test")
+
 head(dat)
 
 ## simulation and checks
@@ -40,6 +45,7 @@ set.seed(1);round(do(200, "M2"), 3) # -0.598 -0.801  0.641  0.767 -1.308 -1.752 
 set.seed(1);round(do(200, "M3"), 3) # -0.650 -0.760 -0.554 -0.832 -2.989 -3.496 -1.780 -2.674 
 set.seed(1);round(do(200, "M4"), 3) # -0.609 -0.793  0.328  0.945 -0.807 -1.050  0.050  0.143 
 
+####################################################################################3
 ## Parallel computing on 1000 replications
 library(parallel)
 library(xtable)
@@ -140,10 +146,7 @@ do <- function(n, model, B = 200) {
     dat <- simDat(n, model)
     bi <- seq(0, 2 * pi, length = 100)
     fit <- gsm(dat)
-<<<<<<< HEAD
-=======
     fit.indep <- gsm(dat, TRUE)
->>>>>>> c5814d9c7b56833afd3756a91b76a5e4d4935e49
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     getBootk <- function(dat) {
@@ -157,24 +160,9 @@ do <- function(n, model, B = 200) {
           fit0$b0, fit0$r0, fit1$b0, fit1$r0)
     }
     tmp <- replicate(B, getBootk(dat))
-    ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0?,
-    ## (4:5) \hat\gamma,
-<<<<<<< HEAD
-    ## (6:7) bootstrap sd for \hat\beta, (8:9) bootstrap sd for \hat\gamma
-    ## (10:11) bootstrap sd for \hat\beta, (12:13) bootstrap sd for \hat\gamma; these assumes indep.
-    c(fit$b0, 1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0,
-      sqrt(diag(var(t(tmp[2:3,])))),
-      sqrt(diag(var(t(tmp[4:5,])))),
-      sqrt(diag(var(t(tmp[6:7,])))),
-=======
-    ## (6:7) \hat\gamma under independence,
-    ## (8:9) bootstrap sd for \hat\beta, (10:11) bootstrap sd for \hat\gamma
-    ## (12:13) bootstrap sd for \hat\gamma; these assumes indep.
     c(fit$b0, 1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0, fit.indep$r0,
       sqrt(diag(var(t(tmp[2:3,])))),
       sqrt(diag(var(t(tmp[4:5,])))),
-      ## sqrt(diag(var(t(tmp[6:7,])))),
->>>>>>> c5814d9c7b56833afd3756a91b76a5e4d4935e49
       sqrt(diag(var(t(tmp[8:9,])))))
 }
 
@@ -219,13 +207,6 @@ sim2200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M2")))
 sim3200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M3")))
 sim4200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M4")))
 stopCluster(cl)
-=======
-r0200M1 <- replicate(500, do.r0(200, "M1"))
-r0200M2 <- replicate(500, do.r0(200, "M2"))
-r0200M3 <- replicate(500, do.r0(200, "M3"))
-r0200M4 <- replicate(500, do.r0(200, "M4"))
->>>>>>> c5814d9c7b56833afd3756a91b76a5e4d4935e49
-
 
 sumSim <- function(n, model, indB0 = "test") {
     fname <- paste(c("results", n, model, B), collapse = "-")
@@ -341,106 +322,56 @@ sumSim2 <- function(n, model, indB0 = "test") {
 
 
 
-################################################################################################################################################
-################################################################################################################################################
-################################################################################################################################################
-################################################################################################################################################
 
-set.seed(2)
-dat <- simDat(400, "M4")
-n <- length(unique(dat$id))
-mm <- aggregate(event ~ id, dat, sum)[,2]
-tij <- subset(dat, event == 1)$t
-yi <- subset(dat, event == 0)$t
-midx <- c(0, cumsum(mm)[-length(mm)])
-X <- as.matrix(subset(dat, event == 0, select = c(x1, x2)))
-p <- ncol(X)
-d <- dstar <- NULL
+####################################################################################3
+## Parallel computing on 1000 replications
+library(parallel)
+library(xtable)
 
-lik <- function(theta) {
-    ## reduce the number of parameter by polar cordinate system
-    bhat <- c(sin(theta),cos(theta))
-    ## The estimating equation Sn needs Yi even for the m = 0's
-    xb <- X %*% bhat
-    ## h and h2 depend on the data, here I use some reasonable value
-    h <- 0.25
-    h2 <- .2
-    
-    ## This calculate R(C_i,x,\beta)
-    Rhat <- unlist(mapply(FUN = function(x, y)
-        .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-           as.double(xb), as.double(x), as.double(y), as.double(h), 
-           result = double(1), PACKAGE = "GSM")$result,
-        X %*% bhat, yi))
-    Rhat <- ifelse(is.na(Rhat), 0, Rhat) #### assign 0/0, Inf/Inf to 0
-    Rhat1 <- rep(Rhat, times = table(dat$id)-1)
-    
-    Xbij <- as.matrix(dat[,4:5]) %*% (bhat)
-    Xbij <- Xbij[dat$event==1]
-    
-    ## This calculate r(T_{ik},x,\beta)
-    rhat <- unlist(mapply(FUN = function(x,t)
-        .C("shapeFun3", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-           as.double(xb), as.double(x), as.double(t), 
-           as.double(h), as.double(h2),
-           result = double(1), PACKAGE = "GSM")$result,
-        Xbij,tij))
-    
-    ## This calculate R(T_{ik},x,\beta)
-    Rhat2 <- unlist(mapply(FUN = function(x, y)
-        .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-           as.double(xb), as.double(x), as.double(y), as.double(h), 
-           result = double(1), PACKAGE = "GSM")$result,
-        Xbij,tij))
-    
-    -sum(log(rhat)) + sum(Rhat2 - Rhat1)
+do <- function(n, model, B = 200) {
+    seed <- sample(1:1e7, 1)
+    set.seed(seed)
+    dat <- simDat(n, model)
+    fit <- gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = FALSE)
+    fit.indep <- gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = TRUE)
+    bi <- seq(0, 2 * pi, length = 100)
+    k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    getBootk <- function(dat) {
+        n <- length(unique(dat$id))
+        ind <- sample(1:n, replace = TRUE)
+        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+        dat0$id <- rep(1:n, mm[ind] + 1)
+        fit0 <- gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat0, shp.ind = FALSE)
+        fit1 <- gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat0, shp.ind = TRUE)
+        c(max(sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])),
+          fit0$b0, fit0$r0, fit1$b0, fit1$r0)
+    }
+    tmp <- replicate(B, getBootk(dat))
+    ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0? (1 = reject),
+    ## (4:5) \hat\gamma,
+    ## (6:7) \hat\gamma under independence,
+    ## (8:9) bootstrap sd for \hat\beta, (10:11) bootstrap sd for \hat\gamma
+    ## (12:13) bootstrap sd for \hat\gamma; these assumes indep.
+    c(fit$b0, 1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0, fit.indep$r0,
+      sqrt(diag(var(t(tmp[2:3,])))),
+      sqrt(diag(var(t(tmp[4:5,])))),
+      ## sqrt(diag(var(t(tmp[6:7,])))),
+      sqrt(diag(var(t(tmp[8:9,])))))
 }
 
+do(100, "M1", B = 50)
 
-## theta takes value on the interval [0,pi] for identifiability, 
-res <- optimize(lik, interval = c(0,pi))
-## to avoid local minimum, we probably need to 
-## search the minimum on subintervals, and see which is the global optimum
-res1 <- optimize(lik, interval = c(0,pi/2))
-res2 <- optimize(lik, interval = c(pi/2,pi))
-
-## Estimated \beta
-c(sin(res$minimum), cos(res$minimum))
-## [1] 0.6317432 0.7751777
-  
-  
-
-## old 
-## lik2 <- function(theta)
-## {
-##   bhat <- c(sin(theta),cos(theta))
-##   #### The estimating equation Sn needs Yi even for the m = 0's
-##   xb <- X %*% bhat
-##   #### h <- 1.06 * sd(xb) * n^-.2
-##   h <- 0.25
-##   h2 <- .2
-##   Fhat <- unlist(mapply(FUN = function(x, y)
-##     .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-##        as.double(xb), as.double(x), as.double(y), as.double(h), 
-##        result = double(1), PACKAGE = "GSM")$result,
-##     X %*% bhat, yi))
-##   Fhat <- ifelse(is.na(Fhat), 0, Fhat) #### assign 0/0, Inf/Inf to 0
-##   Fhat <- exp(-Fhat)
-##   Fhat1 <- rep(Fhat, times = table(dat$id)-1)
-##   Xbij <- as.matrix(dat[,4:5]) %*% (bhat)
-##   Xbij <- Xbij[dat$event==1]
-##   Fhat2 <- unlist(mapply(FUN = function(x,t)
-##     .C("shapeFun3", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-##        as.double(xb), as.double(x), as.double(t), 
-##        as.double(h), as.double(h2),
-##        result = double(1), PACKAGE = "GSM")$result,
-##     Xbij,tij))
-##   Fhat3 <- unlist(mapply(FUN = function(x, y)
-##     .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-##        as.double(xb), as.double(x), as.double(y), as.double(h), 
-##        result = double(1), PACKAGE = "GSM")$result,
-##     Xbij,tij))
-##   Fhat22 <- exp(-Fhat3)*Fhat2
-##   -sum(log(Fhat22))+sum(log(Fhat1))
-## }
-## 
+sim1 <- sim2 <- sim3 <- sim4 <- NULL
+cl <- makePSOCKcluster(8)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, c('do')))
+invisible(clusterEvalQ(NULL, library(GSM)))
+set.seed(1)
+sim1 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M1"))), 8))
+set.seed(1)
+sim1.2 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M1", TRUE))), 8))
+sim2 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M2"))), 8))
+sim3 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M3"))), 8))
+sim4 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M4"))), 8))
+stopCluster(cl)

@@ -3,8 +3,8 @@
 getd <- function(dat2, tilde.b) {
     n2 <- length(unique(dat2$id))
     mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
-    tij2 <- subset(dat2, event == 1)$t
-    yi2 <- subset(dat2, event == 0)$t
+    tij2 <- subset(dat2, event == 1)$Time
+    yi2 <- subset(dat2, event == 0)$Time
     midx2 <- c(0, cumsum(mm2)[-length(mm2)])
     X2 <- as.matrix(subset(dat2, event == 0, select = -c(Time, id, m, event, status)))
     xb <- X2 %*% tilde.b
@@ -43,8 +43,8 @@ getk <- function(dat, b) {
     n <- length(unique(dat0$id))
     mm <- aggregate(event ~ id, dat0, sum)[,2]
     dat0$id <- rep(1:n, mm + 1)
-    tij <- subset(dat0, event == 1)$t
-    yi <- subset(dat0, event == 0)$t
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
     K0 <- .C("kappa", as.integer(n), as.integer(mm), as.integer(midx),

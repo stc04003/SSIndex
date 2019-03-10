@@ -35,7 +35,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     ## The first 5 columns of `DF` are fixed at id, time, event, status, m, followed by covariates.
     ## id Time event status m ...covariates...
     m <- aggregate(event ~ id, data = DF, sum)[,2]
-    DF <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
+    dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
     ## assuming data is generated from simDat
     ## estimate \beta first
     if (is.logical(shp.ind) && !shp.ind) {
@@ -48,8 +48,8 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     }
     n <- length(unique(dat$id))
     mm <- aggregate(event ~ id, dat, sum)[,2]
-    tij <- subset(dat, event == 1)$t
-    yi <- subset(dat, event == 0)$t
+    tij <- subset(dat, event == 1)$Time
+    yi <- subset(dat, event == 0)$Time
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat, event == 0, select = -c(Time, id, m, event, status)))
     p <- ncol(X)
@@ -82,7 +82,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
     Fhat <- exp(-Fhat)
     Sn <- function(r) {
-        r <- comprod(c(1, sin(r))) * c(cos(r), 1)
+        r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
         h <- 1.06 * sd(xr) * n^-.2 
         -.C("shapeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
@@ -90,9 +90,9 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     }
     if (p <= 2) {
         tmp1 <- spg(par = double(p - 1), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optimize(par = double(p - 1), fn = Sn, interval = c(-10, 10))
-        if (tmp1$value < tmp2$minimum) rhat <- rhat0 <- tmp1$par
-        else rhat <- rhat0 <- tmp2$par
+        tmp2 <- optimize(f = Sn, interval = c(-10, 10))
+        if (tmp1$value < tmp2$objective) rhat <- rhat0 <- tmp1$par
+        else rhat <- rhat0 <- tmp2$minimum
     }
     if (p > 2) {
         tmp1 <- spg(par = double(2), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
@@ -100,7 +100,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
         if (tmp1$value < tmp2$value) rhat <- rhat0 <- tmp1$par
         else rhat <- rhat0 <- tmp2$par
     }
-    rhat <- comprod(c(1, sin(rhat))) * c(cos(rhat), 1)
+    rhat <- cumprod(c(1, sin(rhat))) * c(cos(rhat), 1)
     ## rhat <- rhat / sqrt(sum(rhat^2))
     ## rhat <- optimize(f = Sn, interval = c(-10, 10))$minimum
     list(b0 = bhat, r0 = rhat, b00 = bhat0, r00 = rhat0, d = d, dstar = dstar)
@@ -126,9 +126,9 @@ getb0 <- function(dat) {
     p <- ncol(X)
     if (p <= 2) {
         tmp1 <- spg(par = double(p - 1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optimize(par = double(p - 1), fn = Cn, interval = c(-10, 10))
-        if (tmp1$value < tmp2$minimum) bhat <- bhat0 <- tmp1$par
-        else bhat <- bhat0 <- tmp2$objective
+        tmp2 <- optimize(f = Cn, interval = c(-10, 10))
+        if (tmp1$value < tmp2$objective) bhat <- bhat0 <- tmp1$par
+        else bhat <- bhat0 <- tmp2$minimum
     }
     if (p > 2) {
         tmp1 <- spg(par = double(p - 1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
