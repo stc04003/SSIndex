@@ -138,30 +138,12 @@ do <- function(n, model, B = 200) {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model)
-    bi <- seq(0, pi, length = 100)
-    b0 <- getb0(dat)
-    k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
-    mm <- aggregate(event ~ id, dat, sum)[, 2]
-    getBootk <- function(dat) {
-        n <- length(unique(dat$id))
-        ind <- sample(1:n, replace = TRUE)
-        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-        dat0$id <- rep(1:n, mm[ind] + 1)
-        ## max(sapply(1:100, function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x])))))
-        max(sapply(1:100, function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x]))
-    }
-    tmp <- replicate(B, getBootk(dat))
-    list(k = getk0(dat, b0$bhat),
-         kStar = k0, kBoot = tmp)
-    ## c(b0$bhat, max(k0), tmp)
-}
-
-do2 <- function(n, model, B = 200) {
-    seed <- sample(1:1e7, 1)
-    set.seed(seed)
-    dat <- simDat(n, model)
     bi <- seq(0, 2 * pi, length = 100)
     fit <- gsm(dat)
+<<<<<<< HEAD
+=======
+    fit.indep <- gsm(dat, TRUE)
+>>>>>>> c5814d9c7b56833afd3756a91b76a5e4d4935e49
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     getBootk <- function(dat) {
@@ -177,49 +159,41 @@ do2 <- function(n, model, B = 200) {
     tmp <- replicate(B, getBootk(dat))
     ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0?,
     ## (4:5) \hat\gamma,
+<<<<<<< HEAD
     ## (6:7) bootstrap sd for \hat\beta, (8:9) bootstrap sd for \hat\gamma
     ## (10:11) bootstrap sd for \hat\beta, (12:13) bootstrap sd for \hat\gamma; these assumes indep.
     c(fit$b0, 1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0,
       sqrt(diag(var(t(tmp[2:3,])))),
       sqrt(diag(var(t(tmp[4:5,])))),
       sqrt(diag(var(t(tmp[6:7,])))),
+=======
+    ## (6:7) \hat\gamma under independence,
+    ## (8:9) bootstrap sd for \hat\beta, (10:11) bootstrap sd for \hat\gamma
+    ## (12:13) bootstrap sd for \hat\gamma; these assumes indep.
+    c(fit$b0, 1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0, fit.indep$r0,
+      sqrt(diag(var(t(tmp[2:3,])))),
+      sqrt(diag(var(t(tmp[4:5,])))),
+      ## sqrt(diag(var(t(tmp[6:7,])))),
+>>>>>>> c5814d9c7b56833afd3756a91b76a5e4d4935e49
       sqrt(diag(var(t(tmp[8:9,])))))
 }
 
-do3 <- function(n, model, B = 200) {
-    seed <- sample(1:1e7, 1)
-    set.seed(seed)
+do.r0 <- function(n, model) {
     dat <- simDat(n, model)
-    bi <- seq(0, pi, length = 100)
-    b0 <- getb0(dat)
-    k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
-    mm <- aggregate(event ~ id, dat, sum)[, 2]
-    getBootk <- function(dat) {
-        n <- length(unique(dat$id))
-        ind <- sample(1:n, replace = TRUE)
-        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-        dat0$id <- rep(1:n, mm[ind] + 1)
-        tmp <- sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])
-        max(tmp, -tmp)
-    }
-    tmp <- replicate(B, getBootk(dat))
-    1 * (max(k0, -k)0 > quantile(tmp, .95))
+    gsm(dat, TRUE)$r0
 }
 
-system.time(print(do2(100, "M1")))
+r050M1 <- replicate(1000, do.r0(50, "M1"))
+r050M2 <- replicate(1000, do.r0(50, "M2"))
+r050M3 <- replicate(1000, do.r0(50, "M3"))
+r050M4 <- replicate(1000, do.r0(50, "M4"))
 
-library(parallel)
-library(xtable)
+r0100M1 <- replicate(500, do.r0(100, "M1"))
+r0100M2 <- replicate(500, do.r0(100, "M2"))
+r0100M3 <- replicate(500, do.r0(100, "M3"))
+r0100M4 <- replicate(500, do.r0(100, "M4"))
 
-sim150 <- sim250 <- sim350 <- sim450 <- NULL
-sim1100 <- sim2100 <- sim3100 <- sim4100 <- NULL
-sim1200 <- sim2200 <- sim3200 <- sim4200 <- NULL
-## cl <- makePSOCKcluster(8)
-cl <- makePSOCKcluster(16)
-setDefaultCluster(cl)
-invisible(clusterExport(NULL, c('do', 'do2')))
-invisible(clusterEvalQ(NULL, library(GSM)))
-
+<<<<<<< HEAD
 sim150 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M1")))
 sim250 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M2")))
 sim350 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M3")))
@@ -245,28 +219,85 @@ sim2200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M2")))
 sim3200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M3")))
 sim4200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M4")))
 stopCluster(cl)
+=======
+r0200M1 <- replicate(500, do.r0(200, "M1"))
+r0200M2 <- replicate(500, do.r0(200, "M2"))
+r0200M3 <- replicate(500, do.r0(200, "M3"))
+r0200M4 <- replicate(500, do.r0(200, "M4"))
+>>>>>>> c5814d9c7b56833afd3756a91b76a5e4d4935e49
 
-save(sim1200, file = "sim1200.RData")
-save(sim2200, file = "sim2200.RData")
-save(sim3200, file = "sim3200.RData")
-save(sim4200, file = "sim4200.RData")
 
-#######
-
-sumSim <- function(n, model) {
-    fname <- paste("output-", n, "-", model, "-test", sep = "")
+sumSim <- function(n, model, indB0 = "test") {
+    fname <- paste(c("results", n, model, B), collapse = "-")
     if (file.exists(fname)) dat <- read.table(fname)
     else stop("file name does not exist")
     ## dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, nrow(dat) / 50))))
-    dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, 6))))
-    mean(dat[,5] > qnorm(.95))
+    dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, 13))))
+    if (is.logical(indB0)) {
+        pwr <- mean(dat[,3])
+        if (indB0) {
+            PE.b0 <- c(0, 0)
+            ESE.b0 <- c(0, 0)
+            ASE.b0 <- c(0, 0)
+            PE.r0 <- eval(parse(text = paste("rowMeans(r0", n, model, ")", sep = "")))
+            ESE.r0 <- eval(parse(text = paste("apply(r0", n, model, ", 1, sd)", sep = "")))
+            ASE.r0 <- colMeans(dat[,12:13])
+        } else {
+            PE.b0 <- colMeans(dat[,1:2])
+            ESE.b0 <- apply(dat[,1:2], 2, sd)
+            ASE.b0 <- colMeans(dat[,6:7])
+            PE.r0 <- colMeans(dat[,4:5])
+            ESE.r0 <- apply(dat[,4:5], 2, sd)
+            ASE.r0 <- colMeans(dat[,8:9])
+        }
+    } else {
+        PE.b0 <- colMeans(dat[,1:2])
+        ESE.b0 <- apply(dat[,1:2], 2, sd)
+        ASE.b0 <- colMeans(dat[,6:7])
+        PE.r0 <- colMeans(dat[,4:5])
+        ESE.r0 <- apply(dat[,4:5], 2, sd) * (1 - mean(dat[,3])) +
+            apply(eval(parse(text = paste("t(r0", n, model, ")", sep = ""))), 2, sd) * mean(dat[,3]) 
+        ASE.r0 <- colMeans(dat[,3] * dat[,8:9] + (1 - dat[,3]) * dat[,12:13])
+    }
+    cbind(PE.b0, ESE.b0, ASE.b0, PE.r0, ESE.r0, ASE.r0)
 }
 
-sumSim(100, "M1")
-sumSim(500, "M1")
+sumPwr <- function(n, model) {
+    fname <- paste(c("results", n, model, B), collapse = "-")
+    if (file.exists(fname)) dat <- read.table(fname)
+    else stop("file name does not exist")
+    ## dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, nrow(dat) / 50))))
+    dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, 13))))
+    mean(dat[,3])
+}
 
-sumSim(100, "M2")
-sumSim(500, "M2")
+tabPwr <- rbind(c(sumPwr(50, "M1"), sumPwr(100, "M1"), sumPwr(200, "M1"), sumPwr(500, "M1")),
+                c(sumPwr(50, "M2"), sumPwr(100, "M2"), sumPwr(200, "M2"), sumPwr(500, "M2")),
+                c(sumPwr(50, "M3"), sumPwr(100, "M3"), sumPwr(200, "M3"), sumPwr(500, "M3")),
+                c(sumPwr(50, "M4"), sumPwr(100, "M4"), sumPwr(200, "M4"), sumPwr(500, "M4")))
+
+makeTab <- function(n) {
+    cbind(rbind(sumSim(n, "M1", FALSE)[,1:3], sumSim(n, "M1", FALSE)[,4:6]),
+          rbind(sumSim(n, "M1", TRUE)[,1:3], sumSim(n, "M1", TRUE)[,4:6]),
+          rbind(sumSim(n, "M2", FALSE)[,1:3], sumSim(n, "M2", FALSE)[,4:6]),
+          rbind(sumSim(n, "M3", FALSE)[,1:3], sumSim(n, "M3", FALSE)[,4:6]),
+          rbind(sumSim(n, "M4", FALSE)[,1:3], sumSim(n, "M4", FALSE)[,4:6]))
+}
+
+tab <- rbind(makeTab(50), makeTab(100), makeTab(200), makeTab(500))
+
+makeTab2 <- function(n) {
+    rbind(rbind(sumSim(n, "M1", FALSE)[,1:3], sumSim(n, "M1", FALSE)[,4:6]),
+          rbind(sumSim(n, "M1", TRUE)[,1:3], sumSim(n, "M1", TRUE)[,4:6]),
+          rbind(sumSim(n, "M2", FALSE)[,1:3], sumSim(n, "M2", FALSE)[,4:6]),
+          rbind(sumSim(n, "M3", FALSE)[,1:3], sumSim(n, "M3", FALSE)[,4:6]),
+          rbind(sumSim(n, "M4", FALSE)[,1:3], sumSim(n, "M4", FALSE)[,4:6]))
+}
+
+tab <- cbind(makeTab2(50), makeTab2(100), makeTab2(200), makeTab2(500))
+
+library(xtable)
+print(xtable(tab, digits = 3), math.style.negative = TRUE, include.rownames=FALSE)
 
 sumSim(100, "M3")
 sumSim(500, "M3")
@@ -274,6 +305,44 @@ sumSim(1000, "M3")
 sumSim(2000, "M3")
 
 
+sumSim2 <- function(n, model, indB0 = "test") {
+    fname <- paste(c("results", n, model, B), collapse = "-")
+    if (file.exists(fname)) dat <- read.table(fname)
+    else stop("file name does not exist")
+    ## dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, nrow(dat) / 50))))
+    dat <- t(do.call(cbind, lapply(dat, function(x) matrix(x, 13))))
+    if (is.logical(indB0)) {
+        pwr <- mean(dat[,3])
+        if (indB0) {
+            PE.b0 <- colMeans(dat[,1:2])
+            ESE.b0 <- apply(dat[,1:2], 2, sd)
+            ASE.b0 <- colMeans(dat[,6:7])
+            PE.r0 <- colMeans(dat[,4:5])
+            ESE.r0 <- apply(dat[,4:5], 2, sd)
+            ASE.r0 <- colMeans(dat[,12:13])
+        } else {
+            PE.b0 <- colMeans(dat[,1:2])
+            ESE.b0 <- apply(dat[,1:2], 2, sd)
+            ASE.b0 <- colMeans(dat[,6:7])
+            PE.r0 <- colMeans(dat[,4:5])
+            ESE.r0 <- apply(dat[,4:5], 2, sd)
+            ASE.r0 <- colMeans(dat[,8:9])
+        }
+    } else {
+        PE.b0 <- colMeans(dat[,1:2])
+        ESE.b0 <- apply(dat[,1:2], 2, sd)
+        ASE.b0 <- colMeans(dat[,6:7])
+        PE.r0 <- colMeans(dat[,4:5])
+        ESE.r0 <- apply(dat[,4:5], 2, sd)
+        ASE.r0 <- colMeans(dat[,3] * dat[,8:9] + (1 - dat[,3]) * dat[,12:13])
+    }
+    cbind(PE.b0, ESE.b0, ASE.b0, PE.r0, ESE.r0, ASE.r0)
+}
+
+
+
+################################################################################################################################################
+################################################################################################################################################
 ################################################################################################################################################
 ################################################################################################################################################
 
