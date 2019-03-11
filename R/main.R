@@ -103,7 +103,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     rhat <- cumprod(c(1, sin(rhat))) * c(cos(rhat), 1)
     ## rhat <- rhat / sqrt(sum(rhat^2))
     ## rhat <- optimize(f = Sn, interval = c(-10, 10))$minimum
-    list(b0 = bhat, r0 = rhat, b00 = bhat0, r00 = rhat0, d = d, dstar = dstar)
+    list(b0 = bhat, r0 = rhat, b00 = bhat0, r00 = rhat0, d = d, dstar = dstar, Fhat = Fhat)
 }
 
 #' @export
