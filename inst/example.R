@@ -344,8 +344,8 @@ do <- function(n, model, B = 200, frailty = FALSE) {
     bi <- seq(0, 2 * pi, length = 100)
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
+    n <- length(unique(dat$id))
     getBootk <- function(dat) {
-        n <- length(unique(dat$id))
         ind <- sample(1:n, replace = TRUE)
         dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
         dat0$id <- rep(1:n, mm[ind] + 1)
@@ -386,7 +386,7 @@ do2 <- function(n, model, B = 200, frailty = FALSE) {
     c(fit$b0, fit$r0, fit.indep$r0)
 }
 
-do(100, "M1", B = 50)
+system.time(print(do(100, "M1", B = 50)))
 do(50, "M4", B = 50)
 do2(100, "M1", B = 50)
 do2(50, "M4", B = 50)
