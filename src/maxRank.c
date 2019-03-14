@@ -14,11 +14,12 @@ void rank(int *n, int *m, int *midx,
 	for (k = 0; k < m[i]; k++) {
 	  if (tij[midx[i] + k] <= yi[j]) {
 	    for (l = 0; l < m[j]; l++) {
-	      if (tij[midx[j] + l] <= yi[i]) {
-		if (xb[i] > xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
+	      if (tij[midx[j] + l] <= yi[i] && xb[i] > xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
 		  result[0] += 1;
-		}
 	      }
+	      if (tij[midx[j] + l] <= yi[i] && xb[i] == xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
+		result[0] += 0.5;
+	      } // accomdiate bootstrap
 	    }
 	  } // end l
 	} // end if I(t_ik \le \min(Y_i, Y_j))
