@@ -166,4 +166,63 @@ The resampling size is 200.
 \end{tabular}
 \end{table}
 
+\newpage
+\paragraph{Rank estimating equation with induced smoothing}
+The rank estimating equation 
+\begin{equation*}
+\label{E1}
+U_1(\beta) = \frac{1}{n(n-1)}\sum_{i\neq j} I(\beta^\intercal Z_i >  \beta^\intercal Z_j) \int_{0}^{C_{ij}} \int_{0}^{C_{ij}} I( u>t)dN_i(u)dN_j(t),
+\end{equation*}
+is sensitive to initial value; local maximums are often detected instead of the global maximum.
+
+The motivation of the induced smoothing technique is to overcome computational difficulty caused by non-smooth estimating equations. 
+The basic idea is to replace the estimating equation $U_1(\beta)$ with a smooth version
+$E(\beta+ \Gamma Z)$, 
+where $Z$ is a $p$-dimensional standard normal random vector, $\Gamma^\top\Gamma = \Sigma$ is the 
+a working covariance matrix of $\hat\beta_n$, and the expectation is taken with respect to $Z$.
+The smoothed version of $U_1(\beta)$ is then
+\begin{equation}
+\label{smooth}
+\tilde U_1(\beta) = \frac{1}{n(n-1)}\sum_{i\neq j} \Phi\left(\frac{\beta^\intercal Z_i -  \beta^\intercal Z_j}{r_{ij}}\right) \int_{0}^{C_{ij}} \int_{0}^{C_{ij}} I( u>t)dN_i(u)dN_j(t),
+\end{equation}
+where $r_{ij}^2 = (X_i - X_j)^\top\Gamma_n(X_i - X_j)$.
+In my other papers, we tried different choices of $\Gamma$ but all yields similar results, 
+so I usually set $\Gamma$ to be the identity matrix. 
+
+In Figure~\ref{comp}, I plotted the \textbf{negative} $U_1(\cdot)$ and $\tilde U_1(\cdot)$ values against $\theta$ for one simulated data set with $n = 100$ from scenario M2. (so we are looking to find the global minimum here). 
+There are many local minimums for the unsmoothed estimating equation, causing the \texttt{optim} and \texttt{spg} to converge to one of the local minimums. However, we don't have such problem with the smoothed version. Simulation results that shows the $\beta$ estimates by optimizing the smoothed estimating equation based on 200 replications is presented in Table 3. 
+
+\begin{center}
+\begin{figure}
+\caption{Comparison between $U_1(\beta)$ and $\tilde U_1(\beta)$.}
+\includegraphics[scale = .6]{rank.pdf}\label{comp}
+\end{figure}
+\end{center}
+
+\begin{table}[ht]
+\centering
+\caption{Simulation results based on induced smoothing equation~\eqref{smooth}. 
+With 200 replications. 
+All replications converged to global maximum (verified with an exhaust grid search).
+$\Gamma$ is set to be the identity matrix.}
+\begin{tabular}{r rrrrrr}
+\toprule
+& \multicolumn{2}{c}{$n=100$} & \multicolumn{2}{c}{$n=200$} & \multicolumn{2}{c}{$n=500$} \\
+\cmidrule(l){2-3}\cmidrule(l){4-5}\cmidrule(l){6-7}
+& PE & ESE& PE & ESE& PE & ESE\\
+\midrule
+& \multicolumn{6}{c}{Scenario \textbf{M2}}\\
+$\beta_1$ &  -0.582 & 0.184 & -0.599 & 0.125 & -0.593 & 0.075 \\ 
+$\beta_2$ &  -0.764 & 0.209 & -0.784 & 0.104 & -0.799 & 0.055 \\ 
+$\gamma_1$ &  0.588 & 0.118 & 0.599 & 0.057 & 0.593 & 0.033 \\ 
+$\gamma_2$ &  0.786 & 0.150 & 0.797 & 0.042 & 0.804 & 0.024 \\ 
+& \multicolumn{6}{c}{Scenario \textbf{M3}}\\
+$\beta_1$ &   -0.601 & 0.161 & -0.591 & 0.096 & -0.601 & 0.052 \\ 
+$\beta_2$ &   -0.774 & 0.124 & -0.797 & 0.075 & -0.797 & 0.040 \\ 
+$\gamma_1$ &   -0.602 & 0.120 & -0.595 & 0.066 & -0.600 & 0.044 \\ 
+$\gamma_2$ &   -0.782 & 0.113 & -0.799 & 0.051 & -0.798 & 0.033 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \end{document}

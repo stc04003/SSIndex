@@ -89,14 +89,14 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
             result = double(1), PACKAGE = "GSM")$result
     }
     if (p <= 2) {
-        tmp1 <- spg(par = double(p - 1), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
+        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optimize(f = Sn, interval = c(-10, 10))
         if (tmp1$value < tmp2$objective) rhat <- rhat0 <- tmp1$par
         else rhat <- rhat0 <- tmp2$minimum
     }
     if (p > 2) {
-        tmp1 <- spg(par = double(2), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = double(2), fn = Sn)
+        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Sn)
         if (tmp1$value < tmp2$value) rhat <- rhat0 <- tmp1$par
         else rhat <- rhat0 <- tmp2$par
     }
@@ -122,17 +122,27 @@ getb0 <- function(dat) {
             as.double(tij), as.double(yi), as.double(X %*% b),
             result = double(1), PACKAGE = "GSM")$result
     }
-    ## which one gives the absolution min?
     p <- ncol(X)
+    Cn2 <- function(b) {
+    b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
+    -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
+        as.double(diag(p)), 
+        as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
+        result = double(1), PACKAGE = "GSM")$result
+    }
+    ## which one gives the absolution min?
     if (p <= 2) {
-        tmp1 <- spg(par = double(p - 1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optimize(f = Cn, interval = c(-10, 10))
+        ## ## Solve with Cn1 or Cn2 / Cn2 seems better
+        ## tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+        ## tmp2 <- optimize(f = Cn, interval = c(-10, 10))
+        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optimize(f = Cn2, interval = c(-10, 10))
         if (tmp1$value < tmp2$objective) bhat <- bhat0 <- tmp1$par
         else bhat <- bhat0 <- tmp2$minimum
     }
     if (p > 2) {
-        tmp1 <- spg(par = double(p - 1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = double(p - 1), fn = Cn)
+        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Cn2)
         if (tmp1$value < tmp2$value) bhat <- bhat0 <- tmp1$par
         else bhat <- bhat0 <- tmp2$par
     }

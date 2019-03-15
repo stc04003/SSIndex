@@ -4,7 +4,7 @@
 \alias{simDat}
 \title{Function to generate simulated data}
 \usage{
-simDat(n, model)
+simDat(n, model, frailty = FALSE)
 }
 \description{
 We formulate the proposed rate function as
