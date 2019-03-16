@@ -2,217 +2,6 @@ library(GSM)
 library(reReg)
 ## example
 
-set.seed(1)
-dat <- simDat(100, "M1")
-gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = FALSE)$b0
-gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = TRUE)
-gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = "test")
-
-set.seed(1)
-dat <- simDat(100, "M1", TRUE)
-gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = FALSE)$b0
-gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = TRUE)
-gsm(reSurv(t, id, event, status) ~ x1 + x2, data = dat, shp.ind = "test")
-
-head(dat)
-
-## simulation and checks
-
-dim(simDat(100, "M1"))
-dim(simDat(100, "M2"))
-dim(simDat(100, "M3"))
-dim(simDat(100, "M4"))
-
-c(7, 24) / 25
-
-do <- function(n, model, shp.ind = FALSE) {
-    dat <- simDat(n, model)
-    unlist(gsm(dat, shp.ind))
-}
-
-do(200, "M1")
-do(200, "M2")
-do(200, "M3")
-
-sim1 <- t(replicate(100, do(200, "M1")))
-sim2 <- t(replicate(100, do(200, "M2")))
-sim3 <- t(replicate(100, do(200, "M3")))
-sim4 <- t(replicate(100, do(200, "M4")))
-
-summary(sim1)
-summary(sim2)
-summary(sim3)
-summary(sim4)
-
-Douglas06(simDat(100, "M2")) ## confirms data generation
-
-set.seed(1);round(do(200, "M1"), 3) # 0.986 -0.168  0.180  0.984  0.181 -0.031  0.022  0.120 
-set.seed(1);round(do(200, "M2"), 3) # -0.598 -0.801  0.641  0.767 -1.308 -1.752  0.128  0.154 
-set.seed(1);round(do(200, "M3"), 3) # -0.650 -0.760 -0.554 -0.832 -2.989 -3.496 -1.780 -2.674 
-set.seed(1);round(do(200, "M4"), 3) # -0.609 -0.793  0.328  0.945 -0.807 -1.050  0.050  0.143 
-
-####################################################################################3
-## Parallel computing on 1000 replications
-library(parallel)
-library(xtable)
-
-sim1 <- sim1.2 <- sim2 <- sim3 <- sim4 <- NULL
-cl <- makePSOCKcluster(16)
-setDefaultCluster(cl)
-invisible(clusterExport(NULL, c('do')))
-invisible(clusterEvalQ(NULL, library(GSM)))
-set.seed(1)
-sim1 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M1"))), 8))
-set.seed(1)
-sim1.2 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M1", TRUE))), 8))
-sim2 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M2"))), 8))
-sim3 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M3"))), 8))
-sim4 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do(200, "M4"))), 8))
-stopCluster(cl)
-
-makeTab <- function(dat) {
-    cbind(colMeans(dat)[1:4], apply(dat, 2, sd)[1:4])
-}
-
-tab <- cbind(makeTab(sim1), makeTab(sim1.2), makeTab(sim2), makeTab(sim3), makeTab(sim4))
-
-print(xtable(tab, digits = 3), math.style.negative = TRUE)
-
-## -------------------------------------------------------------------------------------
-## Testing \beta_0 = 0
-## -------------------------------------------------------------------------------------
-library(GSM)
-
-set.seed(1)
-dat <- simDat(n = 100, model = "M1")
-
-system.time(f1 <- gsm(dat, shp.ind = TRUE))
-system.time(f2 <- gsm(dat, shp.ind = FALSE))
-system.time(f3 <- gsm(dat, shp.ind = "test"))
-
-do <- function(n, model, shp.ind = "test") {
-    seed <- sample(1:1e7, 1)
-    set.seed(seed)
-    dat <- simDat(n, model)
-    set.seed(seed)
-    tmp <- tryCatch(gsm(dat, shp.ind), error = function(e) NA)
-    if (is.character(shp.ind)) {
-        if (any(is.na(tmp)))
-            return(c(rep(NA, 5), seed))
-        else
-            return(c(tmp$b0, tmp$r0, tmp$d / sd(tmp$dstar), seed))
-    }
-    return(c(tmp$b0, tmp$r0))
-}
-
-set.seed(1);round(do(100, "M1"), 3)
-set.seed(1);round(do(100, "M2"), 3)
-set.seed(1);round(do(100, "M3"), 3)
-set.seed(1);round(do(100, "M4"), 3)
-
-system.time(print(do(300, "M1")))
-system.time(print(do(300, "M1", FALSE)))
-system.time(print(do(300, "M2")))
-system.time(print(do(300, "M3")))
-system.time(print(do(300, "M4")))
-
-library(parallel)
-library(xtable)
-
-sim1 <- sim2 <- sim3 <- NULL
-## cl <- makePSOCKcluster(8)
-cl <- makePSOCKcluster(16)
-setDefaultCluster(cl)
-invisible(clusterExport(NULL, c('do')))
-invisible(clusterEvalQ(NULL, library(GSM)))
-sim1 <- t(parSapply(NULL, 1:100, function(z) do(300, "M1")))
-sim1 <- t(parSapply(NULL, 1:1000, function(z)
-    tryCatch(do(300, "M1", FALSE), error = function(e) rep(NA, 4))))
-sim2 <- t(parSapply(NULL, 1:100, function(z) do(300, "M2")))
-sim3 <- t(parSapply(NULL, 1:100, function(z) do(300, "M3")))
-stopCluster(cl)
-
-sum(abs(sim1[,5]) > qnorm(.975)) / nrow(sim1)
-sum(abs(sim2[,5]) > qnorm(.975)) / nrow(sim2)
-sum(abs(sim3[,5]) > qnorm(.975)) / nrow(sim3)
-
-## ------------------------------------------------------------------------------------
-## Testing \beta_0 = 0 with grid approach
-## ------------------------------------------------------------------------------------
-#'
-#' Testing for 2 dimensional
-#' 
-#' @param B is the bootstrap size
-#' @param len is the length of segments used for uniform sample
-library(GSM)
-
-do <- function(n, model, B = 200) {
-    seed <- sample(1:1e7, 1)
-    set.seed(seed)
-    dat <- simDat(n, model)
-    bi <- seq(0, 2 * pi, length = 100)
-    fit <- gsm(dat)
-    fit.indep <- gsm(dat, TRUE)
-    k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
-    mm <- aggregate(event ~ id, dat, sum)[, 2]
-    getBootk <- function(dat) {
-        n <- length(unique(dat$id))
-        ind <- sample(1:n, replace = TRUE)
-        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-        dat0$id <- rep(1:n, mm[ind] + 1)
-        fit0 <- gsm(dat0)
-        fit1 <- gsm(dat0, TRUE)
-        c(max(sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])),
-          fit0$b0, fit0$r0, fit1$b0, fit1$r0)
-    }
-    tmp <- replicate(B, getBootk(dat))
-    c(fit$b0, 1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0, fit.indep$r0,
-      sqrt(diag(var(t(tmp[2:3,])))),
-      sqrt(diag(var(t(tmp[4:5,])))),
-      sqrt(diag(var(t(tmp[8:9,])))))
-}
-
-do.r0 <- function(n, model) {
-    dat <- simDat(n, model)
-    gsm(dat, TRUE)$r0
-}
-
-r050M1 <- replicate(1000, do.r0(50, "M1"))
-r050M2 <- replicate(1000, do.r0(50, "M2"))
-r050M3 <- replicate(1000, do.r0(50, "M3"))
-r050M4 <- replicate(1000, do.r0(50, "M4"))
-
-r0100M1 <- replicate(500, do.r0(100, "M1"))
-r0100M2 <- replicate(500, do.r0(100, "M2"))
-r0100M3 <- replicate(500, do.r0(100, "M3"))
-r0100M4 <- replicate(500, do.r0(100, "M4"))
-
-sim150 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M1")))
-sim250 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M2")))
-sim350 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M3")))
-sim450 <- t(parSapply(NULL, 1:1000, function(z) do2(50, "M4")))
-
-save(sim150, file = "sim150.RData")
-save(sim250, file = "sim250.RData")
-save(sim350, file = "sim350.RData")
-save(sim450, file = "sim450.RData")
-
-sim1100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M1")))
-sim2100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M2")))
-sim3100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M3")))
-sim4100 <- t(parSapply(NULL, 1:1000, function(z) do2(100, "M4")))
-
-save(sim1100, file = "sim1100.RData")
-save(sim2100, file = "sim2100.RData")
-save(sim3100, file = "sim3100.RData")
-save(sim4100, file = "sim4100.RData")
-
-sim1200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M1")))
-sim2200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M2")))
-sim3200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M3")))
-sim4200 <- t(parSapply(NULL, 1:1000, function(z) do2(200, "M4")))
-stopCluster(cl)
-
 sumSim <- function(n, model, indB0 = "test") {
     fname <- paste(c("results", n, model, B), collapse = "-")
     if (file.exists(fname)) dat <- read.table(fname)
@@ -330,10 +119,13 @@ sumSim2 <- function(n, model, indB0 = "test") {
 
 ####################################################################################3
 ## Parallel computing on 1000 replications
+## March 10
+####################################################################################3
 library(parallel)
 library(xtable)
 
-do <- function(n, model, B = 200, frailty = FALSE) {
+do <- function(n, model, frailty = FALSE) {
+    B <- 200
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model, frailty)
@@ -391,49 +183,56 @@ do(50, "M4", B = 50)
 do2(100, "M1", B = 50)
 do2(50, "M4", B = 50)
 
-sim150 <- sim250 <- sim350 <- sim450 <- NULL
-sim1100 <- sim2100 <- sim3100 <- sim4100 <- NULL
-sim1200 <- sim2200 <- sim3200 <- sim4200 <- NULL
-
-sim1502 <- sim2502 <- sim3502 <- sim4502 <- NULL
-sim11002 <- sim21002 <- sim31002 <- sim41002 <- NULL
-sim12002 <- sim22002 <- sim32002 <- sim42002 <- NULL
-
 cl <- makePSOCKcluster(8)
+cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do', 'do2')))
 invisible(clusterEvalQ(NULL, library(GSM)))
 invisible(clusterEvalQ(NULL, library(reReg)))
 
-sim150 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M1"))), 6))
-sim250 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M2"))), 6))
-sim350 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M3"))), 6))
-sim450 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M4"))), 6))
+runPara <- function(model, n, frailty) {
+    obj <- paste(c(model, n, frailty), collapse = "")
+    eval(parse(text = paste(obj, " <- NULL")))
+    toRun <- paste(obj, " <- t(matrix(unlist(parLapply(NULL, 1:500, function(z) do(",
+                   n, ",'", model, "',", frailty, "))), 13))", sep = "")
+    ptm <- proc.time()
+    eval(parse(text = toRun))
+    print(proc.time() - ptm)
+    fname <- paste(obj, ".RData", sep = "")
+    eval(parse(text = paste("save(", obj, ",file = '", fname, "')", sep = "")))
+}
 
-sim1100 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M1"))), 6))
-sim2100 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M2"))), 6))
-sim3100 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M3"))), 6))
-sim4100 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M4"))), 6))
+runPara("M1", 50, TRUE)
+runPara("M1", 100, TRUE)
+runPara("M1", 200, TRUE)
 
-sim1200 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M1"))), 6))
-sim2200 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M2"))), 6))
-sim3200 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M3"))), 6))
-sim4200 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M4"))), 6))
+runPara("M2", 50, TRUE)
+runPara("M2", 100, TRUE)
+runPara("M2", 200, TRUE)
 
-sim1502 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M1", TRUE))), 6))
-sim2502 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M2", TRUE))), 6))
-sim3502 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M3", TRUE))), 6))
-sim4502 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(50, "M4", TRUE))), 6))
+runPara("M3", 50, TRUE)
+runPara("M3", 100, TRUE)
+runPara("M3", 200, TRUE)
 
-sim11002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M1", TRUE))), 6))
-sim21002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M2", TRUE))), 6))
-sim31002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M3", TRUE))), 6))
-sim41002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(100, "M4", TRUE))), 6))
+runPara("M4", 50, TRUE)
+runPara("M4", 100, TRUE)
+runPara("M4", 200, TRUE)
 
-sim12002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M1", TRUE))), 6))
-sim22002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M2", TRUE))), 6))
-sim32002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M3", TRUE))), 6))
-sim42002 <- t(matrix(unlist(parLapply(NULL, 1:1e3, function(z) do2(200, "M4", TRUE))), 6))
+runPara("M1", 50, FALSE)
+runPara("M1", 100, FALSE)
+runPara("M1", 200, FALSE)
+
+runPara("M2", 50, FALSE)
+runPara("M2", 100, FALSE)
+runPara("M2", 200, FALSE)
+
+runPara("M3", 50, FALSE)
+runPara("M3", 100, FALSE)
+runPara("M3", 200, FALSE)
+
+runPara("M4", 50, FALSE)
+runPara("M4", 100, FALSE)
+runPara("M4", 200, FALSE)
 
 stopCluster(cl)
 
@@ -523,3 +322,134 @@ makeTab2(sim1100)
 makeTab2(sim2100)
 makeTab2(sim3100)
 makeTab2(sim4100)
+
+
+set.seed(2)
+do2(100, "M2", FALSE)
+
+tmp <- matrix(NA, 200, 6)
+for (i in 1:200) {
+    set.seed(i)
+    tmp[i,] <- do2(100, "M2", FALSE)
+}
+
+
+
+debug(gsm)
+undebug(gsm)
+
+debug(getb0)
+undebug(getb0)
+
+set.seed(6822898)
+dat <- simDat(100, "M2", FALSE)
+gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    data = dat, shp.ind = FALSE)
+
+
+spg(par = acos(1 / sqrt(2)), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+spg(par = double(p - 1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+optimize(f = Cn, interval = c(-10, 10))
+
+
+plot(seq(0, 2 * pi, .01), sapply(seq(0, 2 * pi, .01), Cn), 'l')
+
+
+acos(-.6) ## 2.214
+abline(v = acos(-.6))
+optimize(f = Cn, interval = c(4, 5))
+abline(v = 4.62165)
+c(cos(4.62165), sin(4.62165))
+
+
+set.seed(21)
+dat <- simDat(100, "M2", FALSE)
+
+gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    data = dat, shp.ind = FALSE)
+## -0.6355681 -0.7720448
+
+
+Cn(0)
+Cn2(0)
+
+Cn(2)
+Cn2(2)
+
+Cn(2.02)
+Cn2(2.02)
+replicate(100, Cn2(2.47236))
+replicate(100, Cn2(1))
+
+x0 <- seq(0, 2 * pi, .01)
+y1 <- sapply(seq(0, 2 * pi, .01), Cn)
+y2 <- sapply(seq(0, 2 * pi, .01), Cn2)
+
+plot(x0, y1, 'l')
+lines(x0, y2, 'l', col = 2)
+
+plot(x0, y2, 'l')
+lines(x0, y1, 'l', col = 2)
+
+tab <- tibble(x = rep(x0, 2), y = c(y1, y2),
+              type = c(rep("Unsmoothed", length(x0)), rep("Smoothed", length(x0))))
+
+ggplot(data = tab, aes(x = x, y = y, color = type)) +
+    geom_line(lwd = 2, alpha = 0.5) +
+    ggtitle("M2, with n = 100") + xlab(quote(theta)) + ylab(quote(U[1](theta)))
+ggsave("rank.pdf")
+
+library(GSM)
+library(reReg)
+set.seed(21)
+dat <- simDat(100, "M2", FALSE)
+## debug(getb0)
+gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    data = dat, shp.ind = FALSE)
+## -0.6355681 -0.7720448
+
+
+
+abline(v = spg(par = acos(1 / sqrt(2)), fn = Cn, quiet = TRUE, control = list(trace = FALSE))$par)
+abline(v = spg(par = double(p - 1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))$minimum)
+abline(v = optimize(f = Cn, interval = c(-10, 10))$minimum)
+abline(v = optimize(f = Cn, interval = c(0, 10))$minimum)
+
+abline(v = spg(par = acos(1 / sqrt(2)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))$par, col = 3)
+abline(v = spg(par = double(p - 1), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))$par, col = 3)
+abline(v = optimize(f = Cn2, interval = c(-10, 10))$minimum, col = 3)
+abline(v = optimize(f = Cn2, interval = c(0, 10))$minimum, col = 3)
+
+spg(par = acos(1 / sqrt(2)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))$par %% (2 * pi)
+spg(par = double(p - 1), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))$par %% (2 * pi)
+optimize(f = Cn2, interval = c(-10, 10))$minimum %% (2 * pi)
+optimize(f = Cn2, interval = c(0, 10))$minimum %% (2 * pi)
+
+
+
+cos(spg(par = acos(1 / sqrt(2)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))$par)
+cos(spg(par = double(p - 1), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))$par)
+cos(optimize(f = Cn2, interval = c(-10, 10))$minimum)
+cos(optimize(f = Cn2, interval = c(0, 10))$minimum)
+
+
+f1 <- t(matrix(unlist(parLapply(NULL, 1:200, function(z) do2(100, "M2", FALSE))), 6))
+f2 <- t(matrix(unlist(parLapply(NULL, 1:200, function(z) do2(200, "M2", FALSE))), 6))
+f3 <- t(matrix(unlist(parLapply(NULL, 1:200, function(z) do2(500, "M2", FALSE))), 6))
+
+f12 <- t(matrix(unlist(parLapply(NULL, 1:100, function(z) do2(100, "M3", FALSE))), 6))
+f22 <- t(matrix(unlist(parLapply(NULL, 1:100, function(z) do2(200, "M3", FALSE))), 6))
+f32 <- t(matrix(unlist(parLapply(NULL, 1:100, function(z) do2(500, "M3", FALSE))), 6))
+
+
+xtable(cbind(colMeans(f1)[1:4], apply(f1, 2, sd)[1:4],
+             colMeans(f2)[1:4], apply(f2, 2, sd)[1:4],
+             colMeans(f3)[1:4], apply(f3, 2, sd)[1:4]), digits = 3)
+
+
+
+xtable(cbind(colMeans(f12)[1:4], apply(f12, 2, sd)[1:4],
+             colMeans(f22)[1:4], apply(f22, 2, sd)[1:4],
+             colMeans(f32)[1:4], apply(f32, 2, sd)[1:4]), digits = 3)
+
+ 

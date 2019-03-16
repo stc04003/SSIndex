@@ -40,11 +40,11 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     ## estimate \beta first
     if (is.logical(shp.ind) && !shp.ind) {
         tmp <- getb0(dat)
-        bhat <- tmp$bhat
-        bhat0 <- tmp$bhat0
+        bhat1 <- tmp$bhat1
+        bhat2 <- tmp$bhat2
     }
     if (is.logical(shp.ind) && shp.ind){
-        bhat <- bhat0 <- double(2)
+        bhat1 <- bhat2 <- double(2)
     }
     n <- length(unique(dat$id))
     mm <- aggregate(event ~ id, dat, sum)[,2]
@@ -58,18 +58,20 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
         ind <- sample(1:n)[1:round(n/2)]
         dat1 <- subset(dat, id %in% ind)
         dat2 <- subset(dat, !(id %in% ind))
-        tilde.b <- getb0(dat1)$bhat
+        tilde.b <- getb0(dat1)$bhat1
         n2 <- length(unique(dat2$id))
         mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
         d <- getd(dat2, tilde.b)
         dstar <- replicate(B, boot.d(dat2, tilde.b))
         if (abs(d / sd(dstar)) > qnorm(.975)) {
             tmp <- getb0(dat)
-            bhat <- tmp$bhat
-            bhat0 <- tmp$bhat0
+            bhat1 <- tmp$bhat1
+            bhat2 <- tmp$bhat2
         }
-        else bhat <- bhat0 <- double(2)
+        else bhat1 <- bhat2 <- double(2)
     }
+    ## which bhat to use
+    bhat <- bhat2
     ## The estimating equation Sn needs Yi even for the m = 0's
     xb <- X %*% bhat
     ## h <- 1.06 * sd(xb) * n^-.2
@@ -103,7 +105,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     rhat <- cumprod(c(1, sin(rhat))) * c(cos(rhat), 1)
     ## rhat <- rhat / sqrt(sum(rhat^2))
     ## rhat <- optimize(f = Sn, interval = c(-10, 10))$minimum
-    list(b0 = bhat, r0 = rhat, b00 = bhat0, r00 = rhat0, d = d, dstar = dstar, Fhat = Fhat)
+    list(b0 = bhat2, r0 = rhat, b00 = bhat1, r00 = rhat0, d = d, dstar = dstar, Fhat = Fhat)
 }
 
 #' @export
@@ -124,31 +126,38 @@ getb0 <- function(dat) {
     }
     p <- ncol(X)
     Cn2 <- function(b) {
-    b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
-    -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
-        as.double(diag(p)), 
-        as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
-        result = double(1), PACKAGE = "GSM")$result
+        b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
+        -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
+            as.double(diag(p)), 
+            as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
+            result = double(1), PACKAGE = "GSM")$result
     }
     ## which one gives the absolution min?
     if (p <= 2) {
-        ## ## Solve with Cn1 or Cn2 / Cn2 seems better
-        ## tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-        ## tmp2 <- optimize(f = Cn, interval = c(-10, 10))
+        ## Solve the induced smoothing version first, then un-smoothed
         tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optimize(f = Cn2, interval = c(-10, 10))
-        if (tmp1$value < tmp2$objective) bhat <- bhat0 <- tmp1$par
-        else bhat <- bhat0 <- tmp2$minimum
+        if (tmp1$value < tmp2$objective) bhat1 <- tmp1$par
+        else bhat1 <- tmp2$minimum
+        ## bhat1 is smooth version, bhat2 is unsmooth version
+        tmp1 <- spg(par = acos(bhat1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optimize(f = Cn, interval = c(acos(bhat1) - pi/2, acos(bhat1) + pi/2))
+        if (tmp1$value < tmp2$objective) bhat2 <- tmp1$par
+        else bhat2 <- tmp2$minimum
     }
     if (p > 2) {
         tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Cn2)
-        if (tmp1$value < tmp2$value) bhat <- bhat0 <- tmp1$par
-        else bhat <- bhat0 <- tmp2$par
+        if (tmp1$value < tmp2$value) bhat1 <- tmp1$par
+        else bhat1 <- tmp2$par
+        tmp1 <- spg(par = acos(bhat1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = acos(bhat1), fn = Cn)
+        if (tmp1$value < tmp2$value) bhat2 <- tmp1$par
+        else bhat2 <- tmp2$par
     }
-    bhat <- cumprod(c(1, sin(bhat))) * c(cos(bhat), 1)
-    ## bhat <- bhat / sqrt(sum(bhat^2))
-    list(bhat = bhat, bhat0 = bhat0)
+    bhat1 <- cumprod(c(1, sin(bhat1))) * c(cos(bhat1), 1)
+    bhat2 <- cumprod(c(1, sin(bhat2))) * c(cos(bhat2), 1)
+    list(bhat1 = bhat1, bhat2 = bhat2)
 }
 
 #' @export
