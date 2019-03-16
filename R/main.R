@@ -86,28 +86,46 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     Sn <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
-        h <- 1.06 * sd(xr) * n^-.2 
         -.C("shapeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
             result = double(1), PACKAGE = "GSM")$result
     }
+    Sn2 <- function(r) {
+        r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
+        xr <- X %*% r
+        -.C("shapeEqSmooth", as.integer(n), as.integer(p), as.double(xr), as.double(X),
+            as.double(diag(p)), as.double(mm / Fhat),
+            result = double(1), PACKAGE = "GSM")$result        
+    }
+    
     if (p <= 2) {
-        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optimize(f = Sn, interval = c(-10, 10))
-        if (tmp1$value < tmp2$objective) rhat <- rhat0 <- tmp1$par
-        else rhat <- rhat0 <- tmp2$minimum
+        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optimize(f = Sn2, interval = c(-10, 10))
+        if (tmp1$value < tmp2$objective) rhat1 <- tmp1$par %% (2 * pi)
+        else rhat1 <- tmp2$minimum %% (2 * pi)
+        tmp1 <- spg(par = rhat1, fn = Sn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optimize(f = Sn, interval = c(rhat1 - pi / 2, rhat1 + pi / 2))
+        if (tmp1$value < tmp2$objective) rhat2 <- tmp1$par %% (2 * pi)
+        else rhat2 <- tmp2$minimum %% (2 * pi)
     }
     if (p > 2) {
-        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Sn)
-        if (tmp1$value < tmp2$value) rhat <- rhat0 <- tmp1$par
-        else rhat <- rhat0 <- tmp2$par
+        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Sn2)
+        if (tmp1$value < tmp2$value) rhat1 <- tmp1$par %% (2 * pi)
+        else rhat1 <- tmp2$par %% (2 * pi)
+        tmp1 <- spg(par = rhat1, fn = Sn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = rhat1, fn = Sn)
+        if (tmp1$value < tmp2$value) rhat2 <- tmp1$par %% (2 * pi)
+        else rhat2 <- tmp2$par %% (2 * pi)        
     }
-    rhat <- cumprod(c(1, sin(rhat))) * c(cos(rhat), 1)
+    rhat1 <- cumprod(c(1, sin(rhat1))) * c(cos(rhat1), 1)
+    rhat2 <- cumprod(c(1, sin(rhat2))) * c(cos(rhat2), 1)
     ## rhat <- rhat / sqrt(sum(rhat^2))
     ## rhat <- optimize(f = Sn, interval = c(-10, 10))$minimum
-    list(b0 = bhat2, r0 = rhat, b00 = bhat1, r00 = rhat0, d = d, dstar = dstar, Fhat = Fhat)
+    list(b0 = bhat2, r0 = rhat1, b00 = bhat1, r00 = rhat2, d = d, dstar = dstar, Fhat = Fhat)
 }
 
+#' Function to get beta_0 estiamte
+#' @noRd
 #' @export
 getb0 <- function(dat) {
     dat0 <- subset(dat, m > 0)
@@ -137,29 +155,31 @@ getb0 <- function(dat) {
         ## Solve the induced smoothing version first, then un-smoothed
         tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optimize(f = Cn2, interval = c(-10, 10))
-        if (tmp1$value < tmp2$objective) bhat1 <- tmp1$par
-        else bhat1 <- tmp2$minimum
+        if (tmp1$value < tmp2$objective) bhat1 <- tmp1$par %% (2 * pi)
+        else bhat1 <- tmp2$minimum %% (2 * pi)
         ## bhat1 is smooth version, bhat2 is unsmooth version
         tmp1 <- spg(par = bhat1, fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optimize(f = Cn, interval = c(bhat1 - pi/2, bhat1 + pi/2))
-        if (tmp1$value < tmp2$objective) bhat2 <- tmp1$par
-        else bhat2 <- tmp2$minimum
+        tmp2 <- optimize(f = Cn, interval = c(bhat1 - pi / 2, bhat1 + pi / 2))
+        if (tmp1$value < tmp2$objective) bhat2 <- tmp1$par %% (2 * pi)
+        else bhat2 <- tmp2$minimum %% (2 * pi)
     }
     if (p > 2) {
         tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Cn2)
-        if (tmp1$value < tmp2$value) bhat1 <- tmp1$par
-        else bhat1 <- tmp2$par
+        if (tmp1$value < tmp2$value) bhat1 <- tmp1$par %% (2 * pi)
+        else bhat1 <- tmp2$par %% (2 * pi)
         tmp1 <- spg(par = bhat1, fn = Cn, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optim(par = bhat1, fn = Cn)
-        if (tmp1$value < tmp2$value) bhat2 <- tmp1$par
-        else bhat2 <- tmp2$par
+        if (tmp1$value < tmp2$value) bhat2 <- tmp1$par %% (2 * pi)
+        else bhat2 <- tmp2$par %% (2 * pi)
     }
     bhat1 <- cumprod(c(1, sin(bhat1))) * c(cos(bhat1), 1)
     bhat2 <- cumprod(c(1, sin(bhat2))) * c(cos(bhat2), 1)
     list(bhat1 = bhat1, bhat2 = bhat2)
 }
 
+#' Function to get kappa for testing H0: beta0 = 0
+#' @noRd
 #' @export
 getk0 <- function(dat, b) {
     dat0 <- subset(dat, m > 0)

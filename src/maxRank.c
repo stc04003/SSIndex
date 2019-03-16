@@ -56,7 +56,7 @@ void kappa(int *n, int *m, int *midx,
   result[0] = result[0] / n[0] / (n[0] - 1);
 }
 
-// Smooth rank equation??
+// Smooth rank equation
 double get_rikjl(double *X, double *sigma,
 		 int *N, int *p, int ik_idx, int jl_idx) {
   double *xdif = Calloc(*p, double);
@@ -102,4 +102,21 @@ void rankSmooth(int *n, int *p, int *m, int *midx,
     }
   }
   result[0] = result[0] / *n / (*n - 1);
+}
+
+
+void shapeEqSmooth(int *n, int *p, double *xr,
+		   double *xx, double *sigma, 
+		   double *mFhat, double *result) {
+  int i, j;
+  double rijkl;
+  for (i = 0; i < *n; i++) {
+    for (j = 0; j < *n; j++) {
+      rijkl = 0;
+      rijkl = get_rikjl(xx, sigma, n, p, i, j);
+      if (rijkl != 0) {
+	result[0] += pnorm(sqrt(n[0]) * (xr[i] - xr[j]) / rijkl, 0.0, 1.0, 1, 0) * mFhat[i];
+      }
+    }
+  }
 }

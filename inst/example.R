@@ -453,3 +453,14 @@ xtable(cbind(colMeans(f12)[1:4], apply(f12, 2, sd)[1:4],
              colMeans(f32)[1:4], apply(f32, 2, sd)[1:4]), digits = 3)
 
  
+
+
+
+
+set.seed(21)
+dat <- simDat(100, "M2", FALSE)
+gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    data = dat, shp.ind = FALSE)
+## -0.6355681 -0.7720448
+
+debug(gsm)

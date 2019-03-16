@@ -12,18 +12,20 @@ extern void kappa(void *, void *, void *, void *, void *, void *, void *);
 extern void rank(void *, void *, void *, void *, void *, void *, void *);
 extern void rankSmooth(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void shapeEq(void *, void *, void *, void *);
+extern void shapeEqSmooth(void *, void *, void *, void *, void *, void *, void *);
 extern void shapeFun(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void shapeFun2(void *, void *, void *, void *, void *, void *, void *, void *, void *);
 
 static const R_CMethodDef CEntries[] = {
-    {"DouglasAn",  (DL_FUNC) &DouglasAn,   9},
-    {"DouglasUn",  (DL_FUNC) &DouglasUn,   8},
-    {"kappa",      (DL_FUNC) &kappa,       7},
-    {"rank",       (DL_FUNC) &rank,        7},
-    {"rankSmooth", (DL_FUNC) &rankSmooth, 10},
-    {"shapeEq",    (DL_FUNC) &shapeEq,     4},
-    {"shapeFun",   (DL_FUNC) &shapeFun,   10},
-    {"shapeFun2",  (DL_FUNC) &shapeFun2,   9},
+    {"DouglasAn",     (DL_FUNC) &DouglasAn,      9},
+    {"DouglasUn",     (DL_FUNC) &DouglasUn,      8},
+    {"kappa",         (DL_FUNC) &kappa,          7},
+    {"rank",          (DL_FUNC) &rank,           7},
+    {"rankSmooth",    (DL_FUNC) &rankSmooth,    10},
+    {"shapeEq",       (DL_FUNC) &shapeEq,        4},
+    {"shapeEqSmooth", (DL_FUNC) &shapeEqSmooth,  7},
+    {"shapeFun",      (DL_FUNC) &shapeFun,      10},
+    {"shapeFun2",     (DL_FUNC) &shapeFun2,      9},
     {NULL, NULL, 0}
 };
 

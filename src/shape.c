@@ -82,6 +82,7 @@ void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
   }
 }
 
+// return the estimating equation for \gamma_0
 void shapeEq(int *n, double *xr, double *mFhat, double *result) {
   int i, j;
   for (i = 0; i < *n; i++) {
