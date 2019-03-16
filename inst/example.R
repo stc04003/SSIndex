@@ -178,10 +178,10 @@ do2 <- function(n, model, B = 200, frailty = FALSE) {
     c(fit$b0, fit$r0, fit.indep$r0)
 }
 
-system.time(print(do(100, "M1", B = 50)))
-do(50, "M4", B = 50)
-do2(100, "M1", B = 50)
-do2(50, "M4", B = 50)
+system.time(print(do(100, "M1", TRUE)))
+do(50, "M4", FALSE)
+do2(100, "M1", FALSE)
+do2(50, "M4", FALSE)
 
 cl <- makePSOCKcluster(8)
 cl <- makePSOCKcluster(16)

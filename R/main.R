@@ -140,8 +140,8 @@ getb0 <- function(dat) {
         if (tmp1$value < tmp2$objective) bhat1 <- tmp1$par
         else bhat1 <- tmp2$minimum
         ## bhat1 is smooth version, bhat2 is unsmooth version
-        tmp1 <- spg(par = acos(bhat1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optimize(f = Cn, interval = c(acos(bhat1) - pi/2, acos(bhat1) + pi/2))
+        tmp1 <- spg(par = bhat1, fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optimize(f = Cn, interval = c(bhat1 - pi/2, bhat1 + pi/2))
         if (tmp1$value < tmp2$objective) bhat2 <- tmp1$par
         else bhat2 <- tmp2$minimum
     }
@@ -150,8 +150,8 @@ getb0 <- function(dat) {
         tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Cn2)
         if (tmp1$value < tmp2$value) bhat1 <- tmp1$par
         else bhat1 <- tmp2$par
-        tmp1 <- spg(par = acos(bhat1), fn = Cn, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = acos(bhat1), fn = Cn)
+        tmp1 <- spg(par = bhat1, fn = Cn, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = bhat1, fn = Cn)
         if (tmp1$value < tmp2$value) bhat2 <- tmp1$par
         else bhat2 <- tmp2$par
     }
