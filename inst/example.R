@@ -131,8 +131,8 @@ do <- function(n, model, frailty = FALSE) {
     dat <- simDat(n, model, frailty)
     fit <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
                data = dat, shp.ind = FALSE)
-    fit.indep <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
-                     data = dat, shp.ind = TRUE)
+    ## fit.indep <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    ##                  data = dat, shp.ind = TRUE)
     bi <- seq(0, 2 * pi, length = 100)
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
@@ -143,10 +143,11 @@ do <- function(n, model, frailty = FALSE) {
         dat0$id <- rep(1:n, mm[ind] + 1)
         fit0 <- gsm(reSurv(time1 = t, id = id, event = event, status = status) ~ x1 + x2,
                     data = dat0, shp.ind = FALSE)
-        fit1 <- gsm(reSurv(time1 = t, id = id, event = event, status = status) ~ x1 + x2,
-                    data = dat0, shp.ind = TRUE)
+        ## fit1 <- gsm(reSurv(time1 = t, id = id, event = event, status = status) ~ x1 + x2,
+        ##             data = dat0, shp.ind = TRUE)
         c(max(sapply(1:length(bi), function(x) getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])),
-          fit0$b0, fit0$r0, fit1$b0, fit1$r0)
+          fit0$b0, fit0$b00, fit0$r0, fit0$r00)
+          ## fit0$b0, fit0$r0, fit1$b0, fit1$r0)
     }
     tmp <- replicate(B, getBootk(dat))
     ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0? (1 = reject),
@@ -154,12 +155,12 @@ do <- function(n, model, frailty = FALSE) {
     ## (6:7) \hat\gamma under independence,
     ## (8:9) bootstrap sd for \hat\beta, (10:11) bootstrap sd for \hat\gamma
     ## (12:13) bootstrap sd for \hat\gamma; these assumes indep.
-    c(fit$b0,
-      1 * (max(k0) > quantile(tmp[1,], .95)), fit$r0, fit.indep$r0,
+    c(fit$b0, fit$b00, fit$r0, fit$r00, 
       sqrt(diag(var(t(tmp[2:3,])))),
       sqrt(diag(var(t(tmp[4:5,])))),
-      ## sqrt(diag(var(t(tmp[6:7,])))),
-      sqrt(diag(var(t(tmp[8:9,])))))
+      sqrt(diag(var(t(tmp[6:7,])))),
+      sqrt(diag(var(t(tmp[8:9,])))), 
+      1 * (max(k0) > quantile(tmp[1,], .95)))
 }
 
 do2 <- function(n, model, B = 200, frailty = FALSE) {
