@@ -185,3 +185,20 @@ void tauN(int *n, int *m, int *midx,
   Free(e1);
   Free(e2);
 }
+
+void kappa2(int *n, double *xb, double *mFhat, double *result) {
+  int i, j;
+  for (i = 0; i < *n; i++) {
+    for (j = 0; j < *n; j++) {
+      if (i != j) {
+	if (xb[i] > xb[j]) {
+	  result[0] += mFhat[i] - mFhat[j];
+	}
+	if (xb[i] <= xb[j]) {
+	  result[0] += mFhat[j] - mFhat[i];	  
+	}
+      }
+    }
+  }
+  result[0] = result[0] / n[0] / (n[0] - 1);
+}

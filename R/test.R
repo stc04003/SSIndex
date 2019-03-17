@@ -52,6 +52,7 @@ getk <- function(dat, b) {
              result = double(1), PACKAGE = "GSM")$result
     return(K0)
 }
+
 #' @export
 boot.k <- function(dat2, b) {
     n2 <- length(unique(dat2$id))

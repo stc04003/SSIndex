@@ -95,7 +95,8 @@ simDat <- function(n, model, frailty = FALSE) {
 #' @keywords internal
 Lam.f <- function(t, r, b, model, zz){
     if (model == "M1") return(zz * (2 * log(1 + t) * exp(r)))
-    if (model == "M2") return(zz * (exp(t / 10) * 10 + t * b - 10))
+    ## if (model == "M2") return(zz * (exp(t / 10) * 10 + t * b - 10))
+    if (model == "M2") return(zz * (exp(t / 10) * 1 + t * b - 1))
     if (model == "M3") return(zz * ((1 - exp(-t * exp(b) / 2)) * 2 * exp(-b)))
     if (model == "M4") return(zz * (pbeta(t, 2, 1 + exp(b)) * exp(r)))
     if (model == "M5") return(zz * (10 * (1 + t) ^ (exp(b) / 5) - 10))

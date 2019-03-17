@@ -68,7 +68,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
             bhat1 <- tmp$bhat1
             bhat2 <- tmp$bhat2
         }
-        else bhat1 <- bhat2 <- double(2)
+        else bhat1 <- bhat2 <- double(p)
     }
     ## which bhat to use
     bhat <- bhat2
@@ -96,7 +96,6 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
             as.double(diag(p)), as.double(mm / Fhat),
             result = double(1), PACKAGE = "GSM")$result        
     }
-    
     if (p <= 2) {
         tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optimize(f = Sn2, interval = c(-10, 10))
@@ -119,8 +118,6 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     }
     rhat1 <- cumprod(c(1, sin(rhat1))) * c(cos(rhat1), 1)
     rhat2 <- cumprod(c(1, sin(rhat2))) * c(cos(rhat2), 1)
-    ## rhat <- rhat / sqrt(sum(rhat^2))
-    ## rhat <- optimize(f = Sn, interval = c(-10, 10))$minimum
     list(b0 = bhat2, r0 = rhat1, b00 = bhat1, r00 = rhat2, d = d, dstar = dstar, Fhat = Fhat)
 }
 
@@ -179,6 +176,7 @@ getb0 <- function(dat) {
 }
 
 #' Function to get kappa for testing H0: beta0 = 0
+#' @importFrom dplyr filter
 #' @noRd
 #' @export
 getk0 <- function(dat, b) {
@@ -189,11 +187,30 @@ getk0 <- function(dat, b) {
     tij <- subset(dat0, event == 1)$t
     yi <- subset(dat0, event == 0)$t
     midx <- c(0, cumsum(mm)[-length(mm)])
-    X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
+    X <- as.matrix(dat0 %>% filter(event == 0) %>% select(starts_with("x")))
+    ## X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
     Cn <- function(b) {
         .C("kappa", as.integer(n), as.integer(mm), as.integer(midx),
             as.double(tij), as.double(yi), as.double(X %*% b),
             result = double(1), PACKAGE = "GSM")$result
     }
     Cn(b)
+}
+
+#' Function to get kappa for testing H0: beta0 = 0 & gamma0 = 0
+#' @noRd
+#'
+#' @importFrom dplyr select
+#' @importFrom tidyselect starts_with
+#' @export
+getk02 <- function(dat, b, Fhat) {
+    mm <- aggregate(event ~ id, dat, sum)[,2]
+    dat0 <- subset(dat, event < 1)
+    n <- nrow(dat0)
+    rownames(dat0) <- NULL
+    dat0$id <- 1:n
+    X <- as.matrix(dat0 %>% select(starts_with("x")))
+    ## subset(dat0, select = c(x1, x2)))
+    .C("kappa2", as.integer(n), as.double(X %*% b), as.double(mm / Fhat),
+       result = double(1), PACKAGE = "GSM")$result
 }
