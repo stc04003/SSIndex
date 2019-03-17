@@ -195,6 +195,8 @@ runPara <- function(model, n, frailty) {
     eval(parse(text = paste(obj, " <- NULL")))
     toRun <- paste(obj, " <- t(matrix(unlist(parLapply(NULL, 1:500, function(z) do(",
                    n, ",'", model, "',", frailty, "))), 13))", sep = "")
+    ## toRun <- paste(obj, " <- parSapply(NULL, 1:500, function(z) do(",
+    ##                n, ",'", model, "',", frailty, "))", sep = "")
     ptm <- proc.time()
     eval(parse(text = toRun))
     print(proc.time() - ptm)
@@ -464,3 +466,14 @@ gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
 ## -0.6355681 -0.7720448
 
 debug(gsm)
+
+dat <- simDat(100, "M5", FALSE)
+gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    data = dat, shp.ind = FALSE)
+
+do2(100, "M5")
+
+foo <- parSapply(NULL, 1:200, FUN = function(z) do2(100, "M5", FALSE))
+foo2 <- parSapply(NULL, 1:200, FUN = function(z) do2(200, "M5", FALSE))
+
+stopCluster(cl)

@@ -45,16 +45,16 @@ simDat <- function(n, model, frailty = FALSE) {
         x0 <- 100
         if (frailty) zz <- rgamma(1, 1, 1)
         else zz <- 1
-        if (model %in% c("M1", "M2", "M3", "M4")) {
+        if (model %in% c("M1", "M2", "M3", "M4", "M5")) {
             while (abs(x0) > 1 ) {
                 x <- mvrnorm(1, c(0,0), diag(2))
                 x0 <-  sum(x * beta0)
             }
         }
-        if (model %in% c("M21", "M22", "M23", "M24")) 
+        if (model %in% c("M21", "M22", "M23", "M24", "M25")) 
             x <- c(sample(0:1, 1), runif(1, -1, 1))
-        if (model %in% c("M31", "M32", "M33", "M34"))         
-        x <- c(runif(1, -1, 1), rexp(1))
+        if (model %in% c("M31", "M32", "M33", "M34", "M35"))
+            x <- c(runif(1, -1, 1), rexp(1))
         if (model %in% c("M4", "M24", "M34")) tau <- 1
         else tau <- 10
         y <- min(rexp(1, zz / (10 * (1 + abs(x[1])))), tau)
@@ -96,8 +96,9 @@ simDat <- function(n, model, frailty = FALSE) {
 Lam.f <- function(t, r, b, model, zz){
     if (model == "M1") return(zz * (2 * log(1 + t) * exp(r)))
     if (model == "M2") return(zz * (exp(t / 10) * 10 + t * b - 10))
-    if (model == "M3") return(zz * ((1 - exp(-t * exp(b))) * exp(-b)))
+    if (model == "M3") return(zz * ((1 - exp(-t * exp(b) / 2)) * 2 * exp(-b)))
     if (model == "M4") return(zz * (pbeta(t, 2, 1 + exp(b)) * exp(r)))
+    if (model == "M5") return(zz * (10 * (1 + t) ^ (exp(b) / 5) - 10))
     ## Old settings, under Pico's draft
     ## if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))
     ## if (model == "M2") return((exp(t / 10) * 10 + t * b - 10) * exp(r) / 2)
