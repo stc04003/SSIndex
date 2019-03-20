@@ -18,7 +18,7 @@ do <- function(n, model, frailty = FALSE) {
                data = dat, shp.ind = FALSE)
     bi <- seq(0, 2 * pi, length = 100)
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
-    k02 <- sapply(bi, function(x) getk02(dat, c(cos(x), sin(x)), fit$Fhat))
+    k02 <- sapply(bi, function(x) getk02(dat, c(cos(x), sin(x)), fit$Fhat0))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     n <- length(unique(dat$id))
     getBootk <- function(dat) {
@@ -31,7 +31,7 @@ do <- function(n, model, frailty = FALSE) {
           max(sapply(1:length(bi), function(x)
               getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])),
           max(sapply(1:length(bi), function(x)
-              getk02(dat0, c(cos(bi[x]), sin(bi[x])), fit$Fhat) - k02[x])))
+              getk02(dat0, c(cos(bi[x]), sin(bi[x])), fit0$Fhat0) - k02[x])))
     }
     tmp <- replicate(B, getBootk(dat))
     ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0? (1 = reject),
@@ -45,7 +45,7 @@ do <- function(n, model, frailty = FALSE) {
       sqrt(diag(var(t(tmp[5:6,])))),
       sqrt(diag(var(t(tmp[7:8,])))), 
       1 * (max(k0) > quantile(tmp[9,], .95)),
-      1 * (max(k0) > quantile(tmp[10,], .95)))
+      1 * (max(k02) > quantile(tmp[10,], .95)))
 }
 
 do2 <- function(n, model, B = 200, frailty = FALSE) {
@@ -133,6 +133,10 @@ makeTab2 <- function(dat) {
 ##################
 ## Test hypothesis
 
+n <- 100
+model <- "M2"
+frailty  <- FALSE
+
 ## March 17, 2019
 do <- function(n, model, frailty = FALSE) {
     B <- 200
@@ -142,20 +146,20 @@ do <- function(n, model, frailty = FALSE) {
     fit <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
                data = dat, shp.ind = FALSE)
     bi <- seq(0, 2 * pi, length = 100)
-    k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
-    k02 <- sapply(bi, function(x) getk02(dat, c(cos(x), sin(x)), fit$Fhat))
+    k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))    
+    k02 <- sapply(bi, function(x) getk02(dat, c(cos(x), sin(x)), fit$Fhat0))
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     n <- length(unique(dat$id))
     getBootk <- function(dat) {
         ind <- sample(1:n, replace = TRUE)
         dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
         dat0$id <- rep(1:n, mm[ind] + 1)
-        fit0 <- gsm(reSurv(time1 = t, id = id, event = event, status = status) ~ x1 + x2,
-                    data = dat0, shp.ind = FALSE)
+        fit0 <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+                    data = dat0, shp.ind = FALSE)        
         c(max(sapply(1:length(bi), function(x)
-            getk02(dat0, c(cos(bi[x]), sin(bi[x])), fit$Fhat) - k02[x])),
+            getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])),
           max(sapply(1:length(bi), function(x)
-            getk02(dat0, c(cos(bi[x]), sin(bi[x])), fit$Fhat0) - k02[x])))
+            getk02(dat0, c(cos(bi[x]), sin(bi[x])), fit0$Fhat0) - k02[x])))
     }
     tmp <- replicate(B, getBootk(dat))
     c(1 * (max(k0) > quantile(tmp[1,], .95)),
@@ -170,5 +174,6 @@ setDefaultCluster(cl)
 invisible(clusterExport(NULL, 'do'))
 invisible(clusterEvalQ(NULL, library(GSM)))
 invisible(clusterEvalQ(NULL, library(reReg)))
-f <- parSapply(NULL, 1:100, function(z) do(100, "M2"))
+f <- parSapply(NULL, 1:50, function(z) do(100, "M2"))
 stopCluster(cl)
+

@@ -196,12 +196,9 @@ getk0 <- function(dat, b) {
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(dat0 %>% filter(event == 0) %>% select(starts_with("x")))
     ## X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
-    Cn <- function(b) {
-        .C("kappa", as.integer(n), as.integer(mm), as.integer(midx),
-            as.double(tij), as.double(yi), as.double(X %*% b),
-            result = double(1), PACKAGE = "GSM")$result
-    }
-    Cn(b)
+    .C("kappa", as.integer(n), as.integer(mm), as.integer(midx),
+       as.double(tij), as.double(yi), as.double(X %*% b),
+       result = double(1), PACKAGE = "GSM")$result
 }
 
 #' Function to get kappa for testing H0: beta0 = 0 & gamma0 = 0
