@@ -1,6 +1,6 @@
 Package: GSM
 Title: Estimating shape and size indexes for recurrent event 
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Authors@R: person("Steven", "Chiou", email = "schiou@utdallas.edu", role = c("aut", "cre"))
 Description: This package implements functions and simulations in the manuscript "Estimating shape and size indexes for recurrent events".
 Depends: R (>= 3.4.0)
