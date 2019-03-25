@@ -12,8 +12,11 @@ load("dat.SOT.RData")
 base.SOT <- dat.SOT[cumsum(lapply(with(dat.SOT, split(id, id)), length)),]
 ## scale age
 base.SOT$scaleAge <- scale(base.SOT$age)
+base.SOT$age01 <- 1 * (base.SOT$age > 65)
+
 ## put the scaled age back
 dat.SOT$scaleAge <- base.SOT$scaleAge[dat.SOT$id]
+dat.SOT$age01 <- base.SOT$age01[dat.SOT$id]
 
 ## event plots
 with(dat.SOT, plot(reSurv(Time, id, event, status))) ## Only has 6 death
@@ -24,6 +27,7 @@ with(dat.SOT, plotEvents(reSurv(Time, id, event, status) ~ race))
 ############################################################################################
 
 dim(base.SOT)
+head(dat.SOT)
 
 ## median follow-up times in days
 survfit(Surv(Time, rep(1, nrow(base.SOT))) ~ 1, data = base.SOT)
@@ -44,6 +48,15 @@ summary(base.SOT$race)
 ## HLA
 table(base.SOT$HLA.incomp)
 summary(base.SOT$HLA.incomp)
+
+
+###############################################################################################
+## Analysis with reReg (Sinica paper)
+###############################################################################################
+
+gsm(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp, data = dat.SOT)
+    
+e
 
 ###############################################################################################
 ## Analysis with reReg (Sinica paper)
@@ -84,3 +97,4 @@ summary(reReg(reSurv(Time, id, event, status) ~ scaleAge + I(scaleAge^2) + race 
 
 summary(reReg(reSurv(Time, id, event, status) ~ scaleAge + I(scaleAge^2) + race + HLA.incomp + scaleAge:race + scaleAge:HLA.incomp,
               data = dat.SOT, method = "sc.XCYH", se = "resampling", control = list(B = 500)))
+

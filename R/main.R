@@ -114,8 +114,9 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
         else rhat2 <- tmp2$minimum %% (2 * pi)
     }
     if (p > 2) {
-        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Sn2)
+        tmp1 <- spg(par = rep(acos(1 / sqrt(p)), p - 1),
+                    fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = rep(acos(1 / sqrt(p)), p - 1), fn = Sn2)
         if (tmp1$value < tmp2$value) rhat1 <- tmp1$par %% (2 * pi)
         else rhat1 <- tmp2$par %% (2 * pi)
         tmp1 <- spg(par = rhat1, fn = Sn, quiet = TRUE, control = list(trace = FALSE))
@@ -168,8 +169,9 @@ getb0 <- function(dat) {
         else bhat2 <- tmp2$minimum %% (2 * pi)
     }
     if (p > 2) {
-        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = acos(1 / sqrt(p)), fn = Cn2)
+        tmp1 <- spg(par = rep(acos(1 / sqrt(p)), p - 1),
+                    fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp2 <- optim(par = rep(acos(1 / sqrt(p)), p - 1), fn = Cn2)
         if (tmp1$value < tmp2$value) bhat1 <- tmp1$par %% (2 * pi)
         else bhat1 <- tmp2$par %% (2 * pi)
         tmp1 <- spg(par = bhat1, fn = Cn, quiet = TRUE, control = list(trace = FALSE))
