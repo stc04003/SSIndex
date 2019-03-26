@@ -98,7 +98,7 @@ invisible(clusterExport(NULL, c("n", "mm", "dat.SOT", "bi", "k0", "k02")))
 invisible(clusterEvalQ(NULL, library(GSM)))
 invisible(clusterEvalQ(NULL, library(reReg)))
 set.seed(1)
-system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootk(dat.SOT))) ## 450 seconds for B = 400; 
+system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootk(dat.SOT))) ## 450 seconds for B = 400; 2202 seconds for B = 1000
 stopCluster(cl)
 
 1 * (max(k0) > quantile(tmp[13,], .95)) ## 0
@@ -110,6 +110,15 @@ sqrt(diag(var(t(tmp[1:3 + 3 * 2,]))))
 sqrt(diag(var(t(tmp[1:3 + 3 * 3,]))))
 mean(max(k0) > tmp[13,]) ## .760
 mean(max(k02) > tmp[14,]) ## .955
+
+## > sqrt(diag(var(t(tmp[1:3,]))))
+## [1] 0.4034014 0.4172543 0.4465839
+## > sqrt(diag(var(t(tmp[1:3 + 3,]))))
+## [1] 0.4035078 0.4146305 0.4365111
+## > sqrt(diag(var(t(tmp[1:3 + 3 * 2,]))))
+## [1] 0.12219159 0.21317145 0.03398074
+## > sqrt(diag(var(t(tmp[1:3 + 3 * 3,]))))
+## [1] 0.12968396 0.21964168 0.04322522
 
 ## tmp <- replicate(B, getBootk(dat))
 
