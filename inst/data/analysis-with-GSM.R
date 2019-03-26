@@ -3,6 +3,7 @@
 ## SOT data with kidney transplant
 ############################################################################################
 
+library(parallel)
 library(GSM)
 library(reReg)
 library(survival)
@@ -13,10 +14,12 @@ base.SOT <- dat.SOT[cumsum(lapply(with(dat.SOT, split(id, id)), length)),]
 ## scale age
 base.SOT$scaleAge <- scale(base.SOT$age)
 base.SOT$age01 <- 1 * (base.SOT$age > 65)
+base.SOT$m <- aggregate(event ~ id, dat.SOT, sum)[,2]
 
 ## put the scaled age back
 dat.SOT$scaleAge <- base.SOT$scaleAge[dat.SOT$id]
 dat.SOT$age01 <- base.SOT$age01[dat.SOT$id]
+dat.SOT$m <- base.SOT$m[dat.SOT$id]
 
 ## event plots
 with(dat.SOT, plot(reSurv(Time, id, event, status))) ## Only has 6 death
@@ -54,8 +57,64 @@ summary(base.SOT$HLA.incomp)
 ## Analysis with reReg (Sinica paper)
 ###############################################################################################
 
-gsm(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp, data = dat.SOT)
-    
+fit <- gsm(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp, data = dat.SOT)
+
+## Custom function for this data set, need to generalize this later...
+dat.SOT2 <- dat.SOT
+names(dat.SOT2)[c(8, 6, 7)] <- c("x1", "x2", "x3")
+dat.SOT2 <- dat.SOT2[,c(1:5, 8, 6:7, 9:10)]
+head(dat.SOT2)
+
+bi <- as.matrix(expand.grid(seq(0, 2 * pi, length = 50), seq(0, 2 * pi, length = 50)))
+k0 <- sapply(1:NROW(bi), function(x) getk0(dat.SOT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))))
+k02 <- sapply(1:NROW(bi), function(x) getk02(dat.SOT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0))
+
+B <- 1000
+mm <- aggregate(event ~ id, dat.SOT, sum)[, 2]
+n <- length(unique(dat.SOT$id))
+getBootk <- function(dat.SOT) {
+    ind <- sample(1:n, replace = TRUE)
+    dat.SOT0 <- dat.SOT[unlist(sapply(ind, function(x) which(dat.SOT$id %in% x))),]
+    dat.SOT0$id <- rep(1:n, mm[ind] + 1)
+    rownames(dat.SOT0) <- NULL
+    fit0 <- gsm(reSurv(time1 = Time, id = id, event = event, status = status) ~ scaleAge + race + HLA.incomp,
+                data = dat.SOT0, shp.ind = FALSE)
+    names(dat.SOT0)[c(8, 6, 7)] <- c("x1", "x2", "x3")
+    dat.SOT0 <- dat.SOT0[,c(1:5, 8, 6:7, 9:10)]    
+    c(fit0$b0, fit0$b00, fit0$r0, fit0$r00,
+      max(sapply(1:NROW(bi), function(x)
+          getk0(dat.SOT0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x])),
+      max(sapply(1:NROW(bi), function(x)
+          getk02(dat.SOT0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit0$Fhat0) - k02[x])))
+}
+
+set.seed(1)    
+system.time(print(getBootk(dat.SOT)))
+
+cl <- makePSOCKcluster(16)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, "getBootk"))
+invisible(clusterExport(NULL, c("n", "mm", "dat.SOT", "bi", "k0", "k02")))
+invisible(clusterEvalQ(NULL, library(GSM)))
+invisible(clusterEvalQ(NULL, library(reReg)))
+set.seed(1)
+system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootk(dat.SOT))) ## 450 seconds for B = 400; 
+stopCluster(cl)
+
+1 * (max(k0) > quantile(tmp[13,], .95)) ## 0
+1 * (max(k02) > quantile(tmp[14,], .95)) ## 0
+
+sqrt(diag(var(t(tmp[1:3,]))))
+sqrt(diag(var(t(tmp[1:3 + 3,]))))
+sqrt(diag(var(t(tmp[1:3 + 3 * 2,]))))
+sqrt(diag(var(t(tmp[1:3 + 3 * 3,]))))
+mean(max(k0) > tmp[13,]) ## .760
+mean(max(k02) > tmp[14,]) ## .955
+
+## tmp <- replicate(B, getBootk(dat))
+
+system.time(print(getBootk(dat.SOT)))
+
 e
 
 ###############################################################################################
