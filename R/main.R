@@ -155,6 +155,13 @@ getb0 <- function(dat) {
             as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
             result = double(1), PACKAGE = "GSM")$result
     }
+    dCn2 <- function(b) {
+        b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
+        .C("drankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
+            as.double(diag(p)), 
+            as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
+            result = double(1), PACKAGE = "GSM")$result
+    }
     ## which one gives the absolution min?
     if (p <= 2) {
         ## Solve the induced smoothing version first, then un-smoothed

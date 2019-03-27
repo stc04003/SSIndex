@@ -2,7 +2,6 @@
 #include <Rmath.h>
 #include <math.h>
 
-
 // Smooth rank equation
 double get_rikjl(double *X, double *sigma,
 		 int *N, int *p, int ik_idx, int jl_idx) {
@@ -67,3 +66,32 @@ void shapeEqSmooth(int *n, int *p, double *xr,
     }
   }
 }
+
+void drankSmooth(int *n, int *p, int *m, int *midx,
+		 double *sigma, 
+		 double *tij, double *yi, double *xb, double *xx, double *result) {
+  int i, j, k, l; // id index
+  double rijkl;
+  for (i = 0; i < *n; i++) {
+    for (j = 0; j < *n; j++) {
+      if (i != j) {
+	for (k = 0; k < m[i]; k++) {
+	  if (tij[midx[i] + k] <= yi[j]) {
+	    for (l = 0; l < m[j]; l++) {
+	      if (tij[midx[j] + l] <= yi[i] && tij[midx[i] + k] > tij[midx[j] + l]) {
+		rijkl = 0;
+		rijkl = get_rikjl(xx, sigma, n, p, i, j);
+		// result[0] += pnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 1, 0);
+		if (rijkl != 0) {
+		  result[0] += sqrt(n[0]) * dnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 0) * ((xx[i] - xx[j]) / rijkl);
+		}
+	      }
+	    }
+	  } // end l
+	} // end if I(t_ik \le \min(Y_i, Y_j))
+      } // end k
+    }
+  }
+  result[0] = result[0] / *n / (*n - 1);
+}
+
