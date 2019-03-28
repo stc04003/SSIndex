@@ -16,7 +16,7 @@
 #' @export
 #' 
 
-gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
+gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NULL) {
     ## Extract vectors
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
@@ -39,7 +39,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
     ## assuming data is generated from simDat
     ## estimate \beta first
     if (is.logical(shp.ind) && !shp.ind) {
-        tmp <- getb0(dat)
+        tmp <- getb0(dat, bIni)
         bhat1 <- tmp$bhat1
         bhat2 <- tmp$bhat2
     }
@@ -58,13 +58,13 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
         ind <- sample(1:n)[1:round(n/2)]
         dat1 <- subset(dat, id %in% ind)
         dat2 <- subset(dat, !(id %in% ind))
-        tilde.b <- getb0(dat1)$bhat1
+        tilde.b <- getb0(dat1, bIni)$bhat1
         n2 <- length(unique(dat2$id))
         mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
         d <- getd(dat2, tilde.b)
         dstar <- replicate(B, boot.d(dat2, tilde.b))
         if (abs(d / sd(dstar)) > qnorm(.975)) {
-            tmp <- getb0(dat)
+            tmp <- getb0(dat, bIni)
             bhat1 <- tmp$bhat1
             bhat2 <- tmp$bhat2
         }
@@ -103,8 +103,14 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
             as.double(diag(p)), as.double(mm / Fhat),
             result = double(1), PACKAGE = "GSM")$result        
     }
+    if (is.null(rIni)) {
+        if (p <= 2) rIni <- acos(1 / sqrt(p))
+        else rIni <- rep(acos(1 / sqrt(p)), p - 1)
+    } else {
+        if (p <= 2) rIni <- acos(rIni[1])
+    }
     if (p <= 2) {
-        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp1 <- spg(par = rIni, fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optimize(f = Sn2, interval = c(-10, 10))
         if (tmp1$value < tmp2$objective) rhat1 <- tmp1$par %% (2 * pi)
         else rhat1 <- tmp2$minimum %% (2 * pi)
@@ -114,9 +120,9 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
         else rhat2 <- tmp2$minimum %% (2 * pi)
     }
     if (p > 2) {
-        tmp1 <- spg(par = rep(acos(1 / sqrt(p)), p - 1),
+        tmp1 <- spg(par = rIni,
                     fn = Sn2, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = rep(acos(1 / sqrt(p)), p - 1), fn = Sn2)
+        tmp2 <- optim(par = rIni, fn = Sn2)
         if (tmp1$value < tmp2$value) rhat1 <- tmp1$par %% (2 * pi)
         else rhat1 <- tmp2$par %% (2 * pi)
         tmp1 <- spg(par = rhat1, fn = Sn, quiet = TRUE, control = list(trace = FALSE))
@@ -132,7 +138,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100) {
 #' Function to get beta_0 estiamte
 #' @noRd
 #' @export
-getb0 <- function(dat) {
+getb0 <- function(dat, bIni) {
     dat0 <- subset(dat, m > 0)
     n <- length(unique(dat0$id))
     mm <- aggregate(event ~ id, dat0, sum)[,2]
@@ -151,7 +157,7 @@ getb0 <- function(dat) {
     Cn2 <- function(b) {
         b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
         -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
-            as.double(diag(p)), 
+            as.double(solve(t(X) %*% X)), ## as.double(diag(p)), 
             as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
             result = double(1), PACKAGE = "GSM")$result
     }
@@ -162,10 +168,16 @@ getb0 <- function(dat) {
             as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
             result = double(1), PACKAGE = "GSM")$result
     }
+    if (is.null(bIni)) {
+        if (p <= 2) bIni <- acos(1 / sqrt(p))
+        else bIni <- rep(acos(1 / sqrt(p)), p - 1)
+    } else {
+        if (p <= 2) bIni <- acos(bIni[1])
+    }    
     ## which one gives the absolution min?
     if (p <= 2) {
         ## Solve the induced smoothing version first, then un-smoothed
-        tmp1 <- spg(par = acos(1 / sqrt(p)), fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
+        tmp1 <- spg(par = bIni, fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
         tmp2 <- optimize(f = Cn2, interval = c(-10, 10))
         if (tmp1$value < tmp2$objective) bhat1 <- tmp1$par %% (2 * pi)
         else bhat1 <- tmp2$minimum %% (2 * pi)
@@ -176,9 +188,9 @@ getb0 <- function(dat) {
         else bhat2 <- tmp2$minimum %% (2 * pi)
     }
     if (p > 2) {
-        tmp1 <- spg(par = rep(acos(1 / sqrt(p)), p - 1),
+        tmp1 <- spg(par = bIni, 
                     fn = Cn2, quiet = TRUE, control = list(trace = FALSE))
-        tmp2 <- optim(par = rep(acos(1 / sqrt(p)), p - 1), fn = Cn2)
+        tmp2 <- optim(par = bIni, fn = Cn2)
         if (tmp1$value < tmp2$value) bhat1 <- tmp1$par %% (2 * pi)
         else bhat1 <- tmp2$par %% (2 * pi)
         tmp1 <- spg(par = bhat1, fn = Cn, quiet = TRUE, control = list(trace = FALSE))
