@@ -95,13 +95,14 @@ simDat <- function(n, model, frailty = FALSE) {
 #' @keywords internal
 Lam.f <- function(t, r, b, model, zz){
     if (model == "M1") return(zz * (2 * log(1 + t) * exp(r)))
-    if (model == "M2") return(zz * (2 * (1 + t)^2 + t * b)/ 200)
+    if (model == "M2") return(zz * (2 * log(1 + t) + t * exp(b)) / 2) 
+    ## if (model == "M2") return(zz * (2 * sqrt(1 + t) + t * exp(b) - 2) / 2)## okay with 7 events
     ## if (model == "M2") return(zz * (0.2 * t^2  + 0.2 * t * exp(b))) # works 
     ## if (model == "M2") return(zz * (0.5 * t^2  + 0.5 * t * exp(b))) # works but average 30 events / subject
     ## if (model == "M2") return(zz * (exp(t / 10) * 10 + t * exp(b) - 10)) # okay
     ## if (model == "M2") return(zz * (exp(t / 10) * 1 + t * exp(b) - 1))
     if (model == "M3") return(zz * ((1 - exp(-t * exp(b) / 2)) * 2 * exp(-b)))
-    if (model == "M4") return(zz * (pbeta(t, 2, 1 + exp(b)) * exp(r)))
+    if (model == "M4") return(zz * 4 * (pbeta(t, 2, 1 + exp(b)) * exp(r)))
     if (model == "M5") return(zz * (10 * (1 + t) ^ (exp(b) / 5) - 10))
     ## Old settings, under Pico's draft
     ## if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))
