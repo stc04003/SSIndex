@@ -102,7 +102,7 @@ set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootk(dat.SOT))) ## 450 seconds for B = 400; 2202 seconds for B = 1000
 stopCluster(cl)
 
-1 * (max(k0) > quantile(tmp[13,], .95)) ## 0
+1 * (max(k0) > quantile(tmp[13,], .95)) ## 0; don't reject H0
 1 * (max(k02) > quantile(tmp[14,], .95)) ## 0
 
 sqrt(diag(var(t(tmp[1:3,]))))
@@ -195,45 +195,34 @@ mean(max(k02) > tmp[14,]) ## .994
 ## > sqrt(diag(var(t(tmp[1:3 + 3 * 3,]))))
 ## [1] 0.13106275 0.17028238 0.08417492
 
-e
-
-###############################################################################################
-## Analysis with reReg (Sinica paper)
-## Tab 3, upper panel, SOT:
-###############################################################################################
-set.seed(1)
-## 0's as initial value
-fit.SOT0 <- reReg(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp,
-             data = dat.SOT, method = "sc.XCYH", se = "resampling", control = list(B = 500))
-summary(fit.SOT0)
 
 
-fit.SOT.HW <- reReg(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp,
-                data = dat.SOT, method = "cox.HW", se = "bootstrap", control = list(B = 500))
-summary(fit.SOT.HW)
 
-## HW as initial value
-fit.SOT2 <- reReg(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp,
-                  data = dat.SOT, method = "sc.XCYH", se = "resampling",
-                  control = list(B = 500, b0 = coef(fit.SOT.HW)[1:3]))
-summary(fit.SOT2)
+############################################################################################
+## March 30
+## Better to have shape/rate dependence
+## Load package and data from "SOT_kidney.RData"
+############################################################################################
 
-## Gehan weight for a and HW for b
-fit.SOT3 <- reReg(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp,
-                  data = dat.SOT, method = "sc.XCYH", se = "resampling",
-                  control = list(B = 500, b0 = coef(fit.SOT.HW)[1:3], eqType = "Gehan"))
-summary(fit.SOT3)
+library(parallel)
+library(GSM)
+library(reReg)
+library(survival)
 
-fit.SOT4 <- reReg(reSurv(Time, id, event, status) ~ scaleAge + race + HLA.incomp,
-                  data = dat.SOT, method = "sc.XCYH", se = "resampling",
-                  control = list(B = 500, a0 = coef(fit.SOT3)[1:3], b0 = coef(fit.SOT.HW)[1:3]))
-summary(fit.SOT4)
+load("SOT_kidney.RData")
+kid <- kid[complete.cases(kid),]
+mm <- aggregate(event ~ id, kid, sum)[, 2]
+kid$id <- rep(1:length(unique(kid$id)), mm + 1)
 
-## scale-age^2
+head(kid)
 
-summary(reReg(reSurv(Time, id, event, status) ~ scaleAge + I(scaleAge^2) + race + HLA.incomp,
-              data = dat.SOT, method = "sc.XCYH", se = "resampling", control = list(B = 500)))
+fit <- gsm(reSurv(Time, id, event, status) ~
+               scaleAge + race + HLA + CMV + diabetes + hypertension, data = kid)
 
-summary(reReg(reSurv(Time, id, event, status) ~ scaleAge + I(scaleAge^2) + race + HLA.incomp + scaleAge:race + scaleAge:HLA.incomp,
-              data = dat.SOT, method = "sc.XCYH", se = "resampling", control = list(B = 500)))
+summary(fit)
 
+b0 <- seq(0, 2 * pi, length = 50)
+bi <- as.matrix(expand.grid(b0, b0, b0, b0, b0))
+
+k0 <- sapply(1:NROW(bi), function(x) getk0(dat.SOT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))))
+k02 <- sapply(1:NROW(bi), function(x) getk02(dat.SOT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0))
