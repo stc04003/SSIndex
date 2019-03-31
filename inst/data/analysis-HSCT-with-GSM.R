@@ -33,9 +33,9 @@ fname <- reSurv(Time, id, event, status) ~ scaleAge + allo + race
 fit <- gsm(fname, data = dat.HSCT)
 
 ## Custom function for this data set, need to generalize this later...
-as.numeric(sapply(c("scaleAge", "allo", "race"), function(x) which(names(dat.HSCT2) == x)))
 
 dat.HSCT2 <- dat.HSCT
+as.numeric(sapply(c("scaleAge", "allo", "race"), function(x) which(names(dat.HSCT2) == x)))
 names(dat.HSCT2)[c(10, 7, 6)] <- c("x1", "x2", "x3")
 dat.HSCT2 <- dat.HSCT2[,c(1:5, 10, 7, 6, 8:9, 11:12)]
 head(dat.HSCT2)
@@ -149,11 +149,3 @@ max(k0)
 max(k02)
 summary(tmp[13,])
 summary(tmp[14,])
-
-
-
-set.seed(1)
-
-.C("kappa", as.integer(n), as.integer(mm), as.integer(midx), 
-   as.double(tij), as.double(yi), as.double(X %*% b), result = 0, 
-   PACKAGE = "GSM")$result
