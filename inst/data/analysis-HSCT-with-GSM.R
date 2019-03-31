@@ -111,8 +111,8 @@ getBootk <- function(dat.HSCT) {
     dat.HSCT0$id <- rep(1:n, mm[ind] + 1)
     rownames(dat.HSCT0) <- NULL
     fit0 <- gsm(fname, data = dat.HSCT0, shp.ind = FALSE)
-    names(dat.HSCT0)[c(10, 7, 8)] <- c("x1", "x2", "x3")
-    dat.HSCT0 <- dat.HSCT0[,c(1:5, 10, 7, 8, 6, 9, 11:12)]
+    names(dat.HSCT0)[c(11, 7, 8)] <- c("x1", "x2", "x3")
+    dat.HSCT0 <- dat.HSCT0[,c(1:4, 12, 11, 7, 8)]
     c(fit0$b0, fit0$b00, fit0$r0, fit0$r00,
       max(sapply(1:NROW(bi), function(x)
           getk0(dat.HSCT0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x])),
@@ -143,6 +143,17 @@ mean(max(k02) > tmp[14,])
 
 summary(k0)
 summary(k02)
+
+
+max(k0)
+max(k02)
 summary(tmp[13,])
 summary(tmp[14,])
 
+
+
+set.seed(1)
+
+.C("kappa", as.integer(n), as.integer(mm), as.integer(midx), 
+   as.double(tij), as.double(yi), as.double(X %*% b), result = 0, 
+   PACKAGE = "GSM")$result

@@ -212,8 +212,8 @@ getk0 <- function(dat, b) {
     n <- length(unique(dat0$id))
     mm <- aggregate(event ~ id, dat0, sum)[,2]
     dat0$id <- rep(1:n, mm + 1)
-    tij <- subset(dat0, event == 1)$t
-    yi <- subset(dat0, event == 0)$t
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(dat0 %>% filter(event == 0) %>% select(starts_with("x")))
     ## X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
