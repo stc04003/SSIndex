@@ -71,11 +71,11 @@ simDat <- function(n, model, frailty = FALSE) {
         m <- ifelse(inx > 0, inx - 1, 0)
         if (m > 0)  {
             tt <- invLam.f(cumsum(tmpt[1:m]), x_gamma, x_beta, model, zz)
-            tmp <- cbind(id = i, t = c(tt[order(tt)], y), m = m,
+            tmp <- cbind(id = i, Time = c(tt[order(tt)], y), m = m,
                          x1 = x[1], x2 = x[2], event = c(rep(1, length(tt)), 0),
                          status = c(rep(0, length(tt)), 1))
         } else {
-            tmp <- cbind(id = i, t = y, m = m, x1 = x[1], x2 = x[2], event = 0, status = 1)
+            tmp <- cbind(id = i, Time = y, m = m, x1 = x[1], x2 = x[2], event = 0, status = 1)
         }
         dat <- rbind(dat, tmp)
     }
