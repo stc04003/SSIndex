@@ -84,7 +84,7 @@ stopCluster(cl)
 
 
 ###############################################################################################
-## 
+## age01, allo, gender
 ###############################################################################################
 
 fname <- reSurv(Time, id, event, status) ~ age01 + allo + gender
@@ -450,3 +450,66 @@ mean(max(k0) > tmp[13,])
 ## [1] 0.95
 mean(max(k02) > tmp[14,])
 ## [1] 1
+
+
+###############################################################################################
+## age01, allo, gender, CMV
+###############################################################################################
+
+fname <- reSurv(Time, id, event, status) ~ allo + gender + CMVstatus + age01
+dat.HSCT <- dat.HSCT[complete.cases(dat.HSCT),]
+dat.HSCT$id <- rep(1:length(unique(dat.HSCT$id)), aggregate(event ~ id, dat.HSCT, sum)[, 2] + 1)
+
+fit <- gsm(fname, data = dat.HSCT)
+str(fit)
+
+## Custom function for this data set, need to generalize this later...
+
+dat.HSCT2 <- dat.HSCT
+as.numeric(sapply(c("age01", "allo", "gender", "CMVstatus"), function(x) which(names(dat.HSCT2) == x)))
+names(dat.HSCT2)[c(7:9, 11)] <- c("x1", "x2", "x3", "x4")
+dat.HSCT2 <- dat.HSCT2[,c(1:4, 7:9, 11, 12)]
+head(dat.HSCT2)
+
+bi <- as.matrix(expand.grid(seq(0, 2 * pi, length = 50), seq(0, 2 * pi, length = 50), seq(0, 2 * pi, length = 50)))
+k0 <- sapply(1:NROW(bi), function(x) getk0(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))))
+k02 <- sapply(1:NROW(bi), function(x) getk02(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0))
+max(k0)
+max(k02)
+
+B <- 1000
+mm <- aggregate(event ~ id, dat.HSCT, sum)[, 2]
+n <- length(unique(dat.HSCT$id))
+getBootk <- function(dat.HSCT) {
+    ind <- sample(1:n, replace = TRUE)
+    dat.HSCT0 <- dat.HSCT[unlist(sapply(ind, function(x) which(dat.HSCT$id %in% x))),]
+    dat.HSCT0$id <- rep(1:n, mm[ind] + 1)
+    rownames(dat.HSCT0) <- NULL
+    fit0 <- gsm(fname, data = dat.HSCT0, shp.ind = FALSE)
+    names(dat.HSCT0)[c(7:9, 11)] <- c("x1", "x2", "x3", "x4")
+    dat.HSCT0 <- dat.HSCT0[,c(1:4, 7:9, 11, 12)]
+    c(fit0$b0, fit0$b00, fit0$r0, fit0$r00,
+      max(sapply(1:NROW(bi), function(x)
+          getk0(dat.HSCT0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x])),
+      max(sapply(1:NROW(bi), function(x)
+          getk02(dat.HSCT0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit0$Fhat0) - k02[x])))
+}
+
+set.seed(1)    
+system.time(print(getBootk(dat.HSCT)))
+
+cl <- makePSOCKcluster(8)
+## cl <- makePSOCKcluster(16)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, "getBootk"))
+invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
+invisible(clusterEvalQ(NULL, library(GSM)))
+invisible(clusterEvalQ(NULL, library(reReg)))
+
+set.seed(1)
+system.time(tmp <- parSapply(NULL, 1:300, function(z) getBootk(dat.HSCT))) ## 
+stopCluster(cl)
+
+
+1 * (max(k0) > quantile(tmp[13,], .95)) 
+1 * (max(k02) > quantile(tmp[14,], .95)) 
