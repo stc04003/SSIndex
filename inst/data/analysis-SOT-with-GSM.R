@@ -213,16 +213,74 @@ load("SOT_kidney.RData")
 kid <- kid[complete.cases(kid),]
 mm <- aggregate(event ~ id, kid, sum)[, 2]
 kid$id <- rep(1:length(unique(kid$id)), mm + 1)
+kid$m <- unlist(aggregate(event ~ id, kid, function(x) rep(sum(x), length(x)))[,2])
 
 head(kid)
 
-fit <- gsm(reSurv(Time, id, event, status) ~
-               scaleAge + race + HLA + CMV + diabetes + hypertension, data = kid)
 
-summary(fit)
+fname <- reSurv(Time, id, event, status) ~ scaleAge + race + HLA + CMV ## + diabetes + hypertension
+fit <- gsm(fname, data = kid)
+str(fit)
+
 
 b0 <- seq(0, 2 * pi, length = 50)
-bi <- as.matrix(expand.grid(b0, b0, b0, b0, b0))
+bi <- as.matrix(expand.grid(b0, b0, b0))
 
-k0 <- sapply(1:NROW(bi), function(x) getk0(dat.SOT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))))
-k02 <- sapply(1:NROW(bi), function(x) getk02(dat.SOT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0))
+
+kid2 <- kid
+as.numeric(sapply(c("scaleAge", "race", "HLA", "CMV"), function(x) which(names(kid2) == x)))
+names(kid2)[5:8] <- c("x1", "x2", "x3", "x4")
+kid2 <- kid2[,c(1:4, 5:8, 11)]
+head(kid2)
+
+system.time(k0 <- sapply(1:NROW(bi), function(x)
+    getk0(kid2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
+system.time(k02 <- sapply(1:NROW(bi), function(x)
+    getk02(kid2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
+max(k0)
+max(k02)
+
+
+B <- 1000
+mm <- aggregate(event ~ id, kid, sum)[, 2]
+n <- length(unique(kid$id))
+getBootk <- function(kid) {
+    ind <- sample(1:n, replace = TRUE)
+    kid0 <- kid[unlist(sapply(ind, function(x) which(kid$id %in% x))),]
+    kid0$id <- rep(1:n, mm[ind] + 1)
+    rownames(kid0) <- NULL
+    fit0 <- gsm(fname, data = kid0, shp.ind = FALSE)
+    names(kid0)[c(5:8)] <- c("x1", "x2", "x3", "x4")
+    kid0 <- kid0[,c(1:4, 5:8, 11)]
+    c(fit0$b0, fit0$b00, fit0$r0, fit0$r00,
+      max(sapply(1:NROW(bi), function(x)
+          getk0(kid0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x])),
+      max(sapply(1:NROW(bi), function(x)
+          getk02(kid0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit0$Fhat0) - k02[x])))
+}
+
+cl <- makePSOCKcluster(8)
+## cl <- makePSOCKcluster(16)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, "getBootk"))
+invisible(clusterExport(NULL, c("n", "mm", "kid", "bi", "k0", "k02", "fname")))
+invisible(clusterEvalQ(NULL, library(GSM)))
+invisible(clusterEvalQ(NULL, library(reReg)))
+
+set.seed(1)
+system.time(tmp <- parSapply(NULL, 1:200, function(z) getBootk(kid))) ## 
+stopCluster(cl)
+
+1 * (max(k0) > quantile(tmp[13,], .95)) ## 1
+1 * (max(k02) > quantile(tmp[14,], .95)) ## 0
+
+
+mean(max(k0) > tmp[13,]) ## 1
+mean(max(k02) > tmp[14,]) ## 0
+
+sqrt(diag(var(t(tmp[1:3,]))))
+sqrt(diag(var(t(tmp[1:3 + 3,]))))
+sqrt(diag(var(t(tmp[1:3 + 3 * 2,]))))
+sqrt(diag(var(t(tmp[1:3 + 3 * 3,]))))
+mean(max(k0) > tmp[13,]) ## .760
+mean(max(k02) > tmp[14,]) ## .955

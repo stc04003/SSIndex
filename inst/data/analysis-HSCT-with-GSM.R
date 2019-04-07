@@ -24,6 +24,7 @@ dat.HSCT$age01 <- base.HSCT$age01[dat.HSCT$id]
 dat.HSCT$m <- base.HSCT$m[dat.HSCT$id]
 ## make gender 0-1
 dat.HSCT$gender <- dat.HSCT$gender - 1
+head(dat.HSCT)
 
 ###############################################################################################
 ## Analysis with scaled age
@@ -41,8 +42,10 @@ dat.HSCT2 <- dat.HSCT2[,c(1:5, 10, 7, 6, 8:9, 11:12)]
 head(dat.HSCT2)
 
 bi <- as.matrix(expand.grid(seq(0, 2 * pi, length = 50), seq(0, 2 * pi, length = 50)))
-k0 <- sapply(1:NROW(bi), function(x) getk0(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))))
-k02 <- sapply(1:NROW(bi), function(x) getk02(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0))
+system.time(k0 <- sapply(1:NROW(bi), function(x)
+    getk0(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
+system.time(k02 <- sapply(1:NROW(bi), function(x)
+    getk02(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
 
 
 B <- 1000
@@ -471,9 +474,13 @@ names(dat.HSCT2)[c(7:9, 11)] <- c("x1", "x2", "x3", "x4")
 dat.HSCT2 <- dat.HSCT2[,c(1:4, 7:9, 11, 12)]
 head(dat.HSCT2)
 
-bi <- as.matrix(expand.grid(seq(0, 2 * pi, length = 50), seq(0, 2 * pi, length = 50), seq(0, 2 * pi, length = 50)))
-k0 <- sapply(1:NROW(bi), function(x) getk0(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))))
-k02 <- sapply(1:NROW(bi), function(x) getk02(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0))
+bi <- as.matrix(expand.grid(seq(0, 2 * pi, length = 50),
+                            seq(0, 2 * pi, length = 50),
+                            seq(0, 2 * pi, length = 50)))
+system.time(k0 <- sapply(1:NROW(bi), function(x)
+    getk0(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
+system.time(k02 <- sapply(1:NROW(bi), function(x)
+    getk02(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
 max(k0)
 max(k02)
 
@@ -507,9 +514,9 @@ invisible(clusterEvalQ(NULL, library(GSM)))
 invisible(clusterEvalQ(NULL, library(reReg)))
 
 set.seed(1)
-system.time(tmp <- parSapply(NULL, 1:300, function(z) getBootk(dat.HSCT))) ## 
+system.time(tmp <- parSapply(NULL, 1:200, function(z) getBootk(dat.HSCT))) ## 
 stopCluster(cl)
 
 
-1 * (max(k0) > quantile(tmp[13,], .95)) 
-1 * (max(k02) > quantile(tmp[14,], .95)) 
+1 * (max(k0) > quantile(tmp[13,], .95)) ## 0
+1 * (max(k02) > quantile(tmp[14,], .95)) ## 1 
