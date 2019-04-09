@@ -37,10 +37,13 @@
 #'
 #' @importFrom MASS mvrnorm
 #' @importFrom tibble as.tibble
-simDat <- function(n, model, frailty = FALSE) {
+simDat <- function(n, model, frailty = FALSE, type1 = FALSE) {
     dat <- NULL
-    beta0 <- c(.6, .8)
-    gamma0 <- c(7, 24) / 25
+    if (type1) beta0 <- gamma0 <- rep(0, 2)
+    else {
+        beta0 <- c(.6, .8)
+        gamma0 <- c(7, 24) / 25
+    }
     for (i in 1:n) {
         x0 <- 100
         if (frailty) zz <- rgamma(1, 1, 1)
