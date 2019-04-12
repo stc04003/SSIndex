@@ -30,18 +30,19 @@ head(dat.HSCT)
 ## Analysis with scaled age
 ###############################################################################################
 
-fname <- reSurv(Time, id, event, status) ~ scaleAge + allo + race
+fname <- reSurv(Time, id, event, status) ~ race + allo + scaleAge
 fit <- gsm(fname, data = dat.HSCT)
+str(fit)
 
 ## Custom function for this data set, need to generalize this later...
 
 dat.HSCT2 <- dat.HSCT
-as.numeric(sapply(c("scaleAge", "allo", "race"), function(x) which(names(dat.HSCT2) == x)))
-names(dat.HSCT2)[c(10, 7, 6)] <- c("x1", "x2", "x3")
-dat.HSCT2 <- dat.HSCT2[,c(1:5, 10, 7, 6, 8:9, 11:12)]
+as.numeric(sapply(c("race", "allo", "scaleAge"), function(x) which(names(dat.HSCT2) == x)))
+names(dat.HSCT2)[c(6:7, 10)] <- c("x1", "x2", "x3")
+dat.HSCT2 <- dat.HSCT2[,c(1:4, 6:7, 10, 12)]
 head(dat.HSCT2)
 
-bi <- as.matrix(expand.grid(seq(0, 2 * pi, length = 50), seq(0, 2 * pi, length = 50)))
+bi <- as.matrix(expand.grid(seq(0, 2 * pi, length = 100), seq(0, 2 * pi, length = 100)))
 system.time(k0 <- sapply(1:NROW(bi), function(x)
     getk0(dat.HSCT2, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
 system.time(k02 <- sapply(1:NROW(bi), function(x)
@@ -57,8 +58,8 @@ getBootk <- function(dat.HSCT) {
     dat.HSCT0$id <- rep(1:n, mm[ind] + 1)
     rownames(dat.HSCT0) <- NULL
     fit0 <- gsm(fname, data = dat.HSCT0, shp.ind = FALSE)
-    names(dat.HSCT0)[c(10, 7, 6)] <- c("x1", "x2", "x3")
-    dat.HSCT0 <- dat.HSCT0[,c(1:5, 10, 7, 6, 8:9, 11:12)]
+    names(dat.HSCT0)[c(6:7, 10)] <- c("x1", "x2", "x3")
+    dat.HSCT0 <- dat.HSCT0[,c(1:4, 6:7, 10, 12)]
     c(fit0$b0, fit0$b00, fit0$r0, fit0$r00,
       max(sapply(1:NROW(bi), function(x)
           getk0(dat.HSCT0, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x])),
@@ -78,13 +79,14 @@ invisible(clusterEvalQ(NULL, library(GSM)))
 invisible(clusterEvalQ(NULL, library(reReg)))
 
 set.seed(1)
-system.time(tmp <- parSapply(NULL, 1:200, function(z) getBootk(dat.HSCT))) ## B = 200 takes 1097 seconds.
+system.time(tmp <- parSapply(NULL, 1:100, function(z) getBootk(dat.HSCT))) 
 stopCluster(cl)
 
 
 1 * (max(k0) > quantile(tmp[13,], .95)) ## 0; don't reject H0
 1 * (max(k02) > quantile(tmp[14,], .95)) ## 0
-
+mean(max(k0) > tmp[13,]) ## .74
+mean(max(k02) > tmp[14,]) ## .93
 
 ###############################################################################################
 ## age01, allo, gender
@@ -527,7 +529,6 @@ stopCluster(cl)
 fname <- reSurv(Time, id, event, status) ~ allo + gender + scaleAge
 fit <- gsm(fname, data = dat.HSCT)
 str(fit)
-## Custom function for this data set, need to generalize this later...
 
 dat.HSCT2 <- dat.HSCT
 as.numeric(sapply(c("scaleAge", "allo", "gender"), function(x) which(names(dat.HSCT2) == x)))
@@ -573,7 +574,7 @@ invisible(clusterEvalQ(NULL, library(GSM)))
 invisible(clusterEvalQ(NULL, library(reReg)))
 
 set.seed(1)
-system.time(tmp <- parSapply(NULL, 1:300, function(z) getBootk(dat.HSCT))) ## 
+system.time(tmp <- parSapply(NULL, 1:100, function(z) getBootk(dat.HSCT))) ## 
 stopCluster(cl)
 
 
@@ -591,7 +592,6 @@ summary(k02)
 fname <- reSurv(Time, id, event, status) ~ allo + scaleAge
 fit <- gsm(fname, data = dat.HSCT)
 str(fit)
-## Custom function for this data set, need to generalize this later...
 
 dat.HSCT2 <- dat.HSCT
 as.numeric(sapply(c("scaleAge", "allo"), function(x) which(names(dat.HSCT2) == x)))
@@ -714,3 +714,154 @@ stopCluster(cl)
 
 1 * (max(k0) > quantile(tmp[nrow(tmp) - 1,], .95)) ## 0
 1 * (max(k02) > quantile(tmp[nrow(tmp),], .95)) ## 1 
+
+
+############################################################################################
+## Load package and data
+## HSCT cohort from csv
+############################################################################################
+
+library(tidyverse)
+library(parallel)
+library(GSM)
+library(reReg)
+library(survival)
+
+dat.hsct <- read.csv("HSCT.csv", sep=",", header=TRUE)
+dat.hsct <- subset(dat.hsct, !is.na(hsct_type) & Time > 0)
+dat.hsct$id <- rep(1:length(unique(dat.hsct$id)),
+                   with(dat.hsct, unlist(lapply(split(id, id), length))))
+
+## hsct, prepare variables:
+dat.hsct$allo <- dat.hsct$hsct_type
+dat.hsct$lym <- dat.hsct$disease_lym___0 + dat.hsct$disease_lym___1
+dat.hsct$race0 <- ifelse(dat.hsct$race == 1, 1, 0)
+dat.hsct$race1 <- ifelse(dat.hsct$race == 2, 1, 0)
+base.hsct <- subset(dat.hsct, select = -c(Time, ser.inf.type, event, status))
+base.hsct <- base.hsct[cumsum(aggregate(gender ~ id, data = base.hsct, length)[,2]),]
+base.hsct$scaleAge <- scale(base.hsct$age)
+dat.hsct$scaleAge <- base.hsct$scaleAge[dat.hsct$id]
+
+head(dat.hsct)
+dim(dat.hsct)
+summary(dat.hsct)
+
+## dat.hsct is the original data
+## dat0 is what we will use
+
+dat0 <- dat.hsct %>% select(id, Time, event, status,
+                            scaleAge, race0, allo, gender, lym, agvhd)
+
+dat0$m <- rep(aggregate(event ~ id, dat0, sum)[, 2], aggregate(Time ~ id, dat0, length)[, 2])
+summary(dat0)
+dim(dat0)
+head(dat0)
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+fname <- reSurv(Time, id, event, status) ~ scaleAge + race0 + allo
+
+xNames <- attr(terms(fname), "term.labels")
+p <- length(attr(terms(fname), "term.labels"))
+fit <- gsm(fname, data = dat0)
+str(fit)
+
+dat1 <- dat0
+xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
+colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
+dat1 <- dat1[,c(1:4, xCol, 11)]
+head(dat1)
+
+bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
+
+system.time(k0 <- sapply(1:NROW(bi), function(x)
+    getk0(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
+system.time(k02 <- sapply(1:NROW(bi), function(x)
+    getk02(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
+
+getBootK <- function(dat) {
+    n <- length(unique(dat$id))    
+    mm <- aggregate(event ~ id, dat, length)[, 2]
+    ind <- sample(1:n, n, TRUE)
+    datB <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+    datB$id <- rep(1:n, mm[ind])
+    rownames(datB) <- NULL
+    fitB <- gsm(fname, dat = datB)
+    datB1 <- datB
+    xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
+    colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
+    datB1 <- datB1[,c(1:4, xCol, 11)]
+    kb <- max(sapply(1:NROW(bi), function(x)
+        getk0(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x]))
+    kb2 <- max(sapply(1:NROW(bi), function(x)
+        getk02(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fitB$Fhat0) - k02[x]))
+    c(max(kb), max(kb2),
+      fitB$b0, fitB$b00, fitB$r0, fitB$r00)
+}
+
+cl <- makePSOCKcluster(8)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, "getBootK"))
+invisible(clusterExport(NULL, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p")))
+invisible(clusterEvalQ(NULL, library(GSM)))
+invisible(clusterEvalQ(NULL, library(reReg)))
+system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
+stopCluster(cl)
+
+mean(max(k0) > tmp[1,])
+mean(max(k02) > tmp[2,])
+
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+fname <- reSurv(Time, id, event, status) ~ scaleAge + race0 + allo
+head(dat0)
+
+pVal <- function(fname, B = 100) {
+    xNames <- attr(terms(fname), "term.labels")
+    p <- length(attr(terms(fname), "term.labels"))
+    fit <- gsm(fname, data = dat0)
+    ## str(fit)
+    dat1 <- dat0
+    xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
+    colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
+    dat1 <- dat1[,c(1:4, xCol, 11)]
+    head(dat1)
+    bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
+    system.time(k0 <- sapply(1:NROW(bi), function(x)
+        getk0(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
+    system.time(k02 <- sapply(1:NROW(bi), function(x)
+        getk02(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
+    getBootK <- function(dat) {
+        n <- length(unique(dat$id))    
+        mm <- aggregate(event ~ id, dat, length)[, 2]
+        ind <- sample(1:n, n, TRUE)
+        datB <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+        datB$id <- rep(1:n, mm[ind])
+        rownames(datB) <- NULL
+        fitB <- gsm(fname, dat = datB)
+        datB1 <- datB
+        xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
+        colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
+        datB1 <- datB1[,c(1:4, xCol, 11)]
+        kb <- max(sapply(1:NROW(bi), function(x)
+            getk0(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x]))
+        kb2 <- max(sapply(1:NROW(bi), function(x)
+            getk02(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fitB$Fhat0) - k02[x]))
+        c(max(kb), max(kb2),
+          fitB$b0, fitB$b00, fitB$r0, fitB$r00)
+    }
+    cl <- makePSOCKcluster(8)
+    setDefaultCluster(cl)
+    invisible(clusterExport(cl, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p", "getBootK"),
+                            environment()))
+    invisible(clusterEvalQ(NULL, library(GSM)))
+    invisible(clusterEvalQ(NULL, library(reReg)))
+    system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
+    stopCluster(cl)
+    c(mean(max(k0) > tmp[1,]), mean(max(k02) > tmp[2,]))
+}
+
+pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 10)
+
+pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 10)
