@@ -862,6 +862,8 @@ pVal <- function(fname, B = 100) {
     c(mean(max(k0) > tmp[1,]), mean(max(k02) > tmp[2,]))
 }
 
-pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 10)
-
-pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 10)
+f1 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 200)
+f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 200)
+f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 200)
+f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 200)
+f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 200)
