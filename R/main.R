@@ -105,7 +105,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     }
     if (is.null(rIni)) {
         if (p <= 2) rIni <- acos(1 / sqrt(p))
-        else rIni <- rep(acos(1 / sqrt(p)), p - 1)
+        else rIni <- acos(1 / sqrt(p:2))
     } else {
         if (p <= 2) rIni <- acos(rIni[1])
     }
@@ -170,7 +170,7 @@ getb0 <- function(dat, bIni) {
     }
     if (is.null(bIni)) {
         if (p <= 2) bIni <- acos(1 / sqrt(p))
-        else bIni <- rep(acos(1 / sqrt(p)), p - 1)
+        else bIni <- acos(1 / sqrt(p:2))
     } else {
         if (p <= 2) bIni <- acos(bIni[1])
     }    

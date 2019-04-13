@@ -826,8 +826,8 @@ pVal <- function(fname, B = 100) {
     xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
     colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
     dat1 <- dat1[,c(1:4, xCol, 11)]
-    head(dat1)
-    bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
+    ## head(dat1)
+    bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 200)), p - 1)))
     system.time(k0 <- sapply(1:NROW(bi), function(x)
         getk0(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
     system.time(k02 <- sapply(1:NROW(bi), function(x)
@@ -867,3 +867,6 @@ f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 200)
 f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 200)
 f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 200)
 f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 200)
+
+
+pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 5)
