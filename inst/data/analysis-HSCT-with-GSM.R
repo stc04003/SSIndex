@@ -760,64 +760,9 @@ head(dat0)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 fname <- reSurv(Time, id, event, status) ~ scaleAge + race0 + allo
-
-xNames <- attr(terms(fname), "term.labels")
-p <- length(attr(terms(fname), "term.labels"))
-fit <- gsm(fname, data = dat0)
-str(fit)
-
-dat1 <- dat0
-xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
-colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
-dat1 <- dat1[,c(1:4, xCol, 11)]
-head(dat1)
-
-bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
-
-system.time(k0 <- sapply(1:NROW(bi), function(x)
-    getk0(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
-system.time(k02 <- sapply(1:NROW(bi), function(x)
-    getk02(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
-
-getBootK <- function(dat) {
-    n <- length(unique(dat$id))    
-    mm <- aggregate(event ~ id, dat, length)[, 2]
-    ind <- sample(1:n, n, TRUE)
-    datB <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-    datB$id <- rep(1:n, mm[ind])
-    rownames(datB) <- NULL
-    fitB <- gsm(fname, dat = datB)
-    datB1 <- datB
-    xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
-    colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
-    datB1 <- datB1[,c(1:4, xCol, 11)]
-    kb <- max(sapply(1:NROW(bi), function(x)
-        getk0(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x]))
-    kb2 <- max(sapply(1:NROW(bi), function(x)
-        getk02(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fitB$Fhat0) - k02[x]))
-    c(max(kb), max(kb2),
-      fitB$b0, fitB$b00, fitB$r0, fitB$r00)
-}
-
-cl <- makePSOCKcluster(8)
-setDefaultCluster(cl)
-invisible(clusterExport(NULL, "getBootK"))
-invisible(clusterExport(NULL, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
-system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
-stopCluster(cl)
-
-mean(max(k0) > tmp[1,])
-mean(max(k02) > tmp[2,])
-
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-fname <- reSurv(Time, id, event, status) ~ scaleAge + race0 + allo
 head(dat0)
 
-pVal <- function(fname, B = 100) {
+pVal <- function(fname, B = 100, dat0 = dat0) {
     xNames <- attr(terms(fname), "term.labels")
     p <- length(attr(terms(fname), "term.labels"))
     fit <- gsm(fname, data = dat0)
@@ -851,7 +796,8 @@ pVal <- function(fname, B = 100) {
         c(max(kb), max(kb2),
           fitB$b0, fitB$b00, fitB$r0, fitB$r00)
     }
-    cl <- makePSOCKcluster(8)
+    ## cl <- makePSOCKcluster(8)
+    cl <- makePSOCKcluster(16)
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
@@ -862,21 +808,23 @@ pVal <- function(fname, B = 100) {
     c(mean(max(k0) > tmp[1,]), mean(max(k02) > tmp[2,]))
 }
 
-f1 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 200)
-f1.2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 200)
-f1.3 <- pVal(reSurv(Time, id, event, status) ~ race0 + scaleAge + allo, 200)
-f1.4 <- pVal(reSurv(Time, id, event, status) ~ race0 + allo + scaleAge, 200)
+f1 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 100, dat0)
+f1.2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 100, dat0)
+f1.3 <- pVal(reSurv(Time, id, event, status) ~ race0 + scaleAge + allo, 100, dat0)
+f1.4 <- pVal(reSurv(Time, id, event, status) ~ race0 + allo + scaleAge, 100, dat0)
 
-f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 200)
-f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 200)
-f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 200)
-f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 200)
+f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 100, dat0)
+f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 100, dat0)
+f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 100, dat0)
+f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 100, dat0)
 
 
 pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 5)
 
 debug(pVal)
 pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 200)
+
+
 
 
 bbb <- acos(1 / sqrt(p:2))
@@ -893,7 +841,21 @@ Cn3 <- function (b) {
         PACKAGE = "GSM")$result
 }
 
-spg(par = double(p), fn = Cn3, quiet = TRUE)
-spg(par = rep(1 / sqrt(p), p), fn = Cn3, quiet = TRUE)
-optim(par = double(p), fn = Cn3)
-optim(par = rep(1 / sqrt(p), p), fn = Cn3)
+spg(par = double(p), fn = Cn3, quiet = TRUE, control = list(trace = FALSE))
+spg(par = rep(1 / sqrt(p), p), fn = Cn3, quiet = TRUE, control = list(trace = FALSE))
+optim(par = double(p), fn = Cn3, control = list(trace = FALSE))
+optim(par = rep(1 / sqrt(p), p), fn = Cn3, control = list(trace = FALSE))
+
+X <- X[,3:1]
+head(X)
+
+str(gsm(reSurv(Time, id, event, status) ~ scaleAge + race + allo, data = dat0))
+str(gsm(reSurv(Time, id, event, status) ~ scaleAge + allo + race, data = dat0))
+str(gsm(reSurv(Time, id, event, status) ~ race + scaleAge + allo, data = dat0))
+
+
+b <- as.matrix(expand.grid(seq(0, 2 * pi, length = 100), seq(0, 2 * pi, length = 100)))
+y <- sapply(1:nrow(b), function(x) Cn2(b[x,]))
+
+library(rgl)
+
