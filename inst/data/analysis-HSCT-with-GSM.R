@@ -863,6 +863,10 @@ pVal <- function(fname, B = 100) {
 }
 
 f1 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 200)
+f1.2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 200)
+f1.3 <- pVal(reSurv(Time, id, event, status) ~ race0 + scaleAge + allo, 200)
+f1.4 <- pVal(reSurv(Time, id, event, status) ~ race0 + allo + scaleAge, 200)
+
 f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 200)
 f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 200)
 f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 200)
@@ -870,3 +874,26 @@ f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 2
 
 
 pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 5)
+
+debug(pVal)
+pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 200)
+
+
+bbb <- acos(1 / sqrt(p:2))
+cumprod(c(1, sin(bbb))) * c(cos(bbb), 1)
+
+str(gsm(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, data = dat0))
+str(gsm(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, data = dat0))
+str(gsm(reSurv(Time, id, event, status) ~ race0 + scaleAge + allo, data = dat0))
+
+Cn3 <- function (b) {
+    -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), 
+        as.integer(midx), as.double(solve(t(X) %*% X)), as.double(tij), 
+        as.double(yi), as.double(X %*% b), as.double(X), result = double(1), 
+        PACKAGE = "GSM")$result
+}
+
+spg(par = double(p), fn = Cn3, quiet = TRUE)
+spg(par = rep(1 / sqrt(p), p), fn = Cn3, quiet = TRUE)
+optim(par = double(p), fn = Cn3)
+optim(par = rep(1 / sqrt(p), p), fn = Cn3)
