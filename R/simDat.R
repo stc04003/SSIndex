@@ -48,15 +48,15 @@ simDat <- function(n, model, frailty = FALSE, type1 = FALSE) {
         x0 <- 100
         if (frailty) zz <- rgamma(1, 1, 1)
         else zz <- 1
-        if (model %in% c("M1", "M2", "M3", "M4", "M5")) {
+        if (model %in% c("M1", "M2", "M3", "M4", "M5", "M6")) {
             while (abs(x0) > 1 ) {
                 x <- mvrnorm(1, c(0,0), diag(2))
                 x0 <-  sum(x * beta0)
             }
         }
-        if (model %in% c("M21", "M22", "M23", "M24", "M25")) 
+        if (model %in% c("M21", "M22", "M23", "M24", "M25", "M26")) 
             x <- c(sample(0:1, 1), runif(1, -1, 1))
-        if (model %in% c("M31", "M32", "M33", "M34", "M35"))
+        if (model %in% c("M31", "M32", "M33", "M34", "M35", "M36"))
             x <- c(runif(1, -1, 1), rexp(1))
         if (model %in% c("M4", "M24", "M34")) tau <- 1
         else tau <- 10
