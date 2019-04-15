@@ -796,8 +796,8 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
         c(max(kb), max(kb2),
           fitB$b0, fitB$b00, fitB$r0, fitB$r00)
     }
-    ## cl <- makePSOCKcluster(8)
-    cl <- makePSOCKcluster(16)
+    cl <- makePSOCKcluster(8)
+    ## cl <- makePSOCKcluster(16)
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
