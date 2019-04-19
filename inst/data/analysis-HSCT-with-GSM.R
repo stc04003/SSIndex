@@ -759,6 +759,8 @@ head(dat0)
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+as.numeric(levels(f))[f]
+
 fname <- reSurv(Time, id, event, status) ~ scaleAge + race0 + allo
 head(dat0)
 
@@ -774,7 +776,7 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     ## head(dat1)
     bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 200)), p - 1)))
     system.time(k0 <- sapply(1:NROW(bi), function(x)
-        getk0(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
+        getk0(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1))))
     system.time(k02 <- sapply(1:NROW(bi), function(x)
         getk02(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
     getBootK <- function(dat) {
@@ -818,44 +820,4 @@ f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 100, dat0)
 f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 100, dat0)
 f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 100, dat0)
 
-
-pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 5)
-
-debug(pVal)
-pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 200)
-
-
-
-
-bbb <- acos(1 / sqrt(p:2))
-cumprod(c(1, sin(bbb))) * c(cos(bbb), 1)
-
-str(gsm(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, data = dat0))
-str(gsm(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, data = dat0))
-str(gsm(reSurv(Time, id, event, status) ~ race0 + scaleAge + allo, data = dat0))
-
-Cn3 <- function (b) {
-    -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), 
-        as.integer(midx), as.double(solve(t(X) %*% X)), as.double(tij), 
-        as.double(yi), as.double(X %*% b), as.double(X), result = double(1), 
-        PACKAGE = "GSM")$result
-}
-
-spg(par = double(p), fn = Cn3, quiet = TRUE, control = list(trace = FALSE))
-spg(par = rep(1 / sqrt(p), p), fn = Cn3, quiet = TRUE, control = list(trace = FALSE))
-optim(par = double(p), fn = Cn3, control = list(trace = FALSE))
-optim(par = rep(1 / sqrt(p), p), fn = Cn3, control = list(trace = FALSE))
-
-X <- X[,3:1]
-head(X)
-
-str(gsm(reSurv(Time, id, event, status) ~ scaleAge + race + allo, data = dat0))
-str(gsm(reSurv(Time, id, event, status) ~ scaleAge + allo + race, data = dat0))
-str(gsm(reSurv(Time, id, event, status) ~ race + scaleAge + allo, data = dat0))
-
-
-b <- as.matrix(expand.grid(seq(0, 2 * pi, length = 100), seq(0, 2 * pi, length = 100)))
-y <- sapply(1:nrow(b), function(x) Cn2(b[x,]))
-
-library(rgl)
 
