@@ -798,8 +798,8 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
         c(max(kb), max(kb2),
           fitB$b0, fitB$b00, fitB$r0, fitB$r00)
     }
-    cl <- makePSOCKcluster(8)
-    ## cl <- makePSOCKcluster(16)
+    ## cl <- makePSOCKcluster(8)
+    cl <- makePSOCKcluster(16)
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
@@ -813,11 +813,11 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
 f1 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 100, dat0)
 f1.2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 100, dat0)
 f1.3 <- pVal(reSurv(Time, id, event, status) ~ race0 + scaleAge + allo, 100, dat0)
-f1.4 <- pVal(reSurv(Time, id, event, status) ~ race0 + allo + scaleAge, 100, dat0)
+f1.4 <- pVal(reSurv(Time, id, event, status) ~ race0 + allo + scaleAge, 100, dat0); print(f1.4)
 
-f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 100, dat0)
-f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 100, dat0)
-f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 100, dat0)
-f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 100, dat0)
+f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 100, dat0); print(f2)
+f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 100, dat0); print(f3) 
+f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 100, dat0); print(f4)
+f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 100, dat0); print(f5)
 
 
