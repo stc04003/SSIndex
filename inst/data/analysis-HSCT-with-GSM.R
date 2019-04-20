@@ -778,7 +778,7 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     system.time(k0 <- sapply(1:NROW(bi), function(x)
         getk0(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1))))
     system.time(k02 <- sapply(1:NROW(bi), function(x)
-        getk02(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
+        getk02(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1), fit$Fhat0)))
     getBootK <- function(dat) {
         n <- length(unique(dat$id))    
         mm <- aggregate(event ~ id, dat, length)[, 2]
@@ -792,9 +792,9 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
         colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
         datB1 <- datB1[,c(1:4, xCol, 11)]
         kb <- max(sapply(1:NROW(bi), function(x)
-            getk0(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x]))
+            getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
         kb2 <- max(sapply(1:NROW(bi), function(x)
-            getk02(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fitB$Fhat0) - k02[x]))
+            getk02(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1), fitB$Fhat0) - k02[x]))
         c(max(kb), max(kb2),
           fitB$b0, fitB$b00, fitB$r0, fitB$r00)
     }
