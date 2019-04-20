@@ -35,7 +35,6 @@ str(gsm(reSurv(Time, id, event, status) ~ treat + propylac + sex, data = dat0))
 ##########################################################################################
 fname <- reSurv(Time, id, event, status) ~ treat + propylac + inherit
 
-pVal(fname, B = 5, dat0 = dat0)
 
 pVal <- function(fname, B = 100, dat0 = dat0) {
     xNames <- attr(terms(fname), "term.labels")
@@ -49,7 +48,7 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     ## head(dat1)
     bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
     system.time(k0 <- sapply(1:NROW(bi), function(x)
-        getk0(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)))))
+        getk0(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1))))
     system.time(k02 <- sapply(1:NROW(bi), function(x)
         getk02(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
     getBootK <- function(dat) {
@@ -82,3 +81,8 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     stopCluster(cl)
     c(mean(max(k0) > tmp[1,]), mean(max(k02) > tmp[2,]))
 }
+
+pVal(reSurv(Time, id, event, status) ~ treat + propylac + inherit, B = 100, dat0 = dat0)
+pVal(reSurv(Time, id, event, status) ~ treat + propylac + age0, B = 100, dat0 = dat0)
+pVal(reSurv(Time, id, event, status) ~ treat + propylac + sex, B = 100, dat0 = dat0)
+pVal(reSurv(Time, id, event, status) ~ treat + steroids + inherit, B = 100, dat0 = dat0)
