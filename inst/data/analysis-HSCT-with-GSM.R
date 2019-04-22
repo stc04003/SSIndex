@@ -818,6 +818,7 @@ f1.4 <- pVal(reSurv(Time, id, event, status) ~ race0 + allo + scaleAge, 100, dat
 f2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 100, dat0); print(f2)
 f3 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 100, dat0); print(f3) 
 f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd, 100, dat0); print(f4)
-f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo + gender, 100, dat0); print(f5)
+f4 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + agvhd + allo, 100, dat0); print(f4)
+f5 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + agvhd + gender, 100, dat0); print(f5)
 
 

@@ -21,6 +21,7 @@ dat0$treat <- as.numeric(dat0$treat) - 1
 dat0$inherit <- as.numeric(dat0$inherit) - 1
 dat0$sex <- as.numeric(dat0$sex) - 1
 dat0$id <- rep(1:length(unique(dat0$id)), aggregate(event ~ id, dat0, sum)[,2] + 1)
+dat0$age0 <- as.numeric(scale(dat0$age))
 names(dat0)[2] <- "Time"
 head(dat0)
 str(dat0)
@@ -50,7 +51,7 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     system.time(k0 <- sapply(1:NROW(bi), function(x)
         getk0(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1))))
     system.time(k02 <- sapply(1:NROW(bi), function(x)
-        getk02(dat1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fit$Fhat0)))
+        getk02(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1), fit$Fhat0)))
     getBootK <- function(dat) {
         n <- length(unique(dat$id))    
         mm <- aggregate(event ~ id, dat, length)[, 2]
@@ -64,9 +65,9 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
         colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
         datB1 <- datB1[,c(1:5, xCol)]
         kb <- max(sapply(1:NROW(bi), function(x)
-            getk0(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1))) - k0[x]))
+            getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
         kb2 <- max(sapply(1:NROW(bi), function(x)
-            getk02(datB1, cumprod(c(1, sin(bi[x,])) * c(cos(bi[x,]), 1)), fitB$Fhat0) - k02[x]))
+            getk02(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1), fitB$Fhat0) - k02[x]))
         c(max(kb), max(kb2),
           fitB$b0, fitB$b00, fitB$r0, fitB$r00)
     }
@@ -80,9 +81,18 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
     stopCluster(cl)
     c(mean(max(k0) > tmp[1,]), mean(max(k02) > tmp[2,]))
+    ## list(k0 = k0, k02 = k02, tmp = tmp)
 }
 
-pVal(reSurv(Time, id, event, status) ~ treat + propylac + inherit, B = 100, dat0 = dat0)
-pVal(reSurv(Time, id, event, status) ~ treat + propylac + age0, B = 100, dat0 = dat0)
-pVal(reSurv(Time, id, event, status) ~ treat + propylac + sex, B = 100, dat0 = dat0)
-pVal(reSurv(Time, id, event, status) ~ treat + steroids + inherit, B = 100, dat0 = dat0)
+foo <- pVal(reSurv(Time, id, event, status) ~ treat + propylac + inherit, dat0 = dat0)
+
+system.time(f1 <- pVal(reSurv(Time, id, event, status) ~ treat + propylac + age0, dat0 = dat0))
+system.time(f2 <- pVal(reSurv(Time, id, event, status) ~ treat + propylac + sex, dat0 = dat0))
+
+system.time(f3 <- pVal(reSurv(Time, id, event, status) ~ treat + inherit, dat0 = dat0))
+system.time(f4 <- pVal(reSurv(Time, id, event, status) ~ treat + propylac, dat0 = dat0))
+system.time(f5 <- pVal(reSurv(Time, id, event, status) ~ treat + sex + inherit, dat0 = dat0))
+system.time(f6 <- pVal(reSurv(Time, id, event, status) ~ treat + age0 + inherit, dat0 = dat0))
+
+system.time(f7 <- pVal(reSurv(Time, id, event, status) ~ treat + sex, dat0 = dat0))
+system.time(f8 <- pVal(reSurv(Time, id, event, status) ~ treat + age0, dat0 = dat0))
