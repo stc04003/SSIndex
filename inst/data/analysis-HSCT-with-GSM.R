@@ -759,8 +759,6 @@ head(dat0)
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-as.numeric(levels(f))[f]
-
 fname <- reSurv(Time, id, event, status) ~ scaleAge + race0 + allo
 head(dat0)
 
@@ -798,8 +796,8 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
         c(max(kb), max(kb2),
           fitB$b0, fitB$b00, fitB$r0, fitB$r00)
     }
-    ## cl <- makePSOCKcluster(8)
-    cl <- makePSOCKcluster(16)
+    cl <- makePSOCKcluster(8)
+    ## cl <- makePSOCKcluster(16)
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
@@ -831,8 +829,11 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
     colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
     dat1 <- dat1[,c(1:4, xCol, 11)]
     ## head(dat1)
-    bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
-    k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)))
+    ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
+    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .05)), p)))
+    r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
+    bi <- (tmp / r)[r < 1 & r > 0,]
+    k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
     getBootK <- function(dat) {
         n <- length(unique(dat$id))
         mm <- aggregate(event ~ id, dat, length)[, 2]
@@ -844,12 +845,12 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
         xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
         colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
         datB1 <- datB1[,c(1:4, xCol, 11)]
-        kb <- max(sapply(1:NROW(bi), function(x)
-            getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
+        kb <- max(sapply(1:NROW(bi), function(x) getk0(datB1, bi[x,]) - k0[x]))
+            ## getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
         max(kb)
     }
-    ## cl <- makePSOCKcluster(8)
-    cl <- makePSOCKcluster(16)
+    cl <- makePSOCKcluster(8)
+    ## cl <- makePSOCKcluster(16)
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
@@ -862,69 +863,45 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
 
 ## age,gender,heme state relapse, lymphoma,cmv,agvhd(time-dependent)
 
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo, 100, dat0))) ## 0.91
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo, 100, dat0))) ## 0.42
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ lym + allo, 100, dat0))) ## 0.58
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ race0 + allo, 100, dat0))) ## 0.92
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo, 100, dat0))) ## 0.95
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo, 100, dat0))) ## 0.41
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ lym + allo, 100, dat0))) ## 0.59
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ race0 + allo, 100, dat0))) ## 0.96
 
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 50, dat0))) ## 0.22
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 50, dat0))) ## 0.63
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 50, dat0))) ## 0.56
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + race0, 50, dat0))) ## 0.96
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))) ##0.86
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 50, dat0))) ## 0.36
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 50, dat0))) ## 0.66
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 50, dat0))) ## 0.54
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + race0, 50, dat0))) ## 0.94
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + lym, 50, dat0))) ## 0.92
 
 set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))) ## 0.9
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))) ## 0.66
 set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge + allo, 50, dat0))) ## 0.82
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge + allo, 50, dat0))) ## 0.64
 set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))) ## 0.42
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))) ## 0.52
 
 
-
-
-pValShape <- function(fname, B = 100, dat0 = dat0) {
-    xNames <- attr(terms(fname), "term.labels")
-    p <- length(attr(terms(fname), "term.labels"))
-    dat1 <- dat0
-    xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
-    colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
-    dat1 <- dat1[,c(1:4, xCol, 11)]
-    bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 50)), p - 1)))
-    ## sapply(1:NROW(bi), function(x) getk0(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)))
-    X <- as.matrix(dat1 %>% select(starts_with("x")))
-    return(t(sapply(1:NROW(bi), function(x) c(cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)))))
-    ## sapply(1:NROW(bi), function(x) sum(X %*% c(cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1))))
+rSphere <- function(n) {
+    x <- rnorm(n)
+    r <- sqrt(sum(x^2))
+    x / r
 }
 
-system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))
-system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge + allo, 50, dat0))
-system.time(f3 <- pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))
+rSphere2 <- function(n) {
+    x <- as.matrix(expand.grid(rep(list(seq(-1, 1, length = 50)), n)))
+    r <- apply(x, 1, function(z) sqrt(sum(z^2)))
+    (x / r)[r < 1 & r > 0,]
+}
 
-cbind(f1, f2, f3)
-
-summary(f1)
-summary(f2)
-summary(f3)
-
-system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo, 50, dat0))
-system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo, 50, dat0))
-
-
-plot(sin(seq(0, 2 * pi, length = 400)), cos(seq(0, 2 * pi, length = 400)), 'p')
-
-
-foo <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0)
+foo <- t(replicate(1000, rSphere(3)))
 foo <- data.frame(foo)
 names(foo) <- c("x", "y", "z")
-
-str(foo)
-head(foo)
-
-library(plotly)
 plot_ly(foo, x = ~x, y = ~y, z = ~z)
 
-plot(foo$x[which(foo$z == foo$z[160])], foo$y[which(foo$z == foo$z[160])], 'p')
+foo <- rSphere2(3)
+foo <- data.frame(foo)
+names(foo) <- c("x", "y", "z")
+dim(foo)
+plot_ly(foo, x = ~x, y = ~y, z = ~z)
 
-plot(foo$x[which(abs(foo$z - foo$z[160]) < .01)], foo$y[which(abs(foo$z - foo$z[160]) < .01)], 'p')
