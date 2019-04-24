@@ -211,7 +211,6 @@ getk0 <- function(dat, b) {
     dat0 <- subset(dat, m > 0)
     n <- length(unique(dat0$id))
     mm <- aggregate(event ~ id, dat0, sum)[,2]
-    dat0$id <- rep(1:n, mm + 1)
     tij <- subset(dat0, event == 1)$Time
     yi <- subset(dat0, event == 0)$Time
     midx <- c(0, cumsum(mm)[-length(mm)])
