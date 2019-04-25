@@ -863,6 +863,7 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
 
 ## age,gender,heme state relapse, lymphoma,cmv,agvhd(time-dependent)
 
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge, 100, dat0))) ## 0.62
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo, 100, dat0))) ## 0.95
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo, 100, dat0))) ## 0.41
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ lym + allo, 100, dat0))) ## 0.59
@@ -874,12 +875,17 @@ system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + 
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + race0, 50, dat0))) ## 0.94
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + lym, 50, dat0))) ## 0.92
 
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0 + lym + gender, 50, dat0))) ## 0.
+
+
 set.seed(1)
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))) ## 0.66
 set.seed(1)
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 50, dat0))) ## 0.66
+set.seed(1)
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge + allo, 50, dat0))) ## 0.64
 set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))) ## 0.52
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))) ## 0.68
 
 
 rSphere <- function(n) {
@@ -904,4 +910,6 @@ foo <- data.frame(foo)
 names(foo) <- c("x", "y", "z")
 dim(foo)
 plot_ly(foo, x = ~x, y = ~y, z = ~z)
+
+
 
