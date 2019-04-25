@@ -830,7 +830,7 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
     dat1 <- dat1[,c(1:4, xCol, 11)]
     ## head(dat1)
     ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
-    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .05)), p)))
+    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
     r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
     bi <- (tmp / r)[r < 1 & r > 0,]
     k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
@@ -875,7 +875,8 @@ system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + 
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + race0, 50, dat0))) ## 0.94
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + lym, 50, dat0))) ## 0.92
 
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0 + lym + gender, 50, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + gender, 50, dat0))) ## 0.88
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0 + lym + gender, 50, dat0))) ## 0.56
 
 
 set.seed(1)
