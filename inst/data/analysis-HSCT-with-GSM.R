@@ -739,7 +739,8 @@ dat.hsct$race0 <- ifelse(dat.hsct$race == 1, 1, 0)
 dat.hsct$race1 <- ifelse(dat.hsct$race == 2, 1, 0)
 base.hsct <- subset(dat.hsct, select = -c(Time, ser.inf.type, event, status))
 base.hsct <- base.hsct[cumsum(aggregate(gender ~ id, data = base.hsct, length)[,2]),]
-base.hsct$scaleAge <- scale(base.hsct$age)
+## base.hsct$scaleAge <- scale(base.hsct$age)
+base.hsct$scaleAge <- base.hsct$age / max(base.hsct$age)
 dat.hsct$scaleAge <- base.hsct$scaleAge[dat.hsct$id]
 
 head(dat.hsct)
@@ -772,11 +773,12 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
     dat1 <- dat1[,c(1:4, xCol, 11)]
     ## head(dat1)
-    bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 200)), p - 1)))
-    system.time(k0 <- sapply(1:NROW(bi), function(x)
-        getk0(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1))))
-    system.time(k02 <- sapply(1:NROW(bi), function(x)
-        getk02(dat1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1), fit$Fhat0)))
+    ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 200)), p - 1)))
+    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
+    r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
+    bi <- (tmp / r)[r < 1 & r > 0,]
+    k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
+    k02 <- sapply(1:NROW(bi), function(x) getk02(dat1, bi[x,], fit$Fhat0))
     getBootK <- function(dat) {
         n <- length(unique(dat$id))    
         mm <- aggregate(event ~ id, dat, length)[, 2]
@@ -789,12 +791,9 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
         xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
         colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
         datB1 <- datB1[,c(1:4, xCol, 11)]
-        kb <- max(sapply(1:NROW(bi), function(x)
-            getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
-        kb2 <- max(sapply(1:NROW(bi), function(x)
-            getk02(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1), fitB$Fhat0) - k02[x]))
-        c(max(kb), max(kb2),
-          fitB$b0, fitB$b00, fitB$r0, fitB$r00)
+        kb <- max(sapply(1:NROW(bi), function(x) getk0(datB1, bi[x,]) - k0[x]))
+        kb2 <- max(sapply(1:NROW(bi), function(x) getk02(datB1, bi[x,], fitB$Fhat0) - k02[x]))
+        c(max(kb), max(kb2), fitB$b0, fitB$b00, fitB$r0, fitB$r00)
     }
     cl <- makePSOCKcluster(8)
     ## cl <- makePSOCKcluster(16)
@@ -805,8 +804,23 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     invisible(clusterEvalQ(NULL, library(reReg)))
     system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
     stopCluster(cl)
-    c(mean(max(k0) > tmp[1,]), mean(max(k02) > tmp[2,]))
+    list(h1 = mean(max(k0) > tmp[1,]), h2 = mean(max(k02) > tmp[2,]),
+         coef11 = fit$b0, coef12 = fit$b00,
+         coef21 = fit$r0, coef22 = fit$r00,
+         se11 = apply(tmp[3:5,], 1, sd),
+         se12 = apply(tmp[6:8,], 1, sd),
+         se21 = apply(tmp[9:11,], 1, sd),
+         se22 = apply(tmp[12:14,], 1, sd))      
 }
+
+f <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 100, dat0)
+str(f)
+
+f <- pVal(reSurv(Time, id, event, status) ~ allo + scaleAge + gender, 100, dat0)
+str(f)
+
+f <- pVal(reSurv(Time, id, event, status) ~ allo + gender + scaleAge, 100, dat0)
+str(f)
 
 f1 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + race0 + allo, 100, dat0)
 f1.2 <- pVal(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 100, dat0)
@@ -876,6 +890,10 @@ system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + ra
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + lym, 50, dat0))) ## 0.92
 
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + gender, 50, dat0))) ## 0.88
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + scaleAge + lym + gender, 50, dat0))) ## 0.68
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + scaleAge + gender, 50, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + scaleAge, 50, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + race0 + lym + gender, 50, dat0))) ## 0.
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0 + lym + gender, 50, dat0))) ## 0.56
 
 

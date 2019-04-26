@@ -146,3 +146,10 @@ system.time(f5 <- pValShape(reSurv(Time, id, event, status) ~ treat + sex + inhe
 system.time(f6 <- pValShape(reSurv(Time, id, event, status) ~ treat + age0 + inherit, dat0 = dat0)); print(f6)
 system.time(f7 <- pValShape(reSurv(Time, id, event, status) ~ treat + sex, dat0 = dat0)); print(f7)
 system.time(f8 <- pValShape(reSurv(Time, id, event, status) ~ treat + age0, dat0 = dat0)); print(f8)
+
+
+system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + age, dat0 = dat0)); print(f2)
+system.time(f3 <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + height + weight, dat0 = dat0)); print(f3)
+system.time(f4 <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + height + weight + age, dat0 = dat0)); print(f4)
+
+## (treat,inherit,age,height,weight,steroids,prophylactic,sex,hosp1-3
