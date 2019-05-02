@@ -126,8 +126,8 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
             ## getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
         max(kb)
     }
-    cl <- makePSOCKcluster(8)
-    ## cl <- makePSOCKcluster(16)
+    ## cl <- makePSOCKcluster(8)
+    cl <- makePSOCKcluster(16)
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
@@ -148,8 +148,10 @@ system.time(f7 <- pValShape(reSurv(Time, id, event, status) ~ treat + sex, dat0 
 system.time(f8 <- pValShape(reSurv(Time, id, event, status) ~ treat + age0, dat0 = dat0)); print(f8)
 
 
-system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + age, dat0 = dat0)); print(f2)
-system.time(f3 <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + height + weight, dat0 = dat0)); print(f3)
-system.time(f4 <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + height + weight + age, dat0 = dat0)); print(f4)
+
+system.time(f <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + age, dat0 = dat0)); print(f)
+system.time(f <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + height + weight + age, dat0 = dat0)); print(f)
+system.time(f <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + height + weight, dat0 = dat0)); print(f)
+system.time(f <- pValShape(reSurv(Time, id, event, status) ~ treat + propylac + sex + height + weight + age, dat0 = dat0)); print(f)
 
 ## (treat,inherit,age,height,weight,steroids,prophylactic,sex,hosp1-3
