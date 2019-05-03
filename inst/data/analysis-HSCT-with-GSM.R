@@ -743,6 +743,12 @@ base.hsct <- base.hsct[cumsum(aggregate(gender ~ id, data = base.hsct, length)[,
 base.hsct$scaleAge <- base.hsct$age / max(base.hsct$age)
 dat.hsct$scaleAge <- base.hsct$scaleAge[dat.hsct$id]
 
+
+dat.hsct$heme1 <- ifelse(dat.hsct$heme_state == 1, 1, 0)
+dat.hsct$heme2 <- ifelse(dat.hsct$heme_state == 2, 1, 0)
+dat.hsct$cmv1 <- ifelse(dat.hsct$sero_cmv_hsct == 0, 1, 0)
+dat.hsct$cmv2 <- ifelse(dat.hsct$sero_cmv_hsct == 0 & dat.hsct$dsero_cmv_hsct == 0, 1, 0)
+
 head(dat.hsct)
 dim(dat.hsct)
 summary(dat.hsct)
@@ -751,9 +757,11 @@ summary(dat.hsct)
 ## dat0 is what we will use
 
 dat0 <- dat.hsct %>% select(id, Time, event, status,
-                            scaleAge, race0, allo, gender, lym, agvhd)
+                            scaleAge, race0, allo, gender, lym, agvhd,
+                            heme1, heme2, cmv1, cmv2)
 
 dat0$m <- rep(aggregate(event ~ id, dat0, sum)[, 2], aggregate(Time ~ id, dat0, length)[, 2])
+dat0 <- dat0[,c(1:4, 15, 5:14)]
 summary(dat0)
 dim(dat0)
 head(dat0)
@@ -771,7 +779,7 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     dat1 <- dat0
     xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
     colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
-    dat1 <- dat1[,c(1:4, xCol, 11)]
+    dat1 <- dat1[,c(1:5, xCol)]
     ## head(dat1)
     ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 200)), p - 1)))
     tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
@@ -790,7 +798,7 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
         datB1 <- datB
         xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
         colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
-        datB1 <- datB1[,c(1:4, xCol, 11)]
+        datB1 <- datB1[,c(1:5, xCol)]
         kb <- max(sapply(1:NROW(bi), function(x) getk0(datB1, bi[x,]) - k0[x]))
         kb2 <- max(sapply(1:NROW(bi), function(x) getk02(datB1, bi[x,], fitB$Fhat0) - k02[x]))
         c(max(kb), max(kb2), fitB$b0, fitB$b00, fitB$r0, fitB$r00)
@@ -841,7 +849,8 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
     dat1 <- dat0
     xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
     colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
-    dat1 <- dat1[,c(1:4, xCol, 11)]
+    dat1 <- dat1[,c(1:5, xCol)]
+    dat1 <- dat1[complete.cases(dat1),]
     ## head(dat1)
     ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
     tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
@@ -854,11 +863,12 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
         ind <- sample(1:n, n, TRUE)
         datB <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
         datB$id <- rep(1:n, mm[ind])
+        datB <- datB[complete.cases(datB),]
         rownames(datB) <- NULL
         datB1 <- datB
         xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
         colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
-        datB1 <- datB1[,c(1:4, xCol, 11)]
+        datB1 <- datB1[,c(1:5, xCol)]
         kb <- max(sapply(1:NROW(bi), function(x) getk0(datB1, bi[x,]) - k0[x]))
             ## getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
         max(kb)
@@ -896,6 +906,13 @@ system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + race0 + lym + gender, 50, dat0))) ## 0.
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0 + lym + gender, 50, dat0))) ## 0.56
 
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme1, 100, dat0))) ## 0.48
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme2, 100, dat0))) ## 0.54
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv1, 100, dat0))) ## 0.26
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2, 100, dat0))) ## 0.74
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2 + heme2, 100, dat0))) ## 0.6
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2 + gender, 100, dat0))) ## 0.68
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme2 + cmv2 + gender, 100, dat0))) ## 0.
 
 set.seed(1)
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))) ## 0.66
@@ -905,30 +922,5 @@ set.seed(1)
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge + allo, 50, dat0))) ## 0.64
 set.seed(1)
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))) ## 0.68
-
-
-rSphere <- function(n) {
-    x <- rnorm(n)
-    r <- sqrt(sum(x^2))
-    x / r
-}
-
-rSphere2 <- function(n) {
-    x <- as.matrix(expand.grid(rep(list(seq(-1, 1, length = 50)), n)))
-    r <- apply(x, 1, function(z) sqrt(sum(z^2)))
-    (x / r)[r < 1 & r > 0,]
-}
-
-foo <- t(replicate(1000, rSphere(3)))
-foo <- data.frame(foo)
-names(foo) <- c("x", "y", "z")
-plot_ly(foo, x = ~x, y = ~y, z = ~z)
-
-foo <- rSphere2(3)
-foo <- data.frame(foo)
-names(foo) <- c("x", "y", "z")
-dim(foo)
-plot_ly(foo, x = ~x, y = ~y, z = ~z)
-
 
 

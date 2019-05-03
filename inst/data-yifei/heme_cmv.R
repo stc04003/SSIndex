@@ -24,3 +24,41 @@ all$I.cmv.dneg.rneg[all$I.cmv.d.r==4]<-NA
 all
 
 all$study_id
+
+################################################################################################
+## Take 2
+################################################################################################
+all <- read.csv("hsct.long_2014_09_24.csv",header=T)
+all$heme_state
+
+length(unique(all$study_id)) ## 174
+sum(!is.na(all$heme_state)) ## 151
+sum(!is.na(all$sero_cmv_hsct)) ## 171
+sum(!is.na(all$dsero_cmv_hsct)) ## 153
+
+table(all$heme_state)
+table(all$sero_cmv_hsct)
+table(all$dsero_cmv_hsct)
+
+all$study_id[!is.na(all$heme_state)]
+all$study_id[!is.na(all$sero_cmv_hsct)]
+all$study_id[!is.na(all$dsero_cmv_hsct)]
+
+table(all$sero_cmv_hsct, all$dsero_cmv_hsct)
+
+
+heme <- data.frame(id = all$study_id[!is.na(all$heme_state)],
+                   heme = all$heme_state[!is.na(all$heme_state)])
+
+sero <- data.frame(id = all$study_id[!is.na(all$sero_cmv_hsct)],
+                   sero = all$sero_cmv_hsct[!is.na(all$sero_cmv_hsct)])
+
+dsero <- data.frame(id = all$study_id[!is.na(all$dsero_cmv_hsct)],
+                    dsero = all$dsero_cmv_hsct[!is.na(all$dsero_cmv_hsct)])
+
+dim(sero)
+head(sero)
+
+## save(heme, file = "heme.RData")
+## save(sero, file = "sero.RData")
+## save(dsero, file = "dsero.RData")
