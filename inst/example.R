@@ -182,15 +182,14 @@ head(dat)
 
 pValShape(reSurv(Time, id, event, status) ~ x1 + x2, dat0 = dat)
 
-pValShape <- function(fname, B = 100, dat0 = dat0) {
+do <- function(fname, B = 100, dat0 = dat0) {
     p <- length(attr(terms(fname), "term.labels"))
     dat1 <- dat0
-    ## head(dat1)
-    ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
     tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
     r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
     bi <- (tmp / r)[r < 1 & r > 0,]
     k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
+    ## k02 <- sapply(1:NROW(bi), function(x) getk02(dat1, bi[x,], fit$Fhat0))
     getBootK <- function(dat) {
         n <- length(unique(dat$id))
         mm <- aggregate(event ~ id, dat, length)[, 2]
@@ -215,3 +214,43 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
     stopCluster(cl)
     mean(max(k0) > tmp)
 }
+
+
+do <- function(n, model, frailty = FALSE) {
+    B <- 200
+    seed <- sample(1:1e7, 1)
+    set.seed(seed)
+    dat <- simDat(n, model, frailty)
+    fit <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
+               data = dat, shp.ind = FALSE)
+    p <- 2
+    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .05)), p)))
+    r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
+    bi <- (tmp / r)[r < 1 & r > 0,]
+    k0 <- sapply(1:NROW(bi), function(x) getk0(dat, bi[x,]))
+    k02 <- sapply(1:NROW(bi), function(x) getk02(dat, bi[x,], fit$Fhat0))    
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    n <- length(unique(dat$id))
+    getBootk <- function(dat) {
+        ind <- sample(1:n, replace = TRUE)
+        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+        dat0$id <- rep(1:n, mm[ind] + 1)
+        fit0 <- gsm(reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2,
+                    data = dat0, shp.ind = FALSE)
+        k0B <- sapply(1:NROW(bi), function(x) getk0(dat0, bi[x,]) - k0[x])
+        k02B <- sapply(1:NROW(bi), function(x) getk02(dat0, bi[x,], fit0$Fhat0) - k02[x])
+        c(max(k0B), max(k02B), fit0$b0, fit0$b00, fit0$r0, fit0$r00)
+    }
+    tmp <- replicate(B, getBootk(dat))
+    ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0? (1 = reject),
+    ## (4:5) \hat\gamma,
+    ## (6:7) \hat\gamma under independence,
+    ## (8:9) bootstrap sd for \hat\beta, (10:11) bootstrap sd for \hat\gamma
+    ## (12:13) bootstrap sd for \hat\gamma; these assumes indep.
+    c(fit$b0, fit$b00, fit$r0, fit$r00,
+      mean(k0 > quantile(tmp[1,], .95)),
+      mean(k02 > quantile(tmp[2,], .95)),
+      diag(var(t(tmp[3:10,]))))
+}
+
+system.time(f <- do(200, "M3", frailty = FALSE))
