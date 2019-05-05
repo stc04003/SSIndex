@@ -941,5 +941,5 @@ system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender 
 
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme1 + cmv1, 100, dat0))) ## 0.
 
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme1, 100, dat0))) ## 0.
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + cvm1, 100, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0, 100, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + heme1 + cmv2, 100, dat0))) ## 0.

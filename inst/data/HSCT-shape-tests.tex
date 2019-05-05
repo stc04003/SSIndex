@@ -70,9 +70,17 @@ The $p$-value is approximated with $n = 100$ bootstrap samples.
 \multicolumn{9}{c}{covariates} \\
 age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
 \midrule
-\checkmark & \checkmark &&&&&&&&& 0.32\\\midrule
-\checkmark&&\checkmark&&&&&&&&0.59\\\midrule
+%\checkmark & \checkmark &&&&&&&&& 0.32\\\midrule
+%\checkmark&&\checkmark&&&&&&&&0.59\\\midrule
+\checkmark&&&\checkmark&&&&&&&0.63\\\midrule
+&\checkmark&&\checkmark&&&&&&&0.11\\\midrule
+&&\checkmark&\checkmark&&&&&&&0.14\\\midrule
 &&&\checkmark&\checkmark&&&&&&0.41\\\midrule
+&&&\checkmark&&\checkmark&&&&&0.35\\\midrule
+&&&\checkmark&&&\checkmark&&&&0.42\\\midrule
+&&&\checkmark&&&&\checkmark&&&0.32\\\midrule
+&&&\checkmark&&&&&\checkmark&&0.08\\\midrule
+&&&\checkmark&&\checkmark&&&\checkmark&&0.09\\\midrule
 & \checkmark& \checkmark&&&&&&&&0.04\\\midrule
 &&\checkmark & \checkmark&&&&&&& 0.03\\\midrule
 \checkmark&\checkmark&&\checkmark&&&&&&&0.46\\\midrule
@@ -100,6 +108,9 @@ age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
 &&&\checkmark&\checkmark&&\checkmark&&\checkmark&&0.29\\\midrule
 &\checkmark&\checkmark&\checkmark&&&\checkmark&&&&0.22\\\midrule
 &\checkmark&\checkmark&\checkmark&&&&&\checkmark&&0.32\\\midrule
+\checkmark&&&\checkmark&&\checkmark&&\checkmark&&&0.39\\\midrule
+&&\checkmark&\checkmark&&\checkmark&&&&&0.34\\\midrule
+&&\checkmark&\checkmark&&&&\checkmark&&&0.28\\\midrule
 \bottomrule
 \end{tabular}
 \end{table}
