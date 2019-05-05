@@ -873,8 +873,8 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
             ## getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
         max(kb)
     }
-    cl <- makePSOCKcluster(8)
-    ## cl <- makePSOCKcluster(16)
+    ## cl <- makePSOCKcluster(8)
+    cl <- makePSOCKcluster(16)
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
@@ -885,61 +885,22 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
     mean(max(k0) > tmp)
 }
 
-## age,gender,heme state relapse, lymphoma,cmv,agvhd(time-dependent)
+system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme1 + cmv2 + scaleAge, 100, dat0))
+system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme1 + cmv2 + lym, 100, dat0))
+system.time(f3 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme1 + cmv2 + race0, 100, dat0))
 
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge, 100, dat0))) ## 0.62
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo, 100, dat0))) ## 0.95
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + cmv2, 100, dat0))) ## 0.86
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme2, 100, dat0))) ## 0.73
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme2 + cmv2, 100, dat0))) ## 0.73
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2, 100, dat0))) ## 0.8
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2 + race0, 100, dat0))) ## 0.72
+system.time(f4 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + lym + cmv2 + , 100, dat0))
+system.time(f5 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge + cmv2, 100, dat0))
+system.time(f6 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + race0 + cmv2, 100, dat0))
 
-system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2 + lym, 100, dat0)) ## 0.
-system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + gender + race0, 100, dat0)) ## 0.
-system.time(f3 <- pValShape(reSurv(Time, id, event, status) ~ allo + gender + cmv2 + race0, 100, dat0)) ## 0.
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo, 100, dat0))) ## 0.41
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ lym + allo, 100, dat0))) ## 0.59
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ race0 + allo, 100, dat0))) ## 0.96
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + lym, 50, dat0))) ## 0.36
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 50, dat0))) ## 0.66
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0, 50, dat0))) ## 0.54
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + race0, 50, dat0))) ## 0.94
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + lym, 50, dat0))) ## 0.92
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + gender, 50, dat0))) ## 0.88
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + scaleAge + lym + gender, 50, dat0))) ## 0.68
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + scaleAge + gender, 50, dat0))) ## 0.46
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + scaleAge, 50, dat0))) ## 0.34
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + race0 + lym + gender, 50, dat0))) ## 0.
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0 + lym + gender, 50, dat0))) ## 0.56
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme1, 100, dat0))) ## 0.48
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme2, 100, dat0))) ## 0.54
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv1, 100, dat0))) ## 0.26
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2, 100, dat0))) ## 0.74
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2 + heme2, 100, dat0))) ## 0.6
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2 + gender, 100, dat0))) ## 0.68
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme2 + cmv2 + gender, 50, dat0))) ## 0.
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + cmv2 + heme2, 100, dat0))) ## 0.71
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + cmv2 + heme2, 100, dat0))) ## 0.67
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + cmv2 + heme2 + scaleAge, 100, dat0))) ## 0.65
-
-set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))) ## 0.66
-set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + gender, 50, dat0))) ## 0.66
-set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge + allo, 50, dat0))) ## 0.64
-set.seed(1)
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))) ## 0.68
+system.time(f7 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + lym + heme1, 100, dat0))
+system.time(f8 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge + heme1, 100, dat0))
+system.time(f9 <- pValShape(reSurv(Time, id, event, status) ~ gender + allo + race0 + heme1, 100, dat0))
 
 
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme1 + cmv1, 100, dat0))) ## 0.
-
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0, 100, dat0))) ## 0.
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + heme1 + cmv2, 100, dat0))) ## 0.
+system.time(f10 <- pValShape(reSurv(Time, id, event, status) ~ race0 + gender + allo + lym + heme1, 100, dat0))
+system.time(f11 <- pValShape(reSurv(Time, id, event, status) ~ race0 + gender + allo + lym + cmv2, 100, dat0))
+system.time(f12 <- pValShape(reSurv(Time, id, event, status) ~ race0 + gender + allo + lym + heme1 + cmv2, 100, dat0))
+system.time(f13 <- pValShape(reSurv(Time, id, event, status) ~ race0 + gender + allo + lym + heme1 + cmv1, 100, dat0))
+system.time(f14 <- pValShape(reSurv(Time, id, event, status) ~ race0 + gender + allo + lym + heme2 + cmv1, 100, dat0))
+system.time(f15 <- pValShape(reSurv(Time, id, event, status) ~ race0 + gender + allo + lym + heme2 + cmv2, 100, dat0))

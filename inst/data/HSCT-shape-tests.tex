@@ -68,6 +68,7 @@ The $p$-value is approximated with $n = 100$ bootstrap samples.
 \begin{tabular}{cccccccccrr}
 \toprule
 \multicolumn{9}{c}{covariates} \\
+\cmidrule(l){1-9}
 age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
 \midrule
 %\checkmark & \checkmark &&&&&&&&& 0.32\\\midrule
@@ -81,8 +82,22 @@ age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
 &&&\checkmark&&&\checkmark&&&&0.42\\\midrule
 &&&\checkmark&&&&\checkmark&&&0.32\\\midrule
 &&&\checkmark&&&&&\checkmark&&0.08\\\midrule
-&&&\checkmark&&\checkmark&&&\checkmark&&0.09\\\midrule
-[1ex]
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+%\renewcommand\tabcolsep{2pt}
+\caption{Different combinations and the testing results.
+The $p$-value is approximated with $n = 100$ bootstrap samples.
+}
+\begin{tabular}{cccccccccrr}
+\toprule
+\multicolumn{9}{c}{covariates} \\
+\cmidrule(l){1-9}
+age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
+\midrule
 \checkmark&\checkmark&&\checkmark&&&&&&&0.46\\\midrule
 \checkmark&&\checkmark&\checkmark&&&&&&&0.34\\\midrule
 &\checkmark&\checkmark&\checkmark&&&&&&&0.05\\\midrule
@@ -90,27 +105,49 @@ age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
 \checkmark&&&\checkmark&\checkmark&&&&&&0.67\\\midrule
 &&\checkmark & \checkmark&&&&&\checkmark&& 0.10\\\midrule
 &&\checkmark & \checkmark&&&\checkmark&&&& 0.17\\\midrule
+\checkmark&&&\checkmark&&\checkmark&&&&&0.52\\\midrule
+\checkmark&&&\checkmark&&&\checkmark&&&&0.46\\\midrule
+\checkmark&&&\checkmark&&&&\checkmark&&&0.74\\\midrule
+\checkmark&&&\checkmark&&&&&\checkmark&&0.22\\\midrule
+%&&\checkmark&&&&\checkmark&&\checkmark&&0.34 \\\midrule
+\checkmark&&\checkmark&\checkmark&&&&&&&0.32 \\\midrule
+&&\checkmark&\checkmark&&\checkmark&&&&&0.34\\\midrule
+&&\checkmark&\checkmark&&&\checkmark&&&&0.35\\\midrule
+&&\checkmark&\checkmark&&&&\checkmark&&&0.28\\\midrule
+&&\checkmark&\checkmark&&&&&\checkmark&&0.09\\\midrule
+&&&\checkmark&&\checkmark&&&\checkmark&&0.09\\\midrule
+&&&\checkmark&&\checkmark&&\checkmark&&&0.58\\\midrule
+&&& \checkmark&&&\checkmark&&\checkmark&& 0.20\\\midrule
+&&& \checkmark&&&\checkmark&\checkmark&&& 0.54\\\midrule
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+%\renewcommand\tabcolsep{2pt}
+\caption{Different combinations and the testing results.
+The $p$-value is approximated with $n = 100$ bootstrap samples.
+}
+\begin{tabular}{cccccccccrr}
+\toprule
+\multicolumn{9}{c}{covariates} \\
+\cmidrule(l){1-9}
+age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
+\midrule
 &\checkmark&\checkmark&\checkmark&\checkmark&&&&&&0.12\\\midrule
 \checkmark&&\checkmark&\checkmark&\checkmark&&&&&&0.32\\\midrule
 \checkmark&\checkmark&\checkmark&\checkmark&&&&&&&0.54\\\midrule
 &&\checkmark & \checkmark&&&\checkmark&&\checkmark&& 0.17\\\midrule
 \checkmark&\checkmark&&\checkmark&\checkmark&&&&&&0.66\\\midrule
-\checkmark&&&\checkmark&&\checkmark&&&&&0.52\\\midrule
-\checkmark&&&\checkmark&&&\checkmark&&&&0.46\\\midrule
-&&& \checkmark&&&\checkmark&&\checkmark&& 0.20\\\midrule
 &\checkmark && \checkmark&&&\checkmark&&\checkmark&& 0.28\\\midrule
-\checkmark&&&\checkmark&&&&\checkmark&&&0.74\\\midrule
-\checkmark&&&\checkmark&&&&&\checkmark&&0.22\\\midrule
 \checkmark&&&\checkmark&&&\checkmark&&\checkmark&&0.38 \\\midrule
 \checkmark&&\checkmark&\checkmark&&&&&\checkmark&&0.32 \\\midrule
-&&\checkmark&&&&\checkmark&&\checkmark&&0.34 \\\midrule
-\checkmark&&\checkmark&\checkmark&&&&&&&0.32 \\\midrule
 &&&\checkmark&\checkmark&&\checkmark&&\checkmark&&0.29\\\midrule
 &\checkmark&\checkmark&\checkmark&&&\checkmark&&&&0.22\\\midrule
 &\checkmark&\checkmark&\checkmark&&&&&\checkmark&&0.32\\\midrule
 \checkmark&&&\checkmark&&\checkmark&&\checkmark&&&0.39\\\midrule
-&&\checkmark&\checkmark&&\checkmark&&&&&0.34\\\midrule
-&&\checkmark&\checkmark&&&&\checkmark&&&0.28\\\midrule
+\checkmark&&\checkmark&\checkmark&&&\checkmark&&\checkmark&&0.37\\
 \bottomrule
 \end{tabular}
 \end{table}
