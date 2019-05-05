@@ -889,6 +889,16 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
 
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + scaleAge, 100, dat0))) ## 0.62
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo, 100, dat0))) ## 0.95
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + cmv2, 100, dat0))) ## 0.86
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme2, 100, dat0))) ## 0.73
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme2 + cmv2, 100, dat0))) ## 0.73
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2, 100, dat0))) ## 0.8
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2 + race0, 100, dat0))) ## 0.72
+
+system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2 + lym, 100, dat0)) ## 0.
+system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + gender + race0, 100, dat0)) ## 0.
+system.time(f3 <- pValShape(reSurv(Time, id, event, status) ~ allo + gender + cmv2 + race0, 100, dat0)) ## 0.
+
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo, 100, dat0))) ## 0.41
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ lym + allo, 100, dat0))) ## 0.59
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ race0 + allo, 100, dat0))) ## 0.96
@@ -901,8 +911,8 @@ system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + ly
 
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + gender, 50, dat0))) ## 0.88
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + scaleAge + lym + gender, 50, dat0))) ## 0.68
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + scaleAge + gender, 50, dat0))) ## 0.
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + scaleAge, 50, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + scaleAge + gender, 50, dat0))) ## 0.46
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + race0 + lym + scaleAge, 50, dat0))) ## 0.34
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + race0 + lym + gender, 50, dat0))) ## 0.
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + race0 + lym + gender, 50, dat0))) ## 0.56
 
@@ -912,7 +922,11 @@ system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + 
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2, 100, dat0))) ## 0.74
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2 + heme2, 100, dat0))) ## 0.6
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + cmv2 + gender, 100, dat0))) ## 0.68
-system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme2 + cmv2 + gender, 100, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme2 + cmv2 + gender, 50, dat0))) ## 0.
+
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + cmv2 + heme2, 100, dat0))) ## 0.71
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + cmv2 + heme2, 100, dat0))) ## 0.67
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ allo + cmv2 + heme2 + scaleAge, 100, dat0))) ## 0.65
 
 set.seed(1)
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + scaleAge, 50, dat0))) ## 0.66
@@ -924,3 +938,8 @@ set.seed(1)
 system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + gender + allo, 50, dat0))) ## 0.68
 
 
+
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ scaleAge + allo + heme1 + cmv1, 100, dat0))) ## 0.
+
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + heme1, 100, dat0))) ## 0.
+system.time(print(pValShape(reSurv(Time, id, event, status) ~ gender + allo + cvm1, 100, dat0))) ## 0.

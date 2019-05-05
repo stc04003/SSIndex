@@ -177,3 +177,41 @@ invisible(clusterEvalQ(NULL, library(reReg)))
 f <- parSapply(NULL, 1:50, function(z) do(100, "M2"))
 stopCluster(cl)
 
+dat <- simDat(200, "M2", TRUE)
+head(dat)
+
+pValShape(reSurv(Time, id, event, status) ~ x1 + x2, dat0 = dat)
+
+pValShape <- function(fname, B = 100, dat0 = dat0) {
+    p <- length(attr(terms(fname), "term.labels"))
+    dat1 <- dat0
+    ## head(dat1)
+    ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
+    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
+    r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
+    bi <- (tmp / r)[r < 1 & r > 0,]
+    k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
+    getBootK <- function(dat) {
+        n <- length(unique(dat$id))
+        mm <- aggregate(event ~ id, dat, length)[, 2]
+        ind <- sample(1:n, n, TRUE)
+        datB <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+        datB$id <- rep(1:n, mm[ind])
+        datB <- datB[complete.cases(datB),]
+        rownames(datB) <- NULL
+        datB1 <- datB
+        kb <- max(sapply(1:NROW(bi), function(x) getk0(datB1, bi[x,]) - k0[x]))
+        ## getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
+        max(kb)
+    }
+    cl <- makePSOCKcluster(8)
+    ## cl <- makePSOCKcluster(16)
+    setDefaultCluster(cl)
+    invisible(clusterExport(cl, c("bi", "k0", "fname", "dat0", "p", "getBootK"),
+                            environment()))
+    invisible(clusterEvalQ(NULL, library(GSM)))
+    invisible(clusterEvalQ(NULL, library(reReg)))
+    system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
+    stopCluster(cl)
+    mean(max(k0) > tmp)
+}

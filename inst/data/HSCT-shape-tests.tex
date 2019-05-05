@@ -1,0 +1,107 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumerate}
+\usepackage{multicol}
+\usepackage{tikz, geometry}
+\usepackage{xcolor, color, booktabs}	
+\usepackage{graphicx}
+\usepackage[font=small, position=top]{caption, subfig}
+\usepackage{pifont}
+
+\title{Test for shape dependence for the HSCT data}
+\author{}
+\date{}
+
+\setlength{\textheight}{11in}
+\setlength{\textwidth}{6.5in}
+\setlength{\topmargin}{-0.8in}
+\setlength{\oddsidemargin}{-.3in}
+\setlength{\evensidemargin}{-.3in}
+\setlength{\headsep}{0in}
+
+\definecolor{OliveGreen}{rgb}{0,0.6,0}
+\newcommand{\bigbrk}{\vspace*{1.55in}}
+\newcommand{\smallbrk}{\vspace*{.3in}}
+\newcommand{\dif}{\mathrm{d}}%
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\purple}[1]{{\color{purple}#1}}
+\newcommand{\pink}[1]{{\color{pink}#1}}
+\newcommand{\blue}[1]{{\color{blue}#1}}
+\newcommand{\green}[1]{{\color{OliveGreen}#1}}
+\newcommand{\brown}[1]{{\color{brown}#1}}
+\newcommand{\lgray}[1]{{\color{lightgray}#1}}
+\DeclareMathOperator{\logit}{logit}
+\DeclareMathOperator{\Cov}{Cov}
+\usetikzlibrary{calc}
+\def\j{\mathbf j}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty} 
+\pagestyle{empty}
+
+\noindent
+
+Covariates available in the dataset are:
+\begin{description}
+\item[age] scaled
+\item[race] 1 = white, 0 = otherwise
+\item[gender] 1 = male
+\item[allo] 1 = allogeneic, 0 = autologous
+\item[lym] 1 = lymphomas disease at transplant
+\item[heme1] 1 = heme at remission, 0 = otherwise
+\item[heme2] 1 = heme at relapse, 0 = otherwise
+\item[cmv1] 1 = receiver negative, 0 = otherwise
+\item[cmv2] 1 = receiver and donor both negative, 0 = otherwise
+\end{description}
+
+\begin{table}[ht]
+\centering
+%\renewcommand\tabcolsep{2pt}
+\caption{Different combinations and the testing results.
+The $p$-value is approximated with $n = 100$ bootstrap samples.
+}
+\begin{tabular}{cccccccccrr}
+\toprule
+\multicolumn{9}{c}{covariates} \\
+age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
+\midrule
+\checkmark & \checkmark &&&&&&&&& 0.32\\\midrule
+\checkmark&&\checkmark&&&&&&&&0.59\\\midrule
+&&&\checkmark&\checkmark&&&&&&0.41\\\midrule
+& \checkmark& \checkmark&&&&&&&&0.04\\\midrule
+&&\checkmark & \checkmark&&&&&&& 0.03\\\midrule
+\checkmark&\checkmark&&\checkmark&&&&&&&0.46\\\midrule
+&\checkmark&\checkmark&\checkmark&&&&&&&0.05\\\midrule
+&&\checkmark&\checkmark&\checkmark&&&&&&0.06\\\midrule
+\checkmark&&&\checkmark&\checkmark&&&&&&0.67\\\midrule
+\checkmark&&\checkmark&\checkmark&&&&&&&0.34\\\midrule
+&&\checkmark & \checkmark&&&&&\checkmark&& 0.10\\\midrule
+&&\checkmark & \checkmark&&&\checkmark&&&& 0.17\\\midrule
+&\checkmark&\checkmark&\checkmark&\checkmark&&&&&&0.12\\\midrule
+\checkmark&&\checkmark&\checkmark&\checkmark&&&&&&0.32\\\midrule
+\checkmark&\checkmark&\checkmark&\checkmark&&&&&&&0.54\\\midrule
+&&\checkmark & \checkmark&&&\checkmark&&\checkmark&& 0.17\\\midrule
+\checkmark&\checkmark&&\checkmark&\checkmark&&&&&&0.66\\\midrule
+\checkmark&&&\checkmark&&\checkmark&&&&&0.52\\\midrule
+\checkmark&&&\checkmark&&&\checkmark&&&&0.46\\\midrule
+&&& \checkmark&&&\checkmark&&\checkmark&& 0.20\\\midrule
+&\checkmark && \checkmark&&&\checkmark&&\checkmark&& 0.28\\\midrule
+\checkmark&&&\checkmark&&&&\checkmark&&&0.74\\\midrule
+\checkmark&&&\checkmark&&&&&\checkmark&&0.22\\\midrule
+\checkmark&&&\checkmark&&&\checkmark&&\checkmark&&0.38 \\\midrule
+\checkmark&&\checkmark&\checkmark&&&&&\checkmark&&0.32 \\\midrule
+&&\checkmark&&&&\checkmark&&\checkmark&&0.34 \\\midrule
+\checkmark&&\checkmark&\checkmark&&&&&&&0.32 \\\midrule
+&&&\checkmark&\checkmark&&\checkmark&&\checkmark&&0.29\\\midrule
+&\checkmark&\checkmark&\checkmark&&&\checkmark&&&&0.22\\\midrule
+&\checkmark&\checkmark&\checkmark&&&&&\checkmark&&0.32\\\midrule
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}
