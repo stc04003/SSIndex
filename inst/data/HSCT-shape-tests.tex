@@ -118,7 +118,7 @@ age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
 &&&\checkmark&&\checkmark&&&\checkmark&&0.09\\\midrule
 &&&\checkmark&&\checkmark&&\checkmark&&&0.58\\\midrule
 &&& \checkmark&&&\checkmark&&\checkmark&& 0.20\\\midrule
-&&& \checkmark&&&\checkmark&\checkmark&&& 0.54\\\midrule
+&&& \checkmark&&&\checkmark&\checkmark&&& 0.54\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -147,9 +147,37 @@ age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
 &\checkmark&\checkmark&\checkmark&&&\checkmark&&&&0.22\\\midrule
 &\checkmark&\checkmark&\checkmark&&&&&\checkmark&&0.32\\\midrule
 \checkmark&&&\checkmark&&\checkmark&&\checkmark&&&0.39\\\midrule
-\checkmark&&\checkmark&\checkmark&&&\checkmark&&\checkmark&&0.37\\
+&&\checkmark&\checkmark&\checkmark&\checkmark&&&&&0.54\\\midrule
+\checkmark&&\checkmark&\checkmark&&\checkmark&&&&&0.59\\\midrule
+&\checkmark&\checkmark&\checkmark&&\checkmark&&&&&0.26\\\midrule
+\checkmark&&\checkmark&\checkmark&&&\checkmark&&\checkmark&&0.37\\\midrule
+&&\checkmark&\checkmark&\checkmark&&&&\checkmark&&0.15\\\midrule
+&&\checkmark&\checkmark&&\checkmark&&&\checkmark&&0.27\\\midrule
+&&\checkmark&\checkmark&\checkmark&&&&\checkmark&&0.18\\\midrule
+\checkmark&&\checkmark&\checkmark&&&&&\checkmark&&0.31\\\midrule
+&\checkmark&\checkmark&\checkmark&&&&&\checkmark&&0.20\\\midrule
 \bottomrule
 \end{tabular}
 \end{table}
 
+
+\begin{table}[ht]
+\centering
+%\renewcommand\tabcolsep{2pt}
+\caption{Different combinations and the testing results.
+The $p$-value is approximated with $n = 100$ bootstrap samples.
+}
+\begin{tabular}{cccccccccrr}
+\toprule
+\multicolumn{9}{c}{covariates} \\
+\cmidrule(l){1-9}
+age & race & gender & allo & lym & heme1 & heme2 & cmv1 & cmv2 && $p$ \\
+\midrule
+\checkmark&&\checkmark&\checkmark&&\checkmark&&&\checkmark&&0.48\\\midrule
+&&\checkmark&\checkmark&\checkmark&\checkmark&&&\checkmark&&0.28\\\midrule
+&\checkmark&\checkmark&\checkmark&&&\checkmark&&\checkmark&&0.38\\\midrule
+\checkmark&&\checkmark&\checkmark&&&\checkmark&&\checkmark&&0.37\\\midrule
+\bottomrule
+\end{tabular}
+\end{table}
 \end{document}
