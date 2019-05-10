@@ -863,6 +863,11 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
 }
 
 system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme1 + scaleAge + scaleAge2, 100, dat0)) ## .03
-system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + scaleAge + scaleAge2, 100, dat0)) ## .87
-system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + cmv1 + scaleAge + scaleAge2, 100, dat0)) ## .
-system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + cmv2 + scaleAge + scaleAge2, 100, dat0)) ## .
+system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + scaleAge + scaleAge2, 100, dat0)) ## .13
+system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + cmv1 + scaleAge + scaleAge2, 100, dat0)) ## .19
+system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + cmv2 + scaleAge + scaleAge2, 100, dat0)) ## .19
+
+system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme1 + cmv2 + scaleAge + scaleAge2, 100, dat0)) ## .11
+
+system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2 + scaleAge + scaleAge2, 100, dat0)) ## .11
+
