@@ -4,7 +4,8 @@
 \alias{gsm}
 \title{Main estimation function}
 \usage{
-gsm(formula, data, shp.ind = FALSE, B = 100)
+gsm(formula, data, shp.ind = FALSE, B = 100, bIni = NULL,
+  rIni = NULL)
 }
 \arguments{
 \item{formula}{a formula object, with the response on the left of a '~' operator.}

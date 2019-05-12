@@ -830,7 +830,7 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
     dat1 <- dat1[complete.cases(dat1),]
     ## head(dat1)
     ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
-    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
+    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .05)), p)))
     r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
     bi <- (tmp / r)[r < 1 & r > 0,]
     k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
