@@ -1,5 +1,6 @@
 .Rhistory
 tests/
+ganymede/
 *.o
 *.so
 *~
