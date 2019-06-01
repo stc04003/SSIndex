@@ -758,11 +758,14 @@ summary(dat.hsct)
 ## dat0 is what we will use
 dat.hsct$m <- rep(aggregate(event ~ id, dat.hsct, sum)[, 2], aggregate(Time ~ id, dat.hsct, length)[, 2])
 dat0 <- dat.hsct %>% select(id, Time, event, status, m, 
-                            scaleAge, scaleAge2, race0, allo, gender, lym, agvhd,
+                            age, scaleAge, scaleAge2, race0, allo, gender, lym, agvhd,
                             heme1, heme2, cmv1, cmv2)
 summary(dat0)
 dim(dat0)
 head(dat0)
+
+dat00 <- subset(dat0, event == 0)
+summary(dat00)
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
@@ -871,3 +874,60 @@ system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme1 + cmv
 
 system.time(f2 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + cmv2 + scaleAge + scaleAge2, 100, dat0)) ## .11
 
+## Black and white event plots
+n <- length(unique(dat0$id))
+
+base <- subset(dat0, event == 0)
+rownames(base) <- NULL
+datPlot <- NULL
+for (i in 1:n) {
+    tmp <- split(dat0$Time, dat0$id)[[i]]
+    mi <- length(tmp)
+    ## id, T, delta, event, race0, allo
+    datPlot <- rbind(datPlot, cbind(base$id[i], c(tmp, base$Time[i]), c(rep(0, mi), base$status[i]),
+                                    c(rep(1, mi), 0), base$cmv1[i], base$allo[i]))
+}
+colnames(datPlot) <- c("id", "T", "status", "event", "cmv", "allo")
+datPlot <- data.frame(datPlot)
+datPlot <- datPlot[datPlot$T > 0,]
+datPlot <- datPlot[datPlot$event + datPlot$status > 0,]
+datPlot$type <- ifelse(datPlot$allo == 1, "allogeneic", "autologous")
+datPlot$cmv <- ifelse(datPlot$cmv == 1, "positive", "negative")
+datPlot$type <- as.factor(datPlot$type)
+datPlot$cmv <- as.factor(datPlot$cmv)
+datPlot$event <- as.factor(datPlot$event)
+datPlot$status <- as.factor(datPlot$status)
+datPlot$id0 <- 0
+base <- rbind(base, base)
+base$Y[1:164] <- 0
+base <- base[order(base$id),]
+rownames(base) <- NULL
+base$type <- ifelse(base$allo == 1, "allogeneic", "autologous")
+base$cmv <- ifelse(base$cmv1 == 1, "positive", "negative")
+base$type <- as.factor(base$type)
+base$cmv <- as.factor(base$cmv)
+base <- base[order(base$type, base$id), ]
+
+datPlot$type <- factor(datPlot$type, levels = c("autologous", "allogeneic"))
+base$type <- factor(base$type, levels = c("autologous", "allogeneic"))
+
+## re-sort for allo vs auto
+base <- base[base$Time > 0,]
+base <- base[order(base$type, base$Time),] ##, decreasing = TRUE),]
+base$id0 <- 1:n
+base <- rbind(base, base)
+base$Y[1:n] <- 0
+base <- base[order(base$id0),]
+rownames(base) <- NULL
+head(base, 30)
+base$id0[which(base$allo == 1)] <- base$id0[which(base$allo == 1)] - 36
+datPlot$id0 <- 0
+for (i in 1:nrow(datPlot)) datPlot$id0[i] <- base$id0[min(which(base$id == datPlot$id[i]))]
+
+ggplot(base, aes(x = Y, y = id0, group = id0)) +
+    geom_line(color = "gray55", size = 1.5) +
+    facet_grid(type ~ ., scales = "free_y", space = "free_y") +
+    geom_point(data = datPlot,
+               aes(x = T, y = id0, shape = event:status), size = 1.5, alpha = .7) +
+    scale_shape_manual(values = c(16, 4), name = "Event types:", labels = c("Death", "Infection")) +
+    theme_bw() + labs(x = "Time in days", y = "Subjects") + theme(legend.position="none")
