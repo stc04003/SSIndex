@@ -999,6 +999,7 @@ geom_point(data = datPlot,
            aes(x = Time, y = id, shape = event:status), size = 1.5, alpha = .7) +
 scale_shape_manual(values = c(16, 4), name = "Event types:", labels = c("Death", "Infection")) +
 theme_bw() + labs(x = "Time in days", y = "Subjects") +
-theme(legend.position="none", axis.text.y = element_blank())
+theme(legend.position="none", axis.text.y = element_blank()) +
+geom_hline(yintercept = 52, color = "red")
 
 ggsave("HSCT-age.pdf")
