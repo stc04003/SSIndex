@@ -972,3 +972,33 @@ theme_bw() + labs(x = "Time in days", y = "Subjects") +
 theme(legend.position="none", axis.text.y = element_blank())
 
 ggsave("HSCT-cmv.pdf")
+
+#########################################################################################
+## event plot by age
+
+
+
+n <- length(unique(dat0$id))
+base <- subset(dat0, event == 0)
+base <- base[order(base$age),]
+base$id <- 1:n
+rownames(base) <- datPlot <- NULL
+datPlot <- subset(dat0,  select = c("id", "Time", "event", "status", "m", "age", "scaleAge"))
+datPlot <- datPlot[order(datPlot$age),]
+datPlot$id <- rep(1:n, c(1, diff(which(datPlot$event == 0))))
+base <- rbind(base, base)
+base$Time[1:n] <- 0
+base <- base[order(base$id),]
+datPlot <- subset(datPlot, event + status > 0)
+datPlot$event <- as.factor(datPlot$event)
+datPlot$status <- as.factor(datPlot$status)
+
+                  
+ggplot(base, aes(x = Time, y = id, group = id)) + geom_line(color = "gray55", size = 1.5) +
+geom_point(data = datPlot,
+           aes(x = Time, y = id, shape = event:status), size = 1.5, alpha = .7) +
+scale_shape_manual(values = c(16, 4), name = "Event types:", labels = c("Death", "Infection")) +
+theme_bw() + labs(x = "Time in days", y = "Subjects") +
+theme(legend.position="none", axis.text.y = element_blank())
+
+ggsave("HSCT-age.pdf")
