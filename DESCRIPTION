@@ -1,4 +1,4 @@
-Package: GSM
+Package: SSIndex
 Title: Estimating shape and size indexes for recurrent event 
 Version: 0.0.0.9001
 Authors@R: person("Steven", "Chiou", email = "schiou@utdallas.edu", role = c("aut", "cre"))

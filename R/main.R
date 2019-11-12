@@ -8,11 +8,10 @@
 #' @param B a numerical value specifying number of bootstrap in shape independence testing.
 #' 
 #' @importFrom BB spg
-#' @importFrom reReg reSurv is.reSurv
 #' @importFrom tibble add_column
 #' @importFrom dplyr %>%
 #' 
-#' @useDynLib GSM, .registration = TRUE
+#' @useDynLib SSIndex, .registration = TRUE
 #' @export
 #' 
 
@@ -21,7 +20,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
     if (!missing(data)) obj <- eval(formula[[2]], data) 
-    if (!is.reSurv(obj)) stop("Response must be a reSurv object")
+    ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
     formula[[2]] <- NULL
       if (formula == ~ 1) {
         DF <- cbind(obj$reDF[, -5], zero=0)
@@ -79,14 +78,14 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
            as.double(xb), as.double(x), as.double(y), as.double(h), 
-           result = double(1), PACKAGE = "GSM")$result,
+           result = double(1), PACKAGE = "SSIndex")$result,
         X %*% bhat, yi))
     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
     Fhat <- exp(-Fhat)
     Fhat0 <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
            as.double(X %*% double(p)), as.double(x), as.double(y), as.double(h), 
-           result = double(1), PACKAGE = "GSM")$result,
+           result = double(1), PACKAGE = "SSIndex")$result,
         X %*% double(p), yi))    
     Fhat0 <- ifelse(is.na(Fhat0), 0, Fhat0) ## assign 0/0, Inf/Inf to 0
     Fhat0 <- exp(-Fhat0)
@@ -94,14 +93,14 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
         -.C("shapeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
-            result = double(1), PACKAGE = "GSM")$result
+            result = double(1), PACKAGE = "SSIndex")$result
     }
     Sn2 <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
         -.C("shapeEqSmooth", as.integer(n), as.integer(p), as.double(xr), as.double(X),
             as.double(diag(p)), as.double(mm / Fhat),
-            result = double(1), PACKAGE = "GSM")$result        
+            result = double(1), PACKAGE = "SSIndex")$result        
     }
     if (is.null(rIni)) {
         if (p <= 2) rIni <- acos(1 / sqrt(p))
@@ -151,7 +150,7 @@ getb0 <- function(dat, bIni) {
         b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
         -.C("rank", as.integer(n), as.integer(mm), as.integer(midx),
             as.double(tij), as.double(yi), as.double(X %*% b),
-            result = double(1), PACKAGE = "GSM")$result
+            result = double(1), PACKAGE = "SSIndex")$result
     }
     p <- ncol(X)
     Cn2 <- function(b) {
@@ -159,14 +158,14 @@ getb0 <- function(dat, bIni) {
         -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
             as.double(solve(t(X) %*% X)), ## as.double(diag(p)), 
             as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
-            result = double(1), PACKAGE = "GSM")$result
+            result = double(1), PACKAGE = "SSIndex")$result
     }
     dCn2 <- function(b) {
         b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
         .C("drankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
             as.double(diag(p)), 
             as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
-            result = double(1), PACKAGE = "GSM")$result
+            result = double(1), PACKAGE = "SSIndex")$result
     }
     if (is.null(bIni)) {
         if (p <= 2) bIni <- acos(1 / sqrt(p))
@@ -218,7 +217,7 @@ getk0 <- function(dat, b) {
     ## X <- as.matrix(subset(dat0, event == 0, select = c(x1, x2)))
     .C("kappa", as.integer(n), as.integer(mm), as.integer(midx),
        as.double(tij), as.double(yi), as.double(X %*% b),
-       result = double(1), PACKAGE = "GSM")$result
+       result = double(1), PACKAGE = "SSIndex")$result
 }
 
 #' Function to get kappa for testing H0: beta0 = 0 & gamma0 = 0
@@ -236,5 +235,5 @@ getk02 <- function(dat, b, Fhat) {
     X <- as.matrix(dat0 %>% select(starts_with("x")))
     ## subset(dat0, select = c(x1, x2)))
     .C("kappa2", as.integer(n), as.double(X %*% b), as.double(mm / Fhat),
-       result = double(1), PACKAGE = "GSM")$result
+       result = double(1), PACKAGE = "SSIndex")$result
 }
