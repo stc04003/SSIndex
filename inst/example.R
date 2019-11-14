@@ -1,5 +1,4 @@
-library(GSM)
-library(reReg)
+library(SSIndex)
 
 ####################################################################################3
 ## Parallel computing on 1000 replications
@@ -14,7 +13,7 @@ do <- function(n, model, frailty = FALSE) {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model, frailty)
-    fit <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    fit <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
                data = dat, shp.ind = FALSE)
     bi <- seq(0, 2 * pi, length = 100)
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))
@@ -25,7 +24,7 @@ do <- function(n, model, frailty = FALSE) {
         ind <- sample(1:n, replace = TRUE)
         dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
         dat0$id <- rep(1:n, mm[ind] + 1)
-        fit0 <- gsm(reSurv(time1 = t, id = id, event = event, status = status) ~ x1 + x2,
+        fit0 <- gsm(reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2,
                     data = dat0, shp.ind = FALSE)
         c(fit0$b0, fit0$b00, fit0$r0, fit0$r00,
           max(sapply(1:length(bi), function(x)
@@ -37,7 +36,8 @@ do <- function(n, model, frailty = FALSE) {
     ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0? (1 = reject),
     ## (4:5) \hat\gamma,
     ## (6:7) \hat\gamma under independence,
-    ## (8:9) bootstrap sd for \hat\beta, (10:11) bootstrap sd for \hat\gamma
+    ## (8:9) bootstrap sd for \hat\beta,
+    ## (10:11) bootstrap sd for \hat\gamma
     ## (12:13) bootstrap sd for \hat\gamma; these assumes indep.
     c(fit$b0, fit$b00, fit$r0, fit$r00, 
       sqrt(diag(var(t(tmp[1:2,])))),
@@ -52,9 +52,9 @@ do2 <- function(n, model, B = 200, frailty = FALSE) {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model, frailty)
-    fit <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    fit <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
                data = dat, shp.ind = FALSE)
-    fit.indep <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    fit.indep <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
                      data = dat, shp.ind = TRUE)
     ## outputs are (1:2) \hat\beta, (3) reject H_0:\beta = 0? (1 = reject),
     ## (4:5) \hat\gamma,
@@ -64,16 +64,21 @@ do2 <- function(n, model, B = 200, frailty = FALSE) {
     c(fit$b0, fit$r0, fit.indep$r0)
 }
 
-system.time(print(do(100, "M1", TRUE)))
+set.seed(1)
+system.time(print(do(50, "M1", TRUE)))
 do(50, "M4", FALSE)
 do2(100, "M1", FALSE)
 do2(50, "M4", FALSE)
+
+set.seed(1)
+system.time(print(do2(50, "M1", TRUE)))
+## 0.7747495 0.6322683 0.3468791 0.9379099 0.2405921 0.9706263
 
 cl <- makePSOCKcluster(8)
 cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do', 'do2')))
-invisible(clusterEvalQ(NULL, library(GSM)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 invisible(clusterEvalQ(NULL, library(reReg)))
 
 runPara <- function(model, n, frailty) {
@@ -143,7 +148,7 @@ do <- function(n, model, frailty = FALSE) {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model, frailty)
-    fit <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+    fit <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
                data = dat, shp.ind = FALSE)
     bi <- seq(0, 2 * pi, length = 100)
     k0 <- sapply(bi, function(x) getk0(dat, c(cos(x), sin(x))))    
@@ -154,7 +159,7 @@ do <- function(n, model, frailty = FALSE) {
         ind <- sample(1:n, replace = TRUE)
         dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
         dat0$id <- rep(1:n, mm[ind] + 1)
-        fit0 <- gsm(reSurv(time1 = t, id = id, event = event, status =  status) ~ x1 + x2,
+        fit0 <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
                     data = dat0, shp.ind = FALSE)        
         c(max(sapply(1:length(bi), function(x)
             getk0(dat0, c(cos(bi[x]), sin(bi[x]))) - k0[x])),
@@ -172,10 +177,13 @@ system.time(print(do(100, "M2")))
 cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, 'do'))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
+set.seed(1)
 f <- parSapply(NULL, 1:50, function(z) do(100, "M2"))
 stopCluster(cl)
+## rowMeans(f)
+##    95%  95% 
+##    0.26 0.96
 
 dat <- simDat(200, "M2", TRUE)
 head(dat)

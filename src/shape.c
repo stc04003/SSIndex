@@ -95,6 +95,20 @@ void shapeEq(int *n, double *xr, double *mFhat, double *result) {
   }
 }
 
+// return the estimating equation for \gamma_0
+// This is `shapeEq` but with a small \tau_0
+void shapeEq2(int *n, double *xr, double *mFhat, double *y, double *result) {
+  int i, j;
+  for (i = 0; i < *n; i++) {
+    // tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);    
+    for (j = 0; j < *n; j++) {
+      if (xr[i] > xr[j] && y[i] >= 0.03 && y[j] >= 0.03) {
+	result[0] += mFhat[i];
+      }
+    }
+  }
+}
+
 // return \hat r(t,x,\beta) from SS1117 (paper #2)
 // h2 is the bandwidth for smoothing on the time scale
 // I think this function can be improved 

@@ -4,8 +4,7 @@
 ############################################################################################
 
 library(parallel)
-library(GSM)
-library(reReg)
+library(SSIndex)
 library(survival)
 
 load("dat.HSCT.RData")
@@ -33,6 +32,15 @@ head(dat.HSCT)
 fname <- reSurv(Time, id, event, status) ~ race + allo + scaleAge
 fit <- gsm(fname, data = dat.HSCT)
 str(fit)
+## List of 8
+##  $ b0   : num [1:3] 0.475 0.8781 0.0581
+##  $ r0   : num [1:3] 0.47 0.874 0.124
+##  $ b00  : num [1:3] 0.475 0.8781 0.0581
+##  $ r00  : num [1:3] 0.3721 0.9277 0.0302
+##  $ d    : NULL
+##  $ dstar: NULL
+##  $ Fhat : num [1:164] 0.826 1 0.585 0.945 0.227 ...
+##  $ Fhat0: num [1:164] 0.829 0.609 0.589 0.943 0.231 ...
 
 ## Custom function for this data set, need to generalize this later...
 
@@ -75,8 +83,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:100, function(z) getBootk(dat.HSCT))) 
@@ -135,8 +142,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:300, function(z) getBootk(dat.HSCT))) ## 
@@ -219,8 +225,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:200, function(z) getBootk(dat.HSCT))) ## 
@@ -289,8 +294,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:100, function(z) getBootk(dat.HSCT))) ## 
@@ -369,8 +373,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:200, function(z) getBootk(dat.HSCT))) ## 
@@ -439,8 +442,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:100, function(z) getBootk(dat.HSCT))) ## 
@@ -512,8 +514,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:200, function(z) getBootk(dat.HSCT))) ## 
@@ -570,8 +571,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:100, function(z) getBootk(dat.HSCT))) ## 
@@ -635,8 +635,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:500, function(z) getBootk(dat.HSCT))) ## 
@@ -704,8 +703,7 @@ cl <- makePSOCKcluster(8)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, "getBootk"))
 invisible(clusterExport(NULL, c("n", "mm", "dat.HSCT", "bi", "k0", "k02", "fname")))
-invisible(clusterEvalQ(NULL, library(GSM)))
-invisible(clusterEvalQ(NULL, library(reReg)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
 
 set.seed(1)
 system.time(tmp <- parSapply(NULL, 1:200, function(z) getBootk(dat.HSCT))) ## 
@@ -719,12 +717,12 @@ stopCluster(cl)
 ############################################################################################
 ## Load package and data
 ## HSCT cohort from csv
+## Used in the paper
 ############################################################################################
 
 library(tidyverse)
 library(parallel)
-library(GSM)
-library(reReg)
+library(SSIndex)
 library(survival)
 
 dat.hsct <- read.csv("HSCT.csv", sep=",", header=TRUE)
@@ -767,10 +765,33 @@ head(dat0)
 dat00 <- subset(dat0, event == 0)
 summary(dat00)
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+fname <- reSurv(Time, id, event, status) ~ allo + scaleAge + scaleAge2 + gender + race0 + cmv1
+## fname <- reSurv(Time, id, event, status) ~ scaleAge + scaleAge2 + allo + cmv1 + gender + race0
+fit <- gsm(fname, data = dat0)
+str(fit)
+tab <- data.frame(b0 = fit$b0, r0 = fit$r0, b00 = fit$b00, r00 = fit$r0)
+names(tab) <- c("b", "r", "b.smooth", "r.smooth")
+rownames(tab) <- c("allogeneic", "age", "age2", "cmv1", "gender", "white")
+tab
+##                     b           r   b.smooth    r.smooth
+## allogeneic  0.7563023  0.82574611  0.7707468  0.82574611
+## age        -0.2160166 -0.02609171 -0.2094977 -0.02609171
+## age2        0.5446405  0.12314392  0.5329246  0.12314392
+## cmv1        0.1124970  0.12469424  0.1008363  0.12469424
+## gender      0.2402366 -0.43123901  0.2457787 -0.43123901
+## white       0.1197548  0.31746247  0.0864659  0.31746247
 
-fname <- reSurv(Time, id, event, status) ~ scaleAge + race0 + allo
-head(dat0)
+fit$Fhat0
+datFhat <- data.frame(Time = dat00$Time, Fhat = fit$Fhat0)
+datFhat <- datFhat[order(datFhat$Time),]
+
+library(ggplot2)
+
+ggplot(datFhat, aes(x = Time, y = Fhat)) + geom_step() +
+    labs(x = "Time", y = expression(F(t, paste(hat(beta)^T, " ", bar(X)))), title = "")
+
+## ggsave("FtaAT0.pdf")
+ggsave("Fta.pdf")
 
 pVal <- function(fname, B = 100, dat0 = dat0) {
     xNames <- attr(terms(fname), "term.labels")
@@ -809,8 +830,7 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
-    invisible(clusterEvalQ(NULL, library(GSM)))
-    invisible(clusterEvalQ(NULL, library(reReg)))
+    invisible(clusterEvalQ(NULL, library(SSIndex)))
     system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
     stopCluster(cl)
     list(h1 = mean(max(k0) > tmp[1,]), h2 = mean(max(k02) > tmp[2,]),
@@ -821,7 +841,6 @@ pVal <- function(fname, B = 100, dat0 = dat0) {
          se21 = apply(tmp[9:11,], 1, sd),
          se22 = apply(tmp[12:14,], 1, sd))      
 }
-
 
 pValShape <- function(fname, B = 100, dat0 = dat0) {
     xNames <- attr(terms(fname), "term.labels")
@@ -858,12 +877,14 @@ pValShape <- function(fname, B = 100, dat0 = dat0) {
     setDefaultCluster(cl)
     invisible(clusterExport(cl, c("bi", "k0", "fname", "dat0", "xNames", "p", "getBootK"),
                             environment()))
-    invisible(clusterEvalQ(NULL, library(GSM)))
-    invisible(clusterEvalQ(NULL, library(reReg)))
+    invisible(clusterEvalQ(NULL, library(SSIndex)))
     system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
     stopCluster(cl)
     mean(max(k0) > tmp)
 }
+
+system.time(f1 <- pVal(fname, 100, dat0))
+
 
 system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme1 + scaleAge + scaleAge2, 100, dat0)) ## .03
 system.time(f1 <- pValShape(reSurv(Time, id, event, status) ~ allo + heme2 + scaleAge + scaleAge2, 100, dat0)) ## .13

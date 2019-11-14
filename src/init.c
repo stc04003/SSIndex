@@ -14,6 +14,7 @@ extern void kappa2(void *, void *, void *, void *);
 extern void rank(void *, void *, void *, void *, void *, void *, void *);
 extern void rankSmooth(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void shapeEq(void *, void *, void *, void *);
+extern void shapeEq2(void *, void *, void *, void *, void *);
 extern void shapeEqSmooth(void *, void *, void *, void *, void *, void *, void *);
 extern void shapeFun(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void shapeFun2(void *, void *, void *, void *, void *, void *, void *, void *, void *);
@@ -27,6 +28,7 @@ static const R_CMethodDef CEntries[] = {
     {"rank",          (DL_FUNC) &rank,           7},
     {"rankSmooth",    (DL_FUNC) &rankSmooth,    10},
     {"shapeEq",       (DL_FUNC) &shapeEq,        4},
+    {"shapeEq2",      (DL_FUNC) &shapeEq2,       5},
     {"shapeEqSmooth", (DL_FUNC) &shapeEqSmooth,  7},
     {"shapeFun",      (DL_FUNC) &shapeFun,      10},
     {"shapeFun2",     (DL_FUNC) &shapeFun2,      9},

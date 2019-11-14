@@ -74,7 +74,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     ## The estimating equation Sn needs Yi even for the m = 0's
     xb <- X %*% bhat
     ## h <- 1.06 * sd(xb) * n^-.2
-    h <- 2.78 * sd(xb) * n^-.2
+    h <- 2.78 * sd(xb) * n^-.25
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
            as.double(xb), as.double(x), as.double(y), as.double(h), 
@@ -84,15 +84,19 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     Fhat <- exp(-Fhat)
     Fhat0 <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-           as.double(X %*% double(p)), as.double(x), as.double(y), as.double(h), 
+           as.double(xb), as.double(x), as.double(y), as.double(h), 
+           ## as.double(X %*% double(p)), as.double(x), as.double(y), as.double(h), 
            result = double(1), PACKAGE = "SSIndex")$result,
-        X %*% double(p), yi))    
+        t(replicate(nrow(X), colMeans(X))) %*% bhat, yi))
+    ## X %*% double(p), yi))    
     Fhat0 <- ifelse(is.na(Fhat0), 0, Fhat0) ## assign 0/0, Inf/Inf to 0
     Fhat0 <- exp(-Fhat0)
     Sn <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
-        -.C("shapeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
+        ## -.C("shapeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
+        ##     result = double(1), PACKAGE = "SSIndex")$result
+        -.C("shapeEq2", as.integer(n), as.double(xr), as.double(mm / Fhat), as.double(yi),
             result = double(1), PACKAGE = "SSIndex")$result
     }
     Sn2 <- function(r) {
