@@ -787,11 +787,29 @@ datFhat <- datFhat[order(datFhat$Time),]
 
 library(ggplot2)
 
+## Ploting F(t, a) with a = \bar{X} %*% beta
 ggplot(datFhat, aes(x = Time, y = Fhat)) + geom_step() +
     labs(x = "Time", y = expression(F(t, paste(hat(beta)^T, " ", bar(X)))), title = "")
 
 ## ggsave("FtaAT0.pdf")
-ggsave("Fta.pdf")
+## ggsave("Fta.pdf")
+
+## Ploting F(t, a) with fixed t at each Yi and varying a
+
+i <- 111
+ggplot(data.frame(Time = fit$xb[order(fit$xb)], Fhat = fit$Fhat0[[i]][order(fit$xb)]),
+       aes(x = Time, y = Fhat)) + geom_step()
+summary(fit$xb)
+
+fhat <- do.call(rbind, fit$Fhat0)
+
+for (i in 1:164) {
+    plot(fit$xb, fhat[i,], cex = .5, pch = 19)
+    ## plot(dat00$Time, fhat[,i], cex = .5, pch = 19)
+    Sys.sleep(.5)
+}
+
+e
 
 pVal <- function(fname, B = 100, dat0 = dat0) {
     xNames <- attr(terms(fname), "term.labels")

@@ -82,15 +82,26 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
         X %*% bhat, yi))
     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
     Fhat <- exp(-Fhat)
-    Fhat0 <- unlist(mapply(FUN = function(x, y)
-        .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
-           as.double(xb), as.double(x), as.double(y), as.double(h), 
-           ## as.double(X %*% double(p)), as.double(x), as.double(y), as.double(h), 
-           result = double(1), PACKAGE = "SSIndex")$result,
-        t(replicate(nrow(X), colMeans(X))) %*% bhat, yi))
-    ## X %*% double(p), yi))    
-    Fhat0 <- ifelse(is.na(Fhat0), 0, Fhat0) ## assign 0/0, Inf/Inf to 0
-    Fhat0 <- exp(-Fhat0)
+    ## ## F(t, a) with a = \bar{X} %*% \beta
+    ## Fhat0 <- unlist(mapply(FUN = function(x, y)
+    ##     .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
+    ##        as.double(xb), as.double(x), as.double(y), as.double(h), 
+    ##        result = double(1), PACKAGE = "SSIndex")$result,
+    ##     t(replicate(nrow(X), colMeans(X))) %*% bhat, yi))
+
+    ## F(t, a), with a = X %*% bhat,
+    ## outputs a list with yi being each yi
+    Fhat0 <- NULL
+    for (i in 1:length(yi)) {
+        tmp <- unlist(mapply(FUN = function(x, y)
+            .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
+               as.double(tij), as.double(yi),
+               as.double(xb), as.double(x), as.double(y), as.double(h), 
+               result = double(1), PACKAGE = "SSIndex")$result,
+            xb, rep(yi[i], length(yi))))
+        tmp <- ifelse(is.na(tmp), 0, tmp) ## assign 0/0, Inf/Inf to 0
+        Fhat0[[i]] <- exp(-tmp)
+    }
     Sn <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
@@ -135,7 +146,8 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     }
     rhat1 <- cumprod(c(1, sin(rhat1))) * c(cos(rhat1), 1)
     rhat2 <- cumprod(c(1, sin(rhat2))) * c(cos(rhat2), 1)
-    list(b0 = bhat2, r0 = rhat1, b00 = bhat1, r00 = rhat2, d = d, dstar = dstar, Fhat = Fhat, Fhat0 = Fhat0)
+    list(b0 = bhat2, r0 = rhat1, b00 = bhat1, r00 = rhat2, d = d, dstar = dstar,
+         Fhat = Fhat, Fhat0 = Fhat0, xb = xb)
 }
 
 #' Function to get beta_0 estiamte
