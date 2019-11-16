@@ -74,7 +74,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     ## The estimating equation Sn needs Yi even for the m = 0's
     xb <- X %*% bhat
     ## h <- 1.06 * sd(xb) * n^-.2
-    h <- 2.78 * sd(xb[midx + 1]) * n^(-1/3)
+    h <- 2.78 * sd(xb) * n^(-1/3)
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
            as.double(tij), as.double(yi),
@@ -83,6 +83,16 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
         X %*% bhat, yi))
     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
     Fhat <- exp(-Fhat)
+    ## F(t, a) with a = \bar{X} %*% \beta
+    Fhat0 <- unlist(mapply(FUN = function(x, y)
+        .C("shapeFun", 
+           as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), 
+           as.double(yi), as.double(X %*% double(p)), as.double(x), 
+           as.double(y), as.double(h), result = double(1), PACKAGE = "SSIndex")$result, 
+        X %*% double(p), yi))
+    Fhat0 <- ifelse(is.na(Fhat0), 0, Fhat0)
+    Fhat0 <- exp(-Fhat0)
+    ## #####################################################################################
     ## ## F(t, a) with a = \bar{X} %*% \beta
     ## Fhat0 <- unlist(mapply(FUN = function(x, y)
     ##     .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
@@ -91,18 +101,18 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     ##     t(replicate(nrow(X), colMeans(X))) %*% bhat, yi))
     ## #####################################################################################
     ## F(t, a), with a = X %*% bhat,
-    ## outputs a list with yi being each yi
-    Fhat0 <- NULL
-    for (i in 1:length(yi)) {
-        tmp <- unlist(mapply(FUN = function(x, y)
-            .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
-               as.double(tij), as.double(yi),
-               as.double(xb), as.double(x), as.double(y), as.double(h), 
-               result = double(1), PACKAGE = "SSIndex")$result,
-            xb, rep(yi[i], nrow(xb))))
-        tmp <- ifelse(is.na(tmp), 0, tmp) ## assign 0/0, Inf/Inf to 0
-        Fhat0[[i]] <- exp(-tmp)
-    }
+    ## ## outputs a list with yi being each yi
+    ## Fhat0 <- NULL
+    ## for (i in 1:length(yi)) {
+    ##     tmp <- unlist(mapply(FUN = function(x, y)
+    ##         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
+    ##            as.double(tij), as.double(yi),
+    ##            as.double(xb), as.double(x), as.double(y), as.double(h), 
+    ##            result = double(1), PACKAGE = "SSIndex")$result,
+    ##         xb, rep(yi[i], nrow(xb))))
+    ##     tmp <- ifelse(is.na(tmp), 0, tmp) ## assign 0/0, Inf/Inf to 0
+    ##     Fhat0[[i]] <- exp(-tmp)
+    ## }
     Sn <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
