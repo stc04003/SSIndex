@@ -9,6 +9,11 @@
 // yi is the censoring time for the ith subject
 // xb is a vector with the ith element being \beta^\top Z_i
 
+/* double kernal(double dx) { */
+/*   double out = 0.0; */
+/*   out = exp(-1 * dx * dx / 2) / 2.506628; */
+/*   return(out); */
+/* } */
 
 double kernal(double dx) {
   // I added "= 0.0", not sure if this matters or not

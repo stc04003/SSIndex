@@ -9,7 +9,7 @@ library(xtable)
 
 ## March 17, 2019
 do <- function(n, model, frailty = FALSE) {
-    B <- 200
+    B <- 5
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model, frailty)
@@ -24,6 +24,9 @@ do <- function(n, model, frailty = FALSE) {
         ind <- sample(1:n, replace = TRUE)
         dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
         dat0$id <- rep(1:n, mm[ind] + 1)
+        dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] <-
+            dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
+            rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .001)
         fit0 <- gsm(reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2,
                     data = dat0, shp.ind = FALSE)
         c(fit0$b0, fit0$b00, fit0$r0, fit0$r00,
@@ -66,6 +69,7 @@ do2 <- function(n, model, B = 200, frailty = FALSE) {
 
 set.seed(1)
 system.time(print(do(50, "M1", TRUE)))
+
 do(50, "M4", FALSE)
 do2(100, "M1", FALSE)
 do2(50, "M4", FALSE)
@@ -79,13 +83,12 @@ cl <- makePSOCKcluster(16)
 setDefaultCluster(cl)
 invisible(clusterExport(NULL, c('do', 'do2')))
 invisible(clusterEvalQ(NULL, library(SSIndex)))
-invisible(clusterEvalQ(NULL, library(reReg)))
 
 runPara <- function(model, n, frailty) {
     obj <- paste(c(model, n, frailty), collapse = "")
     eval(parse(text = paste(obj, " <- NULL")))
-    toRun <- paste(obj, " <- t(matrix(unlist(parLapply(NULL, 1:500, function(z) do(",
-                   n, ",'", model, "',", frailty, "))), 13))", sep = "")
+    toRun <- paste(obj, " <- t(matrix(unlist(parLapply(NULL, 1:200, function(z) do(",
+                   n, ",'", model, "',", frailty, "))), 18))", sep = "")
     ## toRun <- paste(obj, " <- parSapply(NULL, 1:500, function(z) do(",
     ##                n, ",'", model, "',", frailty, "))", sep = "")
     ptm <- proc.time()

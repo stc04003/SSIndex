@@ -74,9 +74,10 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     ## The estimating equation Sn needs Yi even for the m = 0's
     xb <- X %*% bhat
     ## h <- 1.06 * sd(xb) * n^-.2
-    h <- 2.78 * sd(xb) * n^-.25
+    h <- 2.78 * sd(xb[midx + 1]) * n^(-1/3)
     Fhat <- unlist(mapply(FUN = function(x, y)
-        .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
+        .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
+           as.double(tij), as.double(yi),
            as.double(xb), as.double(x), as.double(y), as.double(h), 
            result = double(1), PACKAGE = "SSIndex")$result,
         X %*% bhat, yi))
@@ -88,7 +89,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     ##        as.double(xb), as.double(x), as.double(y), as.double(h), 
     ##        result = double(1), PACKAGE = "SSIndex")$result,
     ##     t(replicate(nrow(X), colMeans(X))) %*% bhat, yi))
-
+    ## #####################################################################################
     ## F(t, a), with a = X %*% bhat,
     ## outputs a list with yi being each yi
     Fhat0 <- NULL
@@ -98,7 +99,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
                as.double(tij), as.double(yi),
                as.double(xb), as.double(x), as.double(y), as.double(h), 
                result = double(1), PACKAGE = "SSIndex")$result,
-            xb, rep(yi[i], length(yi))))
+            xb, rep(yi[i], nrow(xb))))
         tmp <- ifelse(is.na(tmp), 0, tmp) ## assign 0/0, Inf/Inf to 0
         Fhat0[[i]] <- exp(-tmp)
     }
