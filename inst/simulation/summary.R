@@ -97,7 +97,7 @@ sumPwr <- function(n, model, frailty, type1 = FALSE) {
     if (type1) {
         fname <- paste(c("type1", n, model, frailty), collapse = "-")
         if (file.exists(fname)) dat <- matrix(c(t(matrix(scan(fname), 5))), 26)
-        return(c(mean(dat[25,]), mean(dat[26,])))
+        return(c(mean(dat[25,] > .95), mean(dat[26,] > .95)))
     }
 }
 
