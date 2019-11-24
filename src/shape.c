@@ -250,3 +250,61 @@ void kappa3(int *n, int *m, int *midx, double *xb, double *tij, double *yi, doub
   }
   result[0] = 2 * result[0] / n[0] / (n[0] - 1);
 }
+
+// gives k0 and k02 at once
+void kappa4(int *n, int *m, int *midx, double *xb, double *tij, double *yi, double *result) {
+  int i, j, k, l;
+  double N1, N2;
+  for (i = 0; i < (*n - 1); i++) {
+    for (j = (i + 1); j < *n; j++) {
+      N1 = 0.0;
+      N2 = 0.0;
+      for (k = 0; k < m[i]; k++) {
+	if (tij[midx[i] + k] <= yi[j]) {
+	  N1 += 1;
+	}
+      }
+      for (k = 0; k < m[j]; k++) {
+	if (tij[midx[j] + k] <= yi[i]) {
+	  N2 += 1;
+	}
+      }
+      if (xb[i] > xb[j]) {
+	result[0] += N1 - N2;
+      }
+      if (xb[i] < xb[j]) {
+	result[0] += N2 - N1;
+      }
+      for (k = 0; k < m[i]; k++) {
+	for (l = 0; l < m[j]; l++) {
+	  if (tij[midx[i] + k] <= yi[j] &&
+	      tij[midx[j] + l] <= yi[i] &&
+	      xb[i] > xb[j] && 
+	      tij[midx[i] + k] > tij[midx[j] + l]) {
+	    result[1] += 1;
+	  }
+	  if (tij[midx[i] + k] <= yi[j] &&
+	      tij[midx[j] + l] <= yi[i] &&
+	      xb[i] < xb[j] && 
+	      tij[midx[i] + k] > tij[midx[j] + l]) {
+	    result[1] -= 1;
+	  }
+	  if (tij[midx[i] + k] <= yi[j] &&
+	      tij[midx[j] + l] <= yi[i] &&
+	      xb[i] > xb[j] && 
+	      tij[midx[i] + k] < tij[midx[j] + l]) {
+	    result[1] -= 1;
+	  }
+	  if (tij[midx[i] + k] <= yi[j] &&
+	      tij[midx[j] + l] <= yi[i] &&
+	      xb[i] < xb[j] && 
+	      tij[midx[i] + k] < tij[midx[j] + l]) {
+	    result[1] += 1;
+	  }
+	}
+      }
+    }
+  }
+  result[0] = 2 * result[0] / n[0] / (n[0] - 1);
+  result[1] = 2 * result[1] / n[0] / (n[0] - 1);
+}

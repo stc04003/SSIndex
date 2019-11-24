@@ -270,16 +270,36 @@ getk02 <- function(dat, b, Fhat) {
 #'
 #' @export
 getk03 <- function(dat, b) {
-    dat0 <- subset(dat, event < 1)
-    n <- nrow(dat0)
-    rownames(dat0) <- NULL
-    dat0$id <- 1:n
-    X <- as.matrix(dat0 %>% select(starts_with("x")))
-    yi <- dat0$Time
-    mm <- aggregate(event ~ id, subset(dat, m > 0), sum)[,2]
+    dat0 <- subset(dat, m > 0)
+    n <- length(unique(dat0$id))
+    mm <- aggregate(event ~ id, dat0, sum)[,2]
+    dat0$id <- rep(1:n, mm + 1)
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
     midx <- c(0, cumsum(mm)[-length(mm)])
-    tij <- subset(dat, event == 1)$Time
+    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status)))
     .C("kappa3", as.integer(n), as.integer(mm), as.integer(midx), 
        as.double(X %*% b), as.double(tij), as.double(yi),
        result = double(1), PACKAGE = "SSIndex")$result
+}
+
+
+
+#' Revised function to get kappa for testing H0: beta0 = 0 & gamma0 = 0;
+#' give both shape and rate test statistics
+#' @noRd
+#'
+#' @export
+getk04 <- function(dat, b) {
+    dat0 <- subset(dat, m > 0)
+    n <- length(unique(dat0$id))
+    mm <- aggregate(event ~ id, dat0, sum)[,2]
+    dat0$id <- rep(1:n, mm + 1)
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status)))
+    .C("kappa4", as.integer(n), as.integer(mm), as.integer(midx), 
+       as.double(X %*% b), as.double(tij), as.double(yi),
+       result = double(2), PACKAGE = "SSIndex")$result
 }
