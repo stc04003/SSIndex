@@ -11,6 +11,7 @@ extern void DouglasUn(void *, void *, void *, void *, void *, void *, void *, vo
 extern void drankSmooth(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void kappa(void *, void *, void *, void *, void *, void *, void *);
 extern void kappa2(void *, void *, void *, void *);
+extern void kappa3(void *, void *, void *, void *, void *, void *, void *);
 extern void rank(void *, void *, void *, void *, void *, void *, void *);
 extern void rankSmooth(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void shapeEq(void *, void *, void *, void *);
@@ -25,6 +26,7 @@ static const R_CMethodDef CEntries[] = {
     {"drankSmooth",   (DL_FUNC) &drankSmooth,   10},
     {"kappa",         (DL_FUNC) &kappa,          7},
     {"kappa2",        (DL_FUNC) &kappa2,         4},
+    {"kappa3",        (DL_FUNC) &kappa3,         7},
     {"rank",          (DL_FUNC) &rank,           7},
     {"rankSmooth",    (DL_FUNC) &rankSmooth,    10},
     {"shapeEq",       (DL_FUNC) &shapeEq,        4},

@@ -221,3 +221,32 @@ void kappa2(int *n, double *xb, double *mFhat, double *result) {
   }
   result[0] = result[0] / n[0] / (n[0] - 1);
 }
+
+
+void kappa3(int *n, int *m, int *midx, double *xb, double *tij, double *yi, double *result) {
+  int i, j, k;
+  double N1, N2;
+  for (i = 0; i < (*n - 1); i++) {
+    for (j = (i + 1); j < *n; j++) {
+      N1 = 0.0;
+      N2 = 0.0;
+      for (k = 0; k < m[i]; k++) {
+	if (tij[midx[i] + k] <= yi[i] & tij[midx[i] + k] <= yi[j]) {
+	  N1 += 1;
+	}
+      }
+      for (k = 0; k < m[j]; k++) {
+	if (tij[midx[j] + k] <= yi[i] & tij[midx[j] + k] <= yi[j]) {
+	  N2 += 1;
+	}
+      }
+      if (xb[i] > xb[j]) {
+	result[0] += N1 - N2;
+      }
+      if (xb[i] <= xb[j]) {
+	result[0] += N2 - N1;
+      }
+    }
+  }
+  result[0] = 2 * result[0] / n[0] / (n[0] - 1);
+}

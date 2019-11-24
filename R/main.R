@@ -260,7 +260,26 @@ getk02 <- function(dat, b, Fhat) {
     rownames(dat0) <- NULL
     dat0$id <- 1:n
     X <- as.matrix(dat0 %>% select(starts_with("x")))
-    ## subset(dat0, select = c(x1, x2)))
     .C("kappa2", as.integer(n), as.double(X %*% b), as.double(mm / Fhat),
+       result = double(1), PACKAGE = "SSIndex")$result
+}
+
+
+#' Revised function to get kappa for testing H0: beta0 = 0 & gamma0 = 0
+#' @noRd
+#'
+#' @export
+getk03 <- function(dat, b) {
+    dat0 <- subset(dat, event < 1)
+    n <- nrow(dat0)
+    rownames(dat0) <- NULL
+    dat0$id <- 1:n
+    X <- as.matrix(dat0 %>% select(starts_with("x")))
+    yi <- dat0$Time
+    mm <- aggregate(event ~ id, subset(dat, m > 0), sum)[,2]
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    tij <- subset(dat, event == 1)$Time
+    .C("kappa3", as.integer(n), as.integer(mm), as.integer(midx), 
+       as.double(X %*% b), as.double(tij), as.double(yi),
        result = double(1), PACKAGE = "SSIndex")$result
 }
