@@ -771,15 +771,15 @@ fit <- gsm(fname, data = dat0)
 str(fit)
 tab <- data.frame(b0 = fit$b0, r0 = fit$r0, b00 = fit$b00, r00 = fit$r0)
 names(tab) <- c("b", "r", "b.smooth", "r.smooth")
-rownames(tab) <- c("allogeneic", "age", "age2", "cmv1", "gender", "white")
+rownames(tab) <- c("allogeneic", "age", "age2", "gender", "white", "cmv")
 tab
 ##                     b           r   b.smooth    r.smooth
 ## allogeneic  0.7563023  0.82574611  0.7707468  0.82574611
 ## age        -0.2160166 -0.02609171 -0.2094977 -0.02609171
 ## age2        0.5446405  0.12314392  0.5329246  0.12314392
-## cmv1        0.1124970  0.12469424  0.1008363  0.12469424
-## gender      0.2402366 -0.43123901  0.2457787 -0.43123901
-## white       0.1197548  0.31746247  0.0864659  0.31746247
+## gender      0.1124970  0.12469424  0.1008363  0.12469424
+## whtie       0.2402366 -0.43123901  0.2457787 -0.43123901
+## cmv1        0.1197548  0.31746247  0.0864659  0.31746247
 
 fit$Fhat0
 datFhat <- data.frame(Time = dat00$Time, Fhat = fit$Fhat0)
