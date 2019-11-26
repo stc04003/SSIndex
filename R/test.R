@@ -62,3 +62,49 @@ boot.k <- function(dat2, b) {
     dat22$id <- rep(1:n2, mm2[ind2] + 1)
     getk(dat22, b)
 }
+
+#' @export
+getk0s <- function(dat, bi) {
+    if (any(dat$m == 0)) {
+        tmp <- subset(dat, m == 0)
+        tmp$Time <- 0
+        tmp$event <- 1
+        tmp$status <- 0
+        dat <- rbind(dat, tmp)
+    }
+    n <- length(unique(dat$id))
+    dat <- dat[order(dat$id, dat$Time),]
+    tid <- subset(dat, event == 1)$id
+    tij <- subset(dat, event == 1)$Time
+    yi <- subset(dat, event == 0)$Time
+    m0 <- pmin(subset(dat, event == 1)$m, 1)
+    Xij0 <- as.matrix(subset(dat, event == 0)[, grep("x|y", names(dat))])
+    Xij <- Xij0[tid,]
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    mat1 <- matrix(0, sum(mm), sum(mm))
+    mat1[t(outer(tid, tid, "<"))] <- 
+        .C("k0Mat", as.integer(n), as.integer(mm), as.integer(midx), 
+           as.double(tij), as.double(yi), result = double(sum(outer(tid, tid, "<"))),
+           PACKAGE = "SSIndex")$result
+    mat1 <- t(mat1)
+    mat2 <- matrix(0, n, n)
+    mat2[t(outer(1:n, 1:n, "<"))] <- 
+        .C("k02Mat", as.integer(n), as.integer(mm), as.integer(midx), 
+           as.double(tij), as.double(yi), result = double(sum(1:(n - 1))),
+           PACKAGE = "SSIndex")$result
+    mat2 <- t(mat2)
+    mat2 <- mat2 - t(mat2)
+    k0 <- .C("givek0s", as.integer(n), as.integer(mm), as.integer(midx), as.double(m0), as.integer(length(m0)), 
+             as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(mat1), as.double(mat2),
+             result = double(2 * NROW(bi)), PACKAGE = "SSIndex")$result
+    k0 <- matrix(k0, 2)   
+    ## ## need betas here
+    ## k0 <- sapply(1:NROW(bi), function(x) {
+    ##     xb <- c(Xij0 %*% bi[x,])
+    ##     bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
+    ##     c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat1),
+    ##       sum(bxSgn0 * mat2))
+    ## })
+    return(k0 / n / (n - 1))
+}
