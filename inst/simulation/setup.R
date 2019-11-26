@@ -120,7 +120,7 @@ do <- function(n, model, frailty = FALSE, type1 = FALSE, B = 200) {
     }
     tmp <- replicate(B, getBootk(dat))
     c(mean(max(k0) > tmp[1,]), 
-    mean(max(k02) > tmp[2,]))
+      mean(max(k02) > tmp[2,]))
 }
 
 set.seed(1)
@@ -128,8 +128,6 @@ system.time(print(do(200, "M2", B = 50)))
 
 set.seed(1)
 system.time(print(do(400, "M2", B = 50)))
-
-
 
 library(parallel)
 

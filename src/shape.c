@@ -231,12 +231,12 @@ void kappa3(int *n, int *m, int *midx, double *xb, double *tij, double *yi, doub
       N1 = 0.0;
       N2 = 0.0;
       for (k = 0; k < m[i]; k++) {
-	if (tij[midx[i] + k] <= yi[i] & tij[midx[i] + k] <= yi[j]) {
+	if (tij[midx[i] + k] <= yi[i] && tij[midx[i] + k] <= yi[j]) {
 	  N1 += 1;
 	}
       }
       for (k = 0; k < m[j]; k++) {
-	if (tij[midx[j] + k] <= yi[i] & tij[midx[j] + k] <= yi[j]) {
+	if (tij[midx[j] + k] <= yi[i] && tij[midx[j] + k] <= yi[j]) {
 	  N2 += 1;
 	}
       }
@@ -325,7 +325,7 @@ void k0Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) {
 
 // gives k02 matrix in a vector
 void k02Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) {
-  int i, j, k, l, ind;
+  int i, j, k, ind;
   double N1, N2;
   ind = 0;
   for (i = 0; i < (*n - 1); i++) {
