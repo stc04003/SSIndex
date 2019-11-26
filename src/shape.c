@@ -270,41 +270,80 @@ void kappa4(int *n, int *m, int *midx, double *xb, double *tij, double *yi, doub
 	}
       }
       if (xb[i] > xb[j]) {
-	result[0] += N1 - N2;
+	result[1] += N1 - N2;
       }
       if (xb[i] < xb[j]) {
-	result[0] += N2 - N1;
+	result[1] += N2 - N1;
       }
       for (k = 0; k < m[i]; k++) {
 	for (l = 0; l < m[j]; l++) {
-	  if (tij[midx[i] + k] <= yi[j] &&
-	      tij[midx[j] + l] <= yi[i] &&
-	      xb[i] > xb[j] && 
-	      tij[midx[i] + k] > tij[midx[j] + l]) {
-	    result[1] += 1;
-	  }
-	  if (tij[midx[i] + k] <= yi[j] &&
-	      tij[midx[j] + l] <= yi[i] &&
-	      xb[i] < xb[j] && 
-	      tij[midx[i] + k] > tij[midx[j] + l]) {
-	    result[1] -= 1;
-	  }
-	  if (tij[midx[i] + k] <= yi[j] &&
-	      tij[midx[j] + l] <= yi[i] &&
-	      xb[i] > xb[j] && 
-	      tij[midx[i] + k] < tij[midx[j] + l]) {
-	    result[1] -= 1;
-	  }
-	  if (tij[midx[i] + k] <= yi[j] &&
-	      tij[midx[j] + l] <= yi[i] &&
-	      xb[i] < xb[j] && 
-	      tij[midx[i] + k] < tij[midx[j] + l]) {
-	    result[1] += 1;
+	  if (tij[midx[i] + k] <= yi[j] && tij[midx[j] + l] <= yi[i]) {
+	    if (xb[i] > xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
+	      result[0] += 1;
+	    }
+	    if (xb[i] < xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
+	      result[0] -= 1;
+	    }
+	    if (xb[i] > xb[j] && tij[midx[i] + k] < tij[midx[j] + l]) {
+	      result[0] -= 1;
+	    }
+	    if (xb[i] < xb[j] && tij[midx[i] + k] < tij[midx[j] + l]) {
+	      result[0] += 1;
+	    }
 	  }
 	}
       }
     }
   }
-  result[0] = 2 * result[0] / n[0] / (n[0] - 1);
-  result[1] = 2 * result[1] / n[0] / (n[0] - 1);
+  // result[0] = 2 * result[0] / n[0] / (n[0] - 1);
+  // result[1] = 2 * result[1] / n[0] / (n[0] - 1);
+}
+
+// gives k0 matrix in a vector
+// tikSgn * tijyi * t(tijyi))
+void k0Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) {
+  int i, j, k, l, ind;
+  ind = 0;
+  for (i = 0; i < (*n - 1); i++) {
+    for (k = 0; k < m[i]; k++) {
+      for (j = (i + 1); j < *n; j++) {
+	for (l = 0; l < m[j]; l++) {
+	  if (tij[midx[i] + k] <= yi[j] && tij[midx[j] + l] <= yi[i]) {
+	    if (tij[midx[i] + k] > tij[midx[j] + l]) {
+	      result[ind] = 1;
+	    }
+	    if (tij[midx[i] + k] < tij[midx[j] + l]) {
+	      result[ind] = -1;
+	    }
+	  }
+	  ind = ind + 1;
+	}
+      }
+    }
+  }
+}
+
+// gives k02 matrix in a vector
+void k02Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) {
+  int i, j, k, l, ind;
+  double N1, N2;
+  ind = 0;
+  for (i = 0; i < (*n - 1); i++) {
+    for (j = (i + 1); j < *n; j++) {
+      N1 = 0.0;
+      N2 = 0.0;
+      for (k = 0; k < m[i]; k++) {
+	if (tij[midx[i] + k] <= yi[j]) {
+	  N1 += 1;
+	}
+      }
+      for (k = 0; k < m[j]; k++) {
+	if (tij[midx[j] + k] <= yi[i]) {
+	  N2 += 1;
+	}
+      }
+      result[ind] = N1 - N2;
+      ind = ind + 1;
+    }
+  }
 }
