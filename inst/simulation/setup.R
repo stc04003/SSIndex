@@ -91,60 +91,64 @@ getk06 <- function(dat, b) {
 }
 
 
-do <- function(n, model, frailty = FALSE, B = 200) {
-    seed <- sample(1:1e7, 1)
-    set.seed(seed)
-    dat <- simDat(n, model, frailty)
-    fit <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
-               data = dat, shp.ind = FALSE)
-    p <- 2
-    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .05)), p)))
-    r <- rowSums(tmp * tmp)
-    keep <- which(r < 1 & r > 0)
-    bi <- tmp[keep,] / sqrt(r[keep])
-    k0.tmp <- sapply(1:NROW(bi), function(x) getk04(dat, bi[x,]))
-    k0 <- k0.tmp[2,]
-    k02 <- k0.tmp[1,]
-    mm <- aggregate(event ~ id, dat, sum)[, 2]
-    n <- length(unique(dat$id))
-    getBootk <- function(dat) {
-        ind <- sample(1:n, replace = TRUE)
-        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-	dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] <-
-            dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
-            abs(rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .0001))
-        dat0$id <- rep(1:n, mm[ind] + 1)
-        fit0 <- gsm(reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2,
-                    data = dat0, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00)
-        k0B.tmp <- sapply(1:NROW(bi), function(x) getk04(dat0, bi[x,]))
-        k0B <- k0B.tmp[2,] - k0
-        k02B <- k0B.tmp[1,] - k02
-        ## c(max(k0B), max(k02B), fit0$b0, fit0$b00, fit0$r0, fit0$r00)
-	c(fit0$b0, fit0$b00, fit0$r0, fit0$r00, max(k0B), max(k02B))
+getk07 <- function(dat, bi) {
+    if (any(dat$m == 0)) {
+        tmp <- subset(dat, m == 0)
+        tmp$Time <- 0
+        tmp$event <- 1
+        tmp$status <- 0
+        dat <- rbind(dat, tmp)
     }
-    tmp <- replicate(B, getBootk(dat))
-    c(fit$b0, fit$b00, fit$r0, fit$r00,
-    apply(tmp[1:8,], 1, sd), 
-    apply(tmp[1:8,], 1, sdOut), 
-    mean(max(k0) > tmp[9,]), 
-    mean(max(k02) > tmp[10,]))
+    n <- length(unique(dat$id))
+    dat <- dat[order(dat$id, dat$Time),]
+    tid <- subset(dat, event == 1)$id
+    tij <- subset(dat, event == 1)$Time
+    yi <- subset(dat, event == 0)$Time
+    m0 <- pmin(subset(dat, event == 1)$m, 1)
+    Xij0 <- as.matrix(subset(dat, event == 0)[, grep("x|y", names(dat))])
+    Xij <- Xij0[tid,]
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    mat1 <- matrix(0, sum(mm), sum(mm))
+    mat1[t(outer(tid, tid, "<"))] <- 
+        .C("k0Mat", as.integer(n), as.integer(mm), as.integer(midx), 
+           as.double(tij), as.double(yi), result = double(sum(outer(tid, tid, "<"))),
+           PACKAGE = "SSIndex")$result
+    mat1 <- t(mat1)
+    mat2 <- matrix(0, n, n)
+    mat2[t(outer(1:n, 1:n, "<"))] <- 
+        .C("k02Mat", as.integer(n), as.integer(mm), as.integer(midx), 
+           as.double(tij), as.double(yi), result = double(sum(1:(n - 1))),
+           PACKAGE = "SSIndex")$result
+    mat2 <- t(mat2)
+    mat2 <- mat2 - t(mat2)
+    k0 <- .C("givek0s", as.integer(n), as.integer(mm), as.integer(midx), as.double(m0), as.integer(length(m0)), 
+             as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(mat1), as.double(mat2),
+             result = double(2 * NROW(bi)), PACKAGE = "SSIndex")$result
+    k0 <- matrix(k0, 2)   
+    ## ## need betas here
+    ## k0 <- sapply(1:NROW(bi), function(x) {
+    ##     xb <- c(Xij0 %*% bi[x,])
+    ##     bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
+    ##     c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat1),
+    ##       sum(bxSgn0 * mat2))
+    ## })
+    return(k0 / n / (n - 1))
 }
 
 ## Test only
-do <- function(n, model, frailty = FALSE, B = 200) {
+do2 <- function(n, model, frailty = FALSE, B = 200) {
     seed <- sample(1:1e7, 1)
     set.seed(seed)
     dat <- simDat(n, model, frailty)
-    fit <- gsm(reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2,
-               data = dat, shp.ind = FALSE)
     p <- 2
     tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .05)), p)))
     r <- rowSums(tmp * tmp)
     keep <- which(r < 1 & r > 0)
     bi <- tmp[keep,] / sqrt(r[keep])
-    k0.tmp <- sapply(1:NROW(bi), function(x) getk04(dat, bi[x,]))
-    k0 <- k0.tmp[2,]
-    k02 <- k0.tmp[1,]
+    k0.tmp <- getk07(dat, bi) ## sapply(1:NROW(bi), function(x) getk04(dat, bi[x,]))
+    k0 <- k0.tmp[1,]
+    k02 <- k0.tmp[2,]
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     n <- length(unique(dat$id))
     getBootk <- function(dat) {
@@ -154,18 +158,23 @@ do <- function(n, model, frailty = FALSE, B = 200) {
             dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
             abs(rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .0001))
         dat0$id <- rep(1:n, mm[ind] + 1)
-        k0B.tmp <- sapply(1:NROW(bi), function(x) getk04(dat0, bi[x,]))
-        k0B <- k0B.tmp[2,] - k0
-        k02B <- k0B.tmp[1,] - k02
+        k0B.tmp <- getk07(dat0, bi)
+        k0B <- k0B.tmp[1,] - k0
+        k02B <- k0B.tmp[2,] - k02
 	c(max(k0B), max(k02B))
     }
     tmp <- replicate(B, getBootk(dat))
-    c(fit$b0, fit$b00, fit$r0, fit$r00,
-    mean(max(k0) > tmp[9,]), 
-    mean(max(k02) > tmp[10,]))
+    c(mean(max(k0) > tmp[1,]), 
+    mean(max(k02) > tmp[2,]))
 }
 
-system.time(print(do(200, "M2")))
+set.seed(1)
+system.time(print(do(200, "M2", B = 50)))
+## 1 1 502
+
+set.seed(1)
+system.time(print(do2(200, "M2", B = 50)))
+
 
 library(parallel)
 
@@ -317,12 +326,12 @@ getk07 <- function(dat, bi) {
     Xij <- Xij0[tid,]
     mm <- aggregate(event ~ id, dat, sum)[, 2]
     midx <- c(0, cumsum(mm)[-length(mm)])
-    mat <- matrix(0, sum(mm), sum(mm))
-    mat[t(outer(tid, tid, "<"))] <- 
+    mat1 <- matrix(0, sum(mm), sum(mm))
+    mat1[t(outer(tid, tid, "<"))] <- 
         .C("k0Mat", as.integer(n), as.integer(mm), as.integer(midx), 
            as.double(tij), as.double(yi), result = double(sum(outer(tid, tid, "<"))),
            PACKAGE = "SSIndex")$result
-    mat <- t(mat)
+    mat1 <- t(mat1)
     mat2 <- matrix(0, n, n)
     mat2[t(outer(1:n, 1:n, "<"))] <- 
         .C("k02Mat", as.integer(n), as.integer(mm), as.integer(midx), 
@@ -330,25 +339,60 @@ getk07 <- function(dat, bi) {
            PACKAGE = "SSIndex")$result
     mat2 <- t(mat2)
     mat2 <- mat2 - t(mat2)
-    ## need betas here
-    bxSgn0 <- outer(c(Xij0 %*% fit$b0), c(Xij0 %*% fit$b0), function(x, y) sign(x - y))
-    k0 <- sapply(1:NROW(bi), function(x) {
-        xb <- c(Xij0 %*% bi[x,])
-        bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
-        c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat),
-          sum(bxSgn0 * mat2))
-    })
+    k0 <- .C("givek0s", as.integer(n), as.integer(mm), as.integer(midx), as.double(m0), as.integer(length(m0)), 
+             as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(mat1), as.double(mat2),
+             result = double(2 * NROW(bi)), PACKAGE = "SSIndex")$result
+    k0 <- matrix(k0, 2)   
+    ## ## need betas here
+    ## k0 <- sapply(1:NROW(bi), function(x) {
+    ##     xb <- c(Xij0 %*% bi[x,])
+    ##     bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
+    ##     c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat1),
+    ##       sum(bxSgn0 * mat2))
+    ## })
     return(k0 / n / (n - 1))
 }
 
+debug(getk07)
 getk07(dat, bi)
 
 debug(do)
 do(200, "M3")
 
 
+k02 <- .C("givek0s", as.integer(n), as.integer(mm), as.integer(midx), as.double(m0), as.integer(length(m0)), 
+          as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(mat1), as.double(mat2),
+          result = double(2 * NROW(bi)), PACKAGE = "SSIndex")$result
+k02 <- matrix(k02, 2)
+str(k02)
+head(k02, 20)
 
-xb <- c(Xij0 %*% bi[1,])
-bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
-c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat) / n / (n - 1),
-  sum(bxSgn0 * mat2) / n / (n - 1))
+str(.C("givek0s", as.integer(n), as.integer(mm), as.integer(midx), as.double(m0),
+        as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(c(mat1)), as.double(mat2),
+        result = double(2 * NROW(bi)), PACKAGE = "SSIndex"))
+
+
+system.time(k0 <- sapply(1:NROW(bi), function(x) {
+    xb <- c(Xij0 %*% bi[x,])
+    bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
+    c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat1),
+      sum(bxSgn0 * mat2))
+}))
+
+system.time(k02 <- .C("givek0s", as.integer(n), as.integer(mm), as.integer(midx), as.double(m0), as.integer(length(m0)), 
+                      as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(mat1), as.double(mat2),
+                      result = double(2 * NROW(bi)), PACKAGE = "SSIndex")$result)
+
+library(microbenchmark)
+
+microbenchmark(sapply(1:NROW(bi), function(x) {
+    xb <- c(Xij0 %*% bi[x,])
+    bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
+    c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat),
+      sum(bxSgn0 * mat2))}),
+    apply(Xij0 %*% t(bi), 2, function(xb) {
+        bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
+        c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat),
+          sum(bxSgn0 * mat2))
+    }))
+    

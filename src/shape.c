@@ -347,3 +347,33 @@ void k02Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) 
     }
   }
 }
+
+// Replace the last sapply
+// xb is a vector prepared by c(matrix)
+void givek0s(int *n, int *m, int *midx, double *m0, int *lm0, double *xb, int *lxb,
+	     double *mat1, double *mat2, double *result) {
+  int i, j, k, l, p;
+  for (p = 0; p < *lxb; p++) {
+    for (i = 0; i < *n; i++) {  
+      for (k = 0; k < m[i]; k++) {
+	for (j = 0; j < *n; j++) {	
+	  for (l = 0; l < m[j]; l++) {
+	    if (xb[p * n[0] + i] < xb[p * n[0] + j]) {
+	      result[p * 2 + 0] += m0[midx[i] + k] * m0[midx[j] + l] * mat1[lm0[0] * (midx[i] + k) + midx[j] + l];
+	      if (k == 0 && l == 0) {
+		result[p * 2 + 1] += mat2[i * n[0] + j];
+	      }
+	    }
+	    if (xb[p * n[0] + i] > xb[p * n[0] + j]) {
+	      result[p * 2 + 0] -= m0[midx[i] + k] * m0[midx[j] + l] * mat1[lm0[0] * (midx[i] + k) + midx[j] + l];
+	      if (k == 0 && l == 0) {
+		result[p * 2 + 1] -= mat2[i * n[0] + j];
+	      }
+	    }
+	    
+	  }
+	}
+      }
+    }
+  }
+}
