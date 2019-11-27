@@ -300,6 +300,7 @@ mat2 <- mat2 - t(mat2)
 Xij0 %*% fit$b0
 
 getk07 <- function(dat, bi) {
+    time0 <- proc.time()
     if (any(dat$m == 0)) {
         tmp <- subset(dat, m == 0)
         tmp$Time <- 0
@@ -330,6 +331,7 @@ getk07 <- function(dat, bi) {
            PACKAGE = "SSIndex")$result
     mat2 <- t(mat2)
     mat2 <- mat2 - t(mat2)
+    print(proc.time() - time0)
     ## need betas here
     bxSgn0 <- outer(c(Xij0 %*% fit$b0), c(Xij0 %*% fit$b0), function(x, y) sign(x - y))
     k0 <- sapply(1:NROW(bi), function(x) {
@@ -338,6 +340,7 @@ getk07 <- function(dat, bi) {
         c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat),
           sum(bxSgn0 * mat2))
     })
+    print(proc.time() - time0)
     return(k0 / n / (n - 1))
 }
 
