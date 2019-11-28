@@ -231,12 +231,12 @@ void kappa3(int *n, int *m, int *midx, double *xb, double *tij, double *yi, doub
       N1 = 0.0;
       N2 = 0.0;
       for (k = 0; k < m[i]; k++) {
-	if (tij[midx[i] + k] <= yi[i] & tij[midx[i] + k] <= yi[j]) {
+	if (tij[midx[i] + k] <= yi[i] && tij[midx[i] + k] <= yi[j]) {
 	  N1 += 1;
 	}
       }
       for (k = 0; k < m[j]; k++) {
-	if (tij[midx[j] + k] <= yi[i] & tij[midx[j] + k] <= yi[j]) {
+	if (tij[midx[j] + k] <= yi[i] && tij[midx[j] + k] <= yi[j]) {
 	  N2 += 1;
 	}
       }
@@ -325,7 +325,7 @@ void k0Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) {
 
 // gives k02 matrix in a vector
 void k02Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) {
-  int i, j, k, l, ind;
+  int i, j, k, ind;
   double N1, N2;
   ind = 0;
   for (i = 0; i < (*n - 1); i++) {
@@ -344,6 +344,36 @@ void k02Mat(int *n, int *m, int *midx, double *tij, double *yi, double *result) 
       }
       result[ind] = N1 - N2;
       ind = ind + 1;
+    }
+  }
+}
+
+// Replace the last sapply
+// xb is a vector prepared by c(matrix)
+void givek0s(int *n, int *m, int *midx, double *m0, int *lm0, double *xb, int *lxb,
+	     double *mat1, double *mat2, double *result) {
+  int i, j, k, l, p;
+  for (p = 0; p < *lxb; p++) {
+    for (i = 0; i < *n; i++) {  
+      for (k = 0; k < m[i]; k++) {
+	for (j = 0; j < *n; j++) {	
+	  for (l = 0; l < m[j]; l++) {
+	    if (xb[p * n[0] + i] < xb[p * n[0] + j]) {
+	      result[p * 2 + 0] += m0[midx[i] + k] * m0[midx[j] + l] * mat1[lm0[0] * (midx[i] + k) + midx[j] + l];
+	      if (k == 0 && l == 0) {
+		result[p * 2 + 1] += mat2[i * n[0] + j];
+	      }
+	    }
+	    if (xb[p * n[0] + i] > xb[p * n[0] + j]) {
+	      result[p * 2 + 0] -= m0[midx[i] + k] * m0[midx[j] + l] * mat1[lm0[0] * (midx[i] + k) + midx[j] + l];
+	      if (k == 0 && l == 0) {
+		result[p * 2 + 1] -= mat2[i * n[0] + j];
+	      }
+	    }
+	    
+	  }
+	}
+      }
     }
   }
 }
