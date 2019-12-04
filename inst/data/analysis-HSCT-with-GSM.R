@@ -59,7 +59,8 @@ system.time(k02 <- sapply(1:NROW(bi), function(x)
 
 B <- 1000
 mm <- aggregate(event ~ id, dat.HSCT, sum)[, 2]
-n <- length(unique(dat.HSCT$id))
+n <- length(unique(dat.HSCT$id)
+            )
 getBootk <- function(dat.HSCT) {
     ind <- sample(1:n, replace = TRUE)
     dat.HSCT0 <- dat.HSCT[unlist(sapply(ind, function(x) which(dat.HSCT$id %in% x))),]
@@ -784,6 +785,69 @@ tab
 fit$Fhat0
 datFhat <- data.frame(Time = dat00$Time, Fhat = fit$Fhat0)
 datFhat <- datFhat[order(datFhat$Time),]
+
+## Testing
+
+datest <- subset(dat0, select = c(allo, scaleAge, scaleAge2, gender, race0, cmv1,
+                                  id, Time, event, status, m))
+colnames(datest) <- c(paste("x", 1:6, sep = ""), "id", "Time", "event", "status", "m")
+
+p <- 6
+tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .2)), p)))
+r <- sqrt(rowSums(tmp^2))
+bi <- (tmp / r)[r < 1 & r > 0,]
+str(bi)
+system.time(k0.tmp <- getk0s(datest, bi))
+k0 <- k0.tmp[1,]
+k02 <- k0.tmp[2,]
+
+
+getBootk <- function(dat) {
+    n <- length(unique(dat$id))
+    mm <- aggregate(event ~ id, dat, sum)[, 2]
+    ind <- sample(1:n, replace = TRUE)
+    dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+    dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] <-
+        dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
+        abs(rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .0001))
+    dat0$id <- rep(1:n, mm[ind] + 1)
+    k0B.tmp <- getk0s(dat0, bi)
+    k0B <- k0B.tmp[1,] - k0
+    k02B <- k0B.tmp[2,] - k02
+    c(max(k0B), max(k02B))
+}
+
+system.time(getBootk(datest))
+
+library(parallel)
+
+cl <- makePSOCKcluster(8)
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, "k0"))
+invisible(clusterExport(NULL, "k02"))
+invisible(clusterExport(NULL, "bi"))
+invisible(clusterExport(NULL, "datest"))
+invisible(clusterExport(NULL, "getBootk"))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
+invisible(clusterEvalQ(NULL, library(survival)))
+
+s1 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
+s2 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
+s3 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
+s4 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
+s5 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
+
+stopCluster(cl)
+
+
+c(mean(max(k0) > s1[1,]),  ## 0.92 
+  mean(max(k02) > s1[2,]))  ## 1.00
+
+c(mean(max(k0) > s0[1,]),  ## 0.905 
+  mean(max(k02) > s0[2,]))  ## 1.00
+
+
+
 
 library(ggplot2)
 
