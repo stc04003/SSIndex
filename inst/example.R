@@ -51,6 +51,7 @@ do <- function(n, model, frailty = FALSE) {
       1 * (max(k02) > quantile(tmp[10,], .95)))
 }
 
+## No bootstrap
 do2 <- function(n, model, B = 200, frailty = FALSE) {
     seed <- sample(1:1e7, 1)
     set.seed(seed)

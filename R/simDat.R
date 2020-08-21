@@ -36,7 +36,7 @@
 #' @export
 #'
 #' @importFrom MASS mvrnorm
-#' @importFrom tibble as.tibble
+#' @importFrom tibble as_tibble
 simDat <- function(n, model, frailty = FALSE, type1 = FALSE, offset1 = 1, offset2 = NULL) {
     dat <- NULL
     if (type1) beta0 <- gamma0 <- rep(0, 2)
@@ -83,7 +83,7 @@ simDat <- function(n, model, frailty = FALSE, type1 = FALSE, offset1 = 1, offset
         }
         dat <- rbind(dat, tmp)
     }
-    return(as.tibble(dat))
+    return(as_tibble(dat))
 }
 
 #' Cumulative rate function

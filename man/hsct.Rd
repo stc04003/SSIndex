@@ -4,7 +4,8 @@
 \name{hsct}
 \alias{hsct}
 \title{HSCT data}
-\format{A \code{data.frame} contains the following columns:
+\format{
+A \code{data.frame} contains the following columns:
 \describe{
   \item{\code{id}}{patient id}
   \item{\code{Time}}{observation time}
@@ -22,7 +23,8 @@
   \item{\code{heme2}}{1 = heme at relapse, 0 = otherwise}
   \item{\code{cmv1}}{1 = receiver negative, 0 = otherwise}
   \item{\code{cmv2}}{1 = receiver and donor both negative, 0 = otherwise}
-}}
+}
+}
 \usage{
 data(hsct)
 }
