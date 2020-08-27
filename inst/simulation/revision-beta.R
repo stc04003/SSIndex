@@ -361,13 +361,12 @@ doEE <- function(n, model, frailty = FALSE, type1 = FALSE) {
     c(sin(b1), cos(b1), sin(b2), cos(b2))
 }
 
-
 set.seed(1); doEE(200, "M2", TRUE) # good
 set.seed(10); doEE(200, "M2", TRUE) # bad
 set.seed(55); doEE(200, "M2", TRUE) # bad
 
 set.seed(10)
-set.seed(2)
+set.seed(1)
 dat <- simDat(200, "M2", TRUE, FALSE)
 fm <- reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2
 betaEst(fm, data = dat)
@@ -544,3 +543,17 @@ plot(1:200, ss, 'l')
 dim(dat)
 dim(subset(dat, id %in% which(subset(dat, status == 1)$Time == 10)))
 dim(subset(dat, id %in% which(subset(dat, status == 1)$Time < 10)))
+
+
+
+bb <- matrix(NA, 500, 4)
+for (i in 1:500) {
+    set.seed(i)
+    bb[i,] <- doEE(100, "M2", TRUE)
+}
+
+set.seed(1); doEE(100, "M2", TRUE)
+set.seed(1); dim(simDat(100, "M2", TRUE, FALSE))
+
+
+doEE(50, "M2", TRUE)
