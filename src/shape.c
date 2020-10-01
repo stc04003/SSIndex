@@ -16,11 +16,10 @@
 /* } */
 
 double kernal(double dx) {
-  // I added "= 0.0", not sure if this matters or not
-  double out=0.0;
+  double out = 0.0;
   if ((dx <= 1.0) && (dx >= -1.0)) {
     // out = 15 * (1 - dx * dx) * (1 - dx * dx) / 16; // Quartic/biweight
-    out = 3 * (1 - dx * dx) / 4; // Epanechnikov
+    out = 0.75 * (1 - dx * dx); // Epanechnikov
   }
   return(out);
 }
@@ -37,11 +36,13 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
       if (tij[midx[i] + k] >= t[0]) {
   	de = 0.0;
   	nu = 0.0;
-  	nu = kernal((x[0] - xb[i]) / h[0]);
+  	// nu = kernal((x[0] - xb[i]) / h[0]) / h[0];
   	for (j = 0; j < *n; j++) {
   	  for (l = 0; l < m[j]; l++) {
-  	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-  	      de += kernal((x[0] - xb[j]) / h[0]);
+	    if (tij[midx[i] + k] == tij[midx[j] + l])
+	      nu += kernal((x[0] - xb[j]) / h[0]) / h[0];
+	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+  	      de += kernal((x[0] - xb[j]) / h[0]) / h[0];
   	  }
   	}
   	if(de == 0) {
@@ -70,11 +71,11 @@ void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
     for (k = 0; k < m[i]; k++) {
       de = 0.0;
       nu = 0.0;
-      nu = kernal((x[0] - xb[i]) / h[0]);
+      nu = kernal((x[0] - xb[i]) / h[0]) / h[0];
       for (j = 0; j < *n; j++) {
         for (l = 0; l < m[j]; l++) {
           if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-            de += kernal((x[0] - xb[j]) / h[0]);
+            de += kernal((x[0] - xb[j]) / h[0]) / h[0];
         }
       }
       if (de == 0) {
@@ -88,7 +89,7 @@ void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 }
 
 // return the estimating equation for \gamma_0
-void shapeEq(int *n, double *xr, double *mFhat, double *result) {
+void sizeEq(int *n, double *xr, double *mFhat, double *result) {
   int i, j;
   for (i = 0; i < *n; i++) {
     // tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);    
@@ -102,10 +103,9 @@ void shapeEq(int *n, double *xr, double *mFhat, double *result) {
 
 // return the estimating equation for \gamma_0
 // This is `shapeEq` but with a small \tau_0
-void shapeEq2(int *n, double *xr, double *mFhat, double *y, double *result) {
+void sizeEq2(int *n, double *xr, double *mFhat, double *y, double *result) {
   int i, j;
   for (i = 0; i < *n; i++) {
-    // tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);    
     for (j = 0; j < *n; j++) {
       if (xr[i] > xr[j] && y[i] >= 0.03 && y[j] >= 0.03) {
 	result[0] += mFhat[i];
@@ -117,7 +117,7 @@ void shapeEq2(int *n, double *xr, double *mFhat, double *y, double *result) {
 // return \hat r(t,x,\beta) from SS1117 (paper #2)
 // h2 is the bandwidth for smoothing on the time scale
 // I think this function can be improved 
-void shapeFun3(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
+void sizeFun3(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
                double *x, double *t, double *h, double *h2, double *result) {
   int i, j, k, l;
   double nu = 0.0;
@@ -127,13 +127,13 @@ void shapeFun3(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
     for (k = 0; k < m[i]; k++) {
       de = 0.0;
       nu = 0.0;
-      nu = kernal((x[0] - xb[i]) / h[0]);
+      nu = kernal((x[0] - xb[i]) / h[0]) / h[0];
       // new addition:
       nu = nu * kernal((tij[midx[i]+k] - t[0]) / h2[0]);
       for (j = 0; j < *n; j++) {
         for (l = 0; l < m[j]; l++) {
           if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-            de += kernal((x[0] - xb[j]) / h[0]);
+            de += kernal((x[0] - xb[j]) / h[0]) / h[0];
         }
       }
       if(de == 0)

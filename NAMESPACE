@@ -3,6 +3,7 @@
 export(Douglas06)
 export(boot.d)
 export(boot.k)
+export(getFhat)
 export(getb0)
 export(getd)
 export(getk)

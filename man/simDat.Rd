@@ -4,7 +4,15 @@
 \alias{simDat}
 \title{Function to generate simulated data}
 \usage{
-simDat(n, model, frailty = FALSE, type1 = FALSE, offset1 = 1, offset2 = NULL)
+simDat(
+  n,
+  model,
+  frailty = FALSE,
+  type1 = FALSE,
+  offset1 = 1,
+  offset2 = NULL,
+  noCen = FALSE
+)
 }
 \description{
 We formulate the proposed rate function as

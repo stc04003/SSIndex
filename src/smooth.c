@@ -51,7 +51,7 @@ void rankSmooth(int *n, int *p, int *m, int *midx,
 }
 
 
-void shapeEqSmooth(int *n, int *p, double *xr,
+void sizeEqSmooth(int *n, int *p, double *xr,
 		   double *xx, double *sigma, 
 		   double *mFhat, double *result) {
   int i, j;

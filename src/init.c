@@ -18,9 +18,9 @@ extern void k02Mat(void *, void *, void *, void *, void *, void *);
 extern void givek0s(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void rank(void *, void *, void *, void *, void *, void *, void *);
 extern void rankSmooth(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void shapeEq(void *, void *, void *, void *);
-extern void shapeEq2(void *, void *, void *, void *, void *);
-extern void shapeEqSmooth(void *, void *, void *, void *, void *, void *, void *);
+extern void sizeEq(void *, void *, void *, void *);
+extern void sizeEq2(void *, void *, void *, void *, void *);
+extern void sizeEqSmooth(void *, void *, void *, void *, void *, void *, void *);
 extern void shapeFun(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void shapeFun2(void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void outerC(void *, void *, void *, void *, void *);
@@ -41,9 +41,9 @@ static const R_CMethodDef CEntries[] = {
     {"k02Mat",        (DL_FUNC) &k02Mat,         6},
     {"rank",          (DL_FUNC) &rank,           7},
     {"rankSmooth",    (DL_FUNC) &rankSmooth,    10},
-    {"shapeEq",       (DL_FUNC) &shapeEq,        4},
-    {"shapeEq2",      (DL_FUNC) &shapeEq2,       5},
-    {"shapeEqSmooth", (DL_FUNC) &shapeEqSmooth,  7},
+    {"sizeEq",        (DL_FUNC) &sizeEq,        4},
+    {"sizeEq2",       (DL_FUNC) &sizeEq2,       5},
+    {"sizeEqSmooth",  (DL_FUNC) &sizeEqSmooth,  7},
     {"shapeFun",      (DL_FUNC) &shapeFun,      10},
     {"shapeFun2",     (DL_FUNC) &shapeFun2,      9},
     {NULL, NULL, 0}

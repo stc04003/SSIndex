@@ -4,7 +4,16 @@
 \alias{gsm}
 \title{Main estimation function}
 \usage{
-gsm(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NULL)
+gsm(
+  formula,
+  data,
+  shp.ind = FALSE,
+  B = 100,
+  bIni = NULL,
+  rIni = NULL,
+  optMethod = NULL,
+  smoothFirst = NULL
+)
 }
 \arguments{
 \item{formula}{a formula object, with the response on the left of a '~' operator.}
@@ -14,6 +23,18 @@ gsm(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NULL)
 \item{shp.ind}{a character string indicating either to proceed with shape independence assumption.}
 
 \item{B}{a numerical value specifying number of bootstrap in shape independence testing.}
+
+\item{bIni}{initial value for estimating \beta}
+
+\item{rIni}{initial value for estimating \gamma}
+
+\item{smoothFirst}{estimate the smooth estimator first and use it to guide?
+Default: FALSE when p = 1,  TRUE when p > 1}
+
+\item{opt}{how many optimization methods to try?
+1: optim
+2: 1 + spg
+Default: 1 when p = 1, 2 when p > 1}
 }
 \description{
 Fits general rate model. The formula takes `reSurv` from `reReg`.
