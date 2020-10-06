@@ -1,6 +1,7 @@
 .Rhistory
 tests/
 ganymede/
+inst/
 *.o
 *.so
 *~

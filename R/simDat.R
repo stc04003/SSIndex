@@ -110,7 +110,7 @@ Lam.f <- function(t, r, b, model, zz){
     ## if (model == "M2") return(zz * (exp(t / 10) * 1 + t * exp(b) - 1))
     if (model == "M3") return(zz * ((1 - exp(-t * exp(b) / 2)) * 2 * exp(-b)))
     if (model == "M4") return(zz * 4 * (pbeta(t, 2, 1 + exp(b)) * exp(r)))
-    if (model == "M5") return(zz * (10 * (1 + t) ^ (exp(b) / 5) - 10))
+    if (model == "M5") return(zz * (10 * (1 + t) ^ (exp(b / 2) / 2) - 10))
     if (model == "M6") return(zz * 0.01 * ((0.15 * t * exp(b) + 1)^3 / 3 / exp(b) / 0.15 - t - exp(-b) / 3 / 0.15))
     ## Old settings, under Pico's draft
     ## if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))

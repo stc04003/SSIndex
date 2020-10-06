@@ -773,6 +773,7 @@ str(fit)
 tab <- data.frame(b0 = fit$b0, r0 = fit$r0, b00 = fit$b00, r00 = fit$r0)
 names(tab) <- c("b", "r", "b.smooth", "r.smooth")
 rownames(tab) <- c("allogeneic", "age", "age2", "gender", "white", "cmv")
+
 tab
 ##                     b           r   b.smooth    r.smooth
 ## allogeneic  0.7563023  0.82574611  0.7707468  0.82574611
@@ -782,188 +783,271 @@ tab
 ## whtie       0.2402366 -0.43123901  0.2457787 -0.43123901
 ## cmv1        0.1197548  0.31746247  0.0864659  0.31746247
 
+fit$Fhat
 fit$Fhat0
 datFhat <- data.frame(Time = dat00$Time, Fhat = fit$Fhat0)
 datFhat <- datFhat[order(datFhat$Time),]
+datFhat$mu <- cumsum(diff(c(0, datFhat$Time)) * (1 - datFhat$Fhat))
 
-## Testing
+plot(datFhat$Time, datFhat$mu, 'l')
 
-datest <- subset(dat0, select = c(allo, scaleAge, scaleAge2, gender, race0, cmv1,
-                                  id, Time, event, status, m))
-colnames(datest) <- c(paste("x", 1:6, sep = ""), "id", "Time", "event", "status", "m")
+## ############################################################################
 
-p <- 6
-tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .2)), p)))
-r <- sqrt(rowSums(tmp^2))
-bi <- (tmp / r)[r < 1 & r > 0,]
-str(bi)
-system.time(k0.tmp <- getk0s(datest, bi))
-k0 <- k0.tmp[1,]
-k02 <- k0.tmp[2,]
+fname <- reSurv(Time, id, event, status) ~ scaleAge + scaleAge2 + race0 + cmv1 + allo + gender
+fit <- gsm(fname, data = dat0)
+fit$b0
+fit$b00
+
+t0 <- seq(0, quantile(fit$info$yi, .9), length.out = 500)
+f <- sapply(1:length(fit$info$xb), function(i)
+    unlist(mapply(FUN = function(x, y)
+        .C("shapeFun", as.integer(length(fit$info$mm)), 
+           as.integer(fit$info$mm),
+           as.integer(fit$info$midx),
+           as.double(fit$info$tij),
+           as.double(fit$info$yi), 
+           as.double(fit$info$xb),
+           as.double(x), as.double(y),
+           as.double(fit$info$h), 
+           ## result = double(1), PACKAGE = "SSIndex")$result, fit$info$xb[i], t0)))
+           result = double(1), PACKAGE = "SSIndex")$result, fit$info$xb[i], fit$info$yi)))
+f <- ifelse(is.na(f), 0, f)
+f <- 1 - exp(-f)
+
+plot(fit$info$xb[order(fit$info$xb)],
+     apply(f, 2, function(x) sum(diff(c(0, t0)) * x))[order(fit$info$xb)], 'l')
+
+## range(fit$info$xb)
+t0 <- seq(0, quantile(fit$info$yi, .9), length.out = 500)
+b0 <- seq(0.1, 1.5, length = 1000)
+f2 <- sapply(1:length(b0), function(i)
+    unlist(mapply(FUN = function(x, y)
+        .C("shapeFun", as.integer(length(fit$info$mm)), 
+           as.integer(fit$info$mm),
+           as.integer(fit$info$midx),
+           as.double(fit$info$tij),
+           as.double(fit$info$yi), 
+           as.double(fit$info$xb),
+           as.double(x), as.double(y),
+           ## as.double(fit$info$h),
+           as.double(.5), 
+           result = double(1), PACKAGE = "SSIndex")$result, b0[i], t0)))
+f2 <- ifelse(is.na(f2), 0, f2)
+f2 <- 1 - exp(-f2)
+
+plot(t0, f2[,395], 'l', ylim = c(0, 1))
+invisible(sapply(1:ncol(f2), function(x) lines(t0, f2[,x], col = 'gray')))
+
+plot(b0, f2[3,], 'l', ylim = c(0, 1))
+invisible(sapply(1:nrow(f2), function(x) lines(b0, f2[x,], col = 'gray')))
+
+plot(b0, apply(f2, 2, function(x) sum(diff(c(0, t0)) * x)), 's')
+
+## allo
+f3 <- sapply(1:length(b0), function(i)
+    unlist(mapply(FUN = function(x, y)
+        .C("shapeFun", as.integer(length(fit$info$mm)), 
+           as.integer(fit$info$mm),
+           as.integer(fit$info$midx),
+           as.double(fit$info$tij),
+           as.double(fit$info$yi), 
+           as.double(fit$info$xb),
+           as.double(x), as.double(y),
+           as.double(fit$info$h), 
+           result = double(1), PACKAGE = "SSIndex")$result, b0[i] + fit$b0[1], t0)))
+f3 <- ifelse(is.na(f3), 0, f3)
+f3 <- 1 - exp(-f3)
 
 
-getBootk <- function(dat) {
-    n <- length(unique(dat$id))
-    mm <- aggregate(event ~ id, dat, sum)[, 2]
-    ind <- sample(1:n, replace = TRUE)
-    dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-    dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] <-
-        dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
-        abs(rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .0001))
-    dat0$id <- rep(1:n, mm[ind] + 1)
-    k0B.tmp <- getk0s(dat0, bi)
-    k0B <- k0B.tmp[1,] - k0
-    k02B <- k0B.tmp[2,] - k02
-    c(max(k0B), max(k02B))
+plot(b0, apply(f2, 2, function(x) sum(diff(c(0, t0)) * x)), 's')
+plot(b0, apply(f3, 2, function(x) sum(diff(c(0, t0)) * x)), 's')
+
+
+plot(t0, f2[,51], 'l', ylim = c(0, 1))
+invisible(sapply(1:ncol(f2), function(x) lines(t0, f2[,x], col = 'gray')))
+
+plot(b0, f2[51,], 'l', ylim = c(0, 1))
+invisible(sapply(1:nrow(f2), function(x) lines(b0, f2[x,], col = 'gray')))
+
+
+plot(b0, apply(f3, 2, function(x) sum(diff(c(0, t0)) * x)) -
+   apply(f2, 2, function(x) sum(diff(c(0, t0)) * x)), 's', xlab = "", ylab = "")
+
+lines(xb[order(xb)], apply(f, 2, function(x) sum(diff(c(0, t0)) * x))[order(xb)], col = 2, 's')
+
+## ############################################################################
+## ############################################################################
+
+library(Rcpp)
+library(RcppArmadillo)
+
+
+sourceCpp(code = '
+ #include <RcppArmadillo.h>
+  // [[Rcpp::depends(RcppArmadillo)]]
+  using namespace arma;
+double kernal(double dx) {
+  double out = 0.0;
+  if ((dx <= 1.0) && (dx >= -1.0)) {
+    out = 0.75 * (1 - dx * dx); // Epanechnikov
+  }
+  // out = 1 / (exp(dx) + 2 + exp(-dx));
+  return(out);
 }
 
-system.time(getBootk(datest))
-
-library(parallel)
-
-cl <- makePSOCKcluster(8)
-setDefaultCluster(cl)
-invisible(clusterExport(NULL, "k0"))
-invisible(clusterExport(NULL, "k02"))
-invisible(clusterExport(NULL, "bi"))
-invisible(clusterExport(NULL, "datest"))
-invisible(clusterExport(NULL, "getBootk"))
-invisible(clusterEvalQ(NULL, library(SSIndex)))
-invisible(clusterEvalQ(NULL, library(survival)))
-
-s1 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
-s2 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
-s3 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
-s4 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
-s5 <- parSapply(NULL, 1:200, function(z) getBootk(datest))
-
-stopCluster(cl)
-
-
-c(mean(max(k0) > s1[1,]),  ## 0.92 
-  mean(max(k02) > s1[2,]))  ## 1.00
-
-c(mean(max(k0) > s0[1,]),  ## 0.905 
-  mean(max(k02) > s0[2,]))  ## 1.00
-
-
-
-
-library(ggplot2)
-
-## Ploting F(t, a) with a = \bar{X} %*% beta
-ggplot(datFhat, aes(x = Time, y = Fhat)) + geom_step() +
-    labs(x = "Time", y = expression(F(t, paste(hat(beta)^T, " ", bar(X)))), title = "")
-
-## ggsave("FtaAT0.pdf")
-## ggsave("Fta.pdf")
-
-## Ploting F(t, a) with fixed t at each Yi and varying a
-
-i <- 111
-ggplot(data.frame(Time = fit$xb[order(fit$xb)], Fhat = fit$Fhat0[[i]][order(fit$xb)]),
-       aes(x = Time, y = Fhat)) + geom_step()
-summary(fit$xb)
-
-fhat <- do.call(rbind, fit$Fhat0)
-
-for (i in 1:164) {
-    plot(fit$xb, fhat[i,], cex = .5, pch = 19)
-    ## plot(dat00$Time, fhat[,i], cex = .5, pch = 19)
-    Sys.sleep(.5)
-}
-
-e
-
-pVal <- function(fname, B = 100, dat0 = dat0) {
-    xNames <- attr(terms(fname), "term.labels")
-    p <- length(attr(terms(fname), "term.labels"))
-    fit <- gsm(fname, data = dat0)
-    ## str(fit)
-    dat1 <- dat0
-    xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
-    colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
-    dat1 <- dat1[,c(1:5, xCol)]
-    ## head(dat1)
-    ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 200)), p - 1)))
-    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
-    r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
-    bi <- (tmp / r)[r < 1 & r > 0,]
-    k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
-    k02 <- sapply(1:NROW(bi), function(x) getk02(dat1, bi[x,], fit$Fhat0))
-    getBootK <- function(dat) {
-        n <- length(unique(dat$id))    
-        mm <- aggregate(event ~ id, dat, length)[, 2]
-        ind <- sample(1:n, n, TRUE)
-        datB <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-        datB$id <- rep(1:n, mm[ind])
-        rownames(datB) <- NULL
-        fitB <- gsm(fname, dat = datB)
-        datB1 <- datB
-        xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
-        colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
-        datB1 <- datB1[,c(1:5, xCol)]
-        kb <- max(sapply(1:NROW(bi), function(x) getk0(datB1, bi[x,]) - k0[x]))
-        kb2 <- max(sapply(1:NROW(bi), function(x) getk02(datB1, bi[x,], fitB$Fhat0) - k02[x]))
-        c(max(kb), max(kb2), fitB$b0, fitB$b00, fitB$r0, fitB$r00)
+  // [[Rcpp::export]]
+double shapeFun(int n, vec m, vec midx, vec tij, vec yi, vec xb,
+	      double x, double t, double h) {
+  int i, j, k, l;
+  double nu = 0.0;
+  double de = 0.0;
+  double result = 0.0;
+  for (i = 0; i < n; i++) {
+    for (k = 0; k < m[i]; k++) {
+      if (tij[midx[i] + k] >= t) {
+  	de = 0.0;
+  	nu = 0.0;
+  	// nu = kernal((x - xb[i]) / h) / h;
+  	for (j = 0; j < n; j++) {
+  	  for (l = 0; l < m[j]; l++) {
+	    if (tij[midx[i] + k] == tij[midx[j] + l])
+	      nu += kernal((x - xb[j]) / h) / h;
+	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
+  	      de += kernal((x - xb[j]) / h) / h;
+  	  }
+  	}
+  	if(de == 0) {
+        result += 0;
+  	} else {
+// Rcpp::Rcout << "nu" << nu << " de " << de << "\\n";
+  	  result += nu / de;
+          // result += (nu + .05) / (de + .05);
+  	}
+// Rcpp::Rcout << result << ", ";
+      }
     }
-    cl <- makePSOCKcluster(8)
-    ## cl <- makePSOCKcluster(16)
-    setDefaultCluster(cl)
-    invisible(clusterExport(cl, c("bi", "k0", "k02", "fname", "dat0", "xNames", "p", "getBootK"),
-                            environment()))
-    invisible(clusterEvalQ(NULL, library(SSIndex)))
-    system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
-    stopCluster(cl)
-    list(h1 = mean(max(k0) > tmp[1,]), h2 = mean(max(k02) > tmp[2,]),
-         coef11 = fit$b0, coef12 = fit$b00,
-         coef21 = fit$r0, coef22 = fit$r00,
-         se11 = apply(tmp[3:5,], 1, sd),
-         se12 = apply(tmp[6:8,], 1, sd),
-         se21 = apply(tmp[9:11,], 1, sd),
-         se22 = apply(tmp[12:14,], 1, sd))      
-}
+  }
+return(result);
+}')
 
-pValShape <- function(fname, B = 100, dat0 = dat0) {
-    xNames <- attr(terms(fname), "term.labels")
-    p <- length(attr(terms(fname), "term.labels"))
-    dat1 <- dat0
-    xCol <- as.numeric(sapply(xNames, function(x) which(names(dat0) == x)))
-    colnames(dat1)[xCol] <- paste("x", 1:p, sep = "")
-    dat1 <- dat1[,c(1:5, xCol)]
-    dat1 <- dat1[complete.cases(dat1),]
-    ## head(dat1)
-    ## bi <- as.matrix(expand.grid(rep(list(seq(0, 2 * pi, length = 100)), p - 1)))
-    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .05)), p)))
-    r <- apply(tmp, 1, function(z) sqrt(sum(z^2)))
-    bi <- (tmp / r)[r < 1 & r > 0,]
-    k0 <- sapply(1:NROW(bi), function(x) getk0(dat1, bi[x,]))
-    getBootK <- function(dat) {
-        n <- length(unique(dat$id))
-        mm <- aggregate(event ~ id, dat, length)[, 2]
-        ind <- sample(1:n, n, TRUE)
-        datB <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-        datB$id <- rep(1:n, mm[ind])
-        datB <- datB[complete.cases(datB),]
-        rownames(datB) <- NULL
-        datB1 <- datB
-        xCol <- as.numeric(sapply(xNames, function(x) which(names(datB) == x)))
-        colnames(datB1)[xCol] <- paste("x", 1:p, sep = "")
-        datB1 <- datB1[,c(1:5, xCol)]
-        kb <- max(sapply(1:NROW(bi), function(x) getk0(datB1, bi[x,]) - k0[x]))
-            ## getk0(datB1, cumprod(c(1, sin(bi[x,]))) * c(cos(bi[x,]), 1)) - k0[x]))
-        max(kb)
-    }
-    ## cl <- makePSOCKcluster(8)
-    cl <- makePSOCKcluster(16)
-    setDefaultCluster(cl)
-    invisible(clusterExport(cl, c("bi", "k0", "fname", "dat0", "xNames", "p", "getBootK"),
-                            environment()))
-    invisible(clusterEvalQ(NULL, library(SSIndex)))
-    system.time(tmp <- parSapply(NULL, 1:B, function(z) getBootK(dat0))) 
-    stopCluster(cl)
-    mean(max(k0) > tmp)
-}
+table(fit$info$xb < b0[5])
+table(fit$info$xb < b0[6])
+b0[5]
+b0[6]
+t0[40]
 
-system.time(f1 <- pVal(fname, 100, dat0))
-f1
+fit$info$tij[fit$info$tij > t0[40]]
+(rep(fit$info$xb, fit$info$mm)[fit$info$tij > t0[40]] - b0[5]) / .5
+(rep(fit$info$xb, fit$info$mm)[fit$info$tij > t0[40]] - b0[6]) / .5
+cbind(fit$info$tij, rep(fit$info$yi, fit$info$mm))
+
+kh <- outer(b0[5], as.numeric(fit$info$xb),
+            function(x, y) {
+                z <- (x - y) / .2
+                ifelse(z >= -1 & z <= 1, .75 * (1 - z^2), 0)})
+fit$info$yi[which(kh > 0)]
+fit$info$tij[which(kh > 0)]
+
+fit <- gsm(fname, data = subset(dat0, race0 == 1))
+
+t0 <- seq(0, quantile(fit$info$yi, .9), length.out = 500)
+b0 <- seq(0.1, 1.5, length = 500)
+f2 <- sapply(1:length(b0), function(i)
+    unlist(mapply(FUN = function(x, y)
+        shapeFun(length(fit$info$mm),
+         fit$info$mm,
+         fit$info$midx,
+         fit$info$tij,
+         fit$info$yi, 
+         fit$info$xb, x, y,
+         quantile(abs(fit$info$xb - b0[i]), .5)),
+         b0[i], t0)))
+f2 <- ifelse(is.na(f2), 0, f2)
+f2 <- 1 - exp(-f2)
+
+pdf("varyh.pdf")
+plot(b0, apply(f2, 2, function(x) sum(diff(c(0, t0)) * x)), 's')
+dev.off()
+
+plot(t0, f2[,35], 'l', ylim = c(0, 1))
+invisible(sapply(1:ncol(f2), function(x) lines(t0, f2[,x], col = 'gray')))
+
+plot(b0, f2[3,], 'l', ylim = c(0, 1))
+invisible(sapply(1:nrow(f2), function(x) lines(b0, f2[x,], col = 'gray')))
+
+plot(b0, apply(f2, 2, function(x) sum(diff(c(0, t0)) * x)), 's')
+
+plot(b0, f2[50,], 'l', ylim = c(0, 1))
+
+shapeFun(length(fit$info$mm),
+         fit$info$mm,
+         fit$info$midx,
+         fit$info$tij,
+         fit$info$yi, 
+         fit$info$xb,
+         b0[396], 50, .5)
+
+sss2 <- 1 - exp(-sapply(t0, function(y)
+    shapeFun(length(fit$info$mm),
+             fit$info$mm,
+             fit$info$midx,
+             fit$info$tij,
+             fit$info$yi, 
+             fit$info$xb,
+             b0[396], y, .5)))
+                 
+sss <- 1 - exp(-sapply(t0, function(y)
+    .C("shapeFun", as.integer(length(fit$info$mm)), 
+       as.integer(fit$info$mm),
+       as.integer(fit$info$midx),
+       as.double(fit$info$tij),
+       as.double(fit$info$yi), 
+       as.double(fit$info$xb),
+       as.double(b0[396]), as.double(y),
+       ## as.double(fit$info$h),
+       as.double(.5), 
+       result = double(1), PACKAGE = "SSIndex")$result))
+
+plot(t0, sss, 'l')
+b0[396]
+summary(c(fit$info$xb))
+table(fit$info$xb < b0[396])
+tapply(fit$info$yi, fit$info$xb < b0[396], summary)
+
+boxplot(fit$info$yi)
+
+kk <- outer(as.numeric(fit$info$xb), as.numeric(fit$info$xb), "-")
+kk <- ifelse(kk >= -1 & kk <= 1, .75 * (1 - kk^2), 0)
+str(kk)
+
+xb <- as.numeric(fit$info$xb)
+plot(xb[order(xb)], kk[,1][order(xb)], 'l')
+invisible(sapply(1:length(xb), function(x) lines(xb[order(xb)], kk[,x][order(xb)], col = 'gray')))
+
+
+
+## kk <- outer(rep(as.numeric(fit$info$xb), fit$info$mm),
+##             rep(as.numeric(fit$info$xb), fit$info$mm), "-")            
+kk <- outer(b0, rep(as.numeric(fit$info$xb), fit$info$mm), "-")
+kk <- kk / .2
+kk <- ifelse(kk >= -1 & kk <= 1, .75 * (1 - kk^2), 0) / .2
+
+nuInd <- outer(fit$info$tij, fit$info$tij, "==")
+deInd <- outer(fit$info$tij, fit$info$tij, "<=") *
+    outer(fit$info$tij, rep(fit$info$yi, fit$info$mm), "<=")
+
+fR <- sapply(t0, function(tt) {
+    ind <- fit$info$tij >= tt
+    ## 1 - exp(-colSums(t(kk %*% (nuInd * ind))) / colSums(t(kk %*% (deInd * ind))))
+    1 - exp(-colSums(t(kk %*% t(nuInd * ind))) / colSums(t(kk %*% t(deInd * ind))))
+})
+
+str(fR)
+plot(t0, fR[12,], 'l')
+invisible(sapply(1:1000, function(x) lines(t0, fR[x,], col = 'gray')))
+
+summary(c(fR))
+
+
+plot(b0, fR[,12], 'l')
+invisible(sapply(1:length(xb), function(x) lines(b0, fR[,x], col = 'gray')))

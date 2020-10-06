@@ -31,7 +31,7 @@ for (j in 1: NumIt){
   set.seed(sim)  
   print(j)	
   X = matrix(runif(m * n),n,m, byrow = FALSE)
-  z = X%*%a0
+  z = X %*% a0
   y = (z)^3 + rnorm(n,0,sigma)
   ## y = rbinom(n,10,exp(z)/(1+exp(z)))
   ## EDR estimate proposed by Hristache et al.

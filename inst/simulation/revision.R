@@ -21,7 +21,6 @@ sourceCpp("pietg/ESE.cpp")
 sourceCpp("pietg/LSE.cpp")
 sourceCpp("pietg/spline.cpp")
 
-
 #######################################################################
 ## Load function
 #######################################################################
@@ -137,38 +136,101 @@ sdOut <- function(x) {
     sd(x)
 }
 
-## Test only
-do <- function(n, model, frailty = FALSE, type1 = FALSE, B = 200) {
-    seed <- sample(1:1e7, 1)
-    set.seed(seed)
-    dat <- simDat(n, model, frailty, type1)
-    p <- 2
-    tmp <- as.matrix(expand.grid(rep(list(seq(-1, 1, .1)), p)))
-    r <- rowSums(tmp * tmp)
-    keep <- which(r < 1 & r > 0)
-    bi <- tmp[keep,] / sqrt(r[keep])
-    k0.tmp <- getk0s(dat, bi) ## sapply(1:NROW(bi), function(x) getk04(dat, bi[x,]))
-    k0 <- k0.tmp[1,]
-    k02 <- k0.tmp[2,]
-    mm <- aggregate(event ~ id, dat, sum)[, 2]
-    n <- length(unique(dat$id))
-    getBootk <- function(dat) {
-        ind <- sample(1:n, replace = TRUE)
-        dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-	dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] <-
-            dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
-            abs(rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .0001))
-        dat0$id <- rep(1:n, mm[ind] + 1)
-        k0B.tmp <- getk0s(dat0, bi)
-        k0B <- k0B.tmp[1,] - k0
-        k02B <- k0B.tmp[2,] - k02
-	c(max(k0B), max(k02B))
-    }
-    tmp <- replicate(B, getBootk(dat))
-    c(mean(max(k0) > tmp[1,]), 
-      mean(max(k02) > tmp[2,]))
-}
 
+## Both EE approaches
+## pietg <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
+##     ## Extract vectors
+##     Call <- match.call()
+##     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
+##     if (!missing(data)) obj <- eval(formula[[2]], data) 
+##     ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
+##     formula[[2]] <- NULL
+##     if (formula == ~ 1) {
+##         DF <- cbind(obj$reDF[, -5], zero=0)
+##     } else {
+##         if (!missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, data))
+##         if (missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, parent.frame()))
+##         DF <- DF[,-which(colnames(DF) == "(Intercept)")]
+##     }
+##     DF <- DF[order(DF$id, DF$Time), ]
+##     DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
+##     m <- aggregate(event ~ id, data = DF, sum)[,2]
+##     dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
+##     ## computation
+##     dat0 <- subset(dat, m > 0)
+##     n <- length(unique(dat0$id)) ## n = 80
+##     mm <- aggregate(event ~ id, dat0, sum)[, 2] ## 80 by 1
+##     dat0$id <- rep(1:n, mm + 1)
+##     tij <- subset(dat0, event == 1)$Time ## 476 by 1
+##     yi <- subset(dat0, event == 0)$Time ## 80 by 1
+##     midx <- c(0, cumsum(mm)[-length(mm)])
+##     X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status))) ## 80 by 2
+##     h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-.2
+##     ## h <- .5
+##     ## Different ways to find root; choose the best root
+##     b1 <- BB::spg(par = 0, fn = function(x)
+##         getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),])^2,
+##         lower = 0, upper = pi, quiet = TRUE, alertConvergence = FALSE)$par
+##     b2 <- optimize(f = function(x)
+##         getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),])^2,
+##         interval = c(0, pi))$minimum
+##     gg <- seq(0, pi, length.out = 21)
+##     g0 <- sapply(gg, function(x)
+##         getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),]))
+##     b3 <- sapply(which(diff(sign(g0)) != 0), function(x)
+##         uniroot(f = function(x) getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),]),
+##                 interval = c(gg[x], gg[x + 1]))$root)
+##     b <- c(b1, b2, b3)
+##     b <- b[which.min(sapply(b, function(x)
+##         abs(getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),]))))]
+##     ## c(sin(b), cos(b))
+##     X0 <- as.matrix(subset(dat, status == 1, select = -c(Time, id, m, event, status)))
+##     bhat <- c(sin(b), cos(b))
+##     Fhat <- unlist(mapply(FUN = function(x, y)
+##         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
+##            as.double(tij), as.double(yi),
+##            as.double(X %*% bhat), as.double(x), as.double(y), as.double(h), 
+##            result = double(1), PACKAGE = "SSIndex")$result,
+##         X0 %*% bhat, subset(dat, status == 1)$Time))
+##     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
+##     Fhat <- exp(-Fhat)    
+##     LSE <- ComputeLSE(X0, m / Fhat)$alpha
+##     SSE <- ComputeSSE(X0, m / Fhat)$alpha
+##     ESE <- ComputeESE(X0, m / Fhat)$alpha
+##     spline <- Compute_spline(X0, m / Fhat)$alpha
+##     MAVE <- as.numeric(mave.compute(X0, m / Fhat, method = "meanmave")$dir[[1]])
+##     MAVE <- abs(MAVE)
+##     suppressWarnings(EFM <- fisher(X0, m / Fhat, 1, mymodel = "none")$root)
+##     est1 <- list(b0 = bhat, LSE = LSE, SSE = SSE, ESE = ESE, spline = spline, MAVE = MAVE, EFM = EFM)
+##     bhat <- LSE <- SSE <- ESE <- spline <- MAVE <- EFM <- NULL
+##     ## Use beta from M-approach
+##     dat$Y <- rep(dat$Time[dat$status == 1], m + 1)
+##     T2 <- dat$Time[dat$status == 0]
+##     C2 <- dat$Y[dat$status == 0]
+##     Z <- as.matrix(subset(dat, status == 0)[,c("x1", "x2")])
+##     b2 <- optimize(f = function(x) -M(c(sin(x), cos(x)), Z, T2, C2, 0.2, 0.5),
+##                    interval = c(0, pi))$minimum
+##     bhat <- c(sin(b2), cos(b2))
+##     Fhat <- unlist(mapply(FUN = function(x, y)
+##         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
+##            as.double(tij), as.double(yi),
+##            as.double(X %*% bhat), as.double(x), as.double(y), as.double(h), 
+##            result = double(1), PACKAGE = "SSIndex")$result,
+##         X0 %*% bhat, subset(dat, status == 1)$Time))
+##     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
+##     Fhat <- exp(-Fhat)
+##     LSE <- ComputeLSE(X0, m / Fhat)$alpha
+##     SSE <- ComputeSSE(X0, m / Fhat)$alpha
+##     ESE <- ComputeESE(X0, m / Fhat)$alpha
+##     spline <- Compute_spline(X0, m / Fhat)$alpha
+##     MAVE <- as.numeric(mave.compute(X0, m / Fhat, method = "meanmave")$dir[[1]])
+##     MAVE <- abs(MAVE)
+##     suppressWarnings(EFM <- fisher(X0, m / Fhat, 1, mymodel = "none")$root)
+##     est2 <- list(b0 = bhat, LSE = LSE, SSE = SSE, ESE = ESE, spline = spline, MAVE = MAVE, EFM = EFM)
+##     list(est1 = est1, est2 = est2)    
+## }
+
+## Only M approach
 pietg <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
     ## Extract vectors
     Call <- match.call()
@@ -187,69 +249,64 @@ pietg <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
     DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
     m <- aggregate(event ~ id, data = DF, sum)[,2]
     dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
-    ## computation
+    ## h <- .5
+    ## Different ways to find root; choose the best root    
+    ## Use beta from M-approach
+    dat$Y <- rep(dat$Time[dat$status == 1], m + 1)
+    T2 <- dat$Time[dat$status == 0]
+    C2 <- dat$Y[dat$status == 0]
+    Z <- as.matrix(subset(dat, status == 0)[,c("x1", "x2")])
+    h <- 1.06 * sd(Z %*% c(.6, .8)) * nrow(Z)^-.2
+    ht <- 1.06 * sd(T2) * length(T2)^-.2
+    ## print(c(h, ht))    
+    b2 <- optimize(f = function(x) -M(c(sin(x), cos(x)), Z, T2, C2, h, ht),
+                   interval = c(0, pi))$minimum
+    bhat <- c(sin(b2), cos(b2))
     dat0 <- subset(dat, m > 0)
-    n <- length(unique(dat0$id)) ## n = 80
-    mm <- aggregate(event ~ id, dat0, sum)[, 2] ## 80 by 1
+    n <- length(unique(dat0$id)) 
+    mm <- aggregate(event ~ id, dat0, sum)[, 2] 
     dat0$id <- rep(1:n, mm + 1)
-    tij <- subset(dat0, event == 1)$Time ## 476 by 1
-    yi <- subset(dat0, event == 0)$Time ## 80 by 1
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
     midx <- c(0, cumsum(mm)[-length(mm)])
-    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status))) ## 80 by 2
-    ## h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-.2
-    h <- .5
-    ## Different ways to find root; choose the best root
-    b1 <- BB::spg(par = 0, fn = function(x)
-        getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),])^2,
-        lower = 0, upper = pi, quiet = TRUE, alertConvergence = FALSE)$par
-    b2 <- optimize(f = function(x)
-        getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),])^2,
-        interval = c(0, pi))$minimum
-    gg <- seq(0, pi, length.out = 21)
-    g0 <- sapply(gg, function(x)
-        getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),]))
-    b3 <- sapply(which(diff(sign(g0)) != 0), function(x)
-        uniroot(f = function(x) getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),]),
-                interval = c(gg[x], gg[x + 1]))$root)
-    b <- c(b1, b2, b3)
-    b <- b[which.min(sapply(b, function(x)
-        abs(getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),]))))]
-    ## c(sin(b), cos(b))
-    bhat <- c(sin(b), cos(b))
+    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status, Y)))     
+    X0 <- as.matrix(subset(dat, status == 1, select = -c(Time, id, m, event, status, Y)))    
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
            as.double(tij), as.double(yi),
            as.double(X %*% bhat), as.double(x), as.double(y), as.double(h), 
            result = double(1), PACKAGE = "SSIndex")$result,
-        X %*% bhat, yi))
+        X0 %*% bhat, subset(dat, status == 1)$Time))
     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
     Fhat <- exp(-Fhat)
-    LSE <- ComputeLSE(X, mm / Fhat)$alpha
-    SSE <- ComputeSSE(X, mm / Fhat)$alpha
-    ESE <- ComputeESE(X, mm / Fhat)$alpha
-    spline <- Compute_spline(X, mm / Fhat)$alpha
-    MAVE <- as.numeric(mave.compute(X, mm / Fhat, method = "meanmave")$dir[[1]])
+    LSE <- ComputeLSE(X0, m / Fhat)$alpha
+    SSE <- ComputeSSE(X0, m / Fhat)$alpha
+    ESE <- ComputeESE(X0, m / Fhat)$alpha
+    spline <- Compute_spline(X0, m / Fhat)$alpha
+    MAVE <- as.numeric(mave.compute(X0, m / Fhat, method = "meanmave")$dir[[1]])
     MAVE <- abs(MAVE)
-    suppressWarnings(EFM <- fisher(X, mm / Fhat, 1, mymodel = "none")$root)
+    suppressWarnings(EFM <- fisher(X0, m / Fhat, 1, mymodel = "none")$root)
     list(b0 = bhat, LSE = LSE, SSE = SSE, ESE = ESE, spline = spline, MAVE = MAVE, EFM = EFM)
 }
 
-do <- function(n, model, frailty = FALSE, type1 = FALSE) {
-    dat <- simDat(n, model, frailty, type1)
+do <- function(n, model, frailty = FALSE, type1 = FALSE, noCen = FALSE) {
+    dat <- simDat(n, model, frailty, type1, noCen = noCen)
     fit <- pietg(reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2,
                  data = dat)
     unlist(fit)
 }
 
-
 set.seed(1); do(200, "M2", TRUE)
 set.seed(10); do(200, "M2", TRUE) ## -1
+set.seed(10); do(200, "M2", TRUE, noCen = TRUE)
+set.seed(5); matrix(do(200, "M2", TRUE), ncol = 2)
 
-set.seed(55); do(200, "M2", TRUE) 
-for (i in 40:70) {
-    set.seed(i)
-    if(do(200, "M2", TRUE)[2] < -0.9) break
-    print(i)
+matrix(do(200, "M2", TRUE, noCen = TRUE), ncol = 2)
+f <- replicate(10, do(200, "M2", TRUE, noCen = TRUE))
+
+f <- NULL
+for (i in 1:10) {
+    f <- cbind(f, do(200, "M2", TRUE, noCen = TRUE))
 }
 
 ## Yifei code
@@ -271,8 +328,6 @@ for(i in 1:100) {
 plot(thetaall, mall, 'l')
 
 
-debug(pietg)
-
 M2n200 <- replicate(500, do(200, "M2"))
 M3n200 <- replicate(500, do(200, "M3"))
 M4n200 <- replicate(500, do(200, "M4"))
@@ -281,6 +336,15 @@ save(M2n200, file = "M2n200.RData")
 save(M3n200, file = "M3n200.RData")
 save(M4n200, file = "M4n200.RData")
 save(M5n200, file = "M5n200.RData")
+
+M2n200noCen <- replicate(500, do(200, "M2", noCen = TRUE))
+M3n200noCen <- replicate(500, do(200, "M3", noCen = TRUE))
+M4n200noCen <- replicate(500, do(200, "M4", noCen = TRUE))
+M5n200noCen <- replicate(500, do(200, "M5", noCen = TRUE))
+save(M2n200noCen, file = "M2n200noCen.RData")
+save(M3n200noCen, file = "M3n200noCen.RData")
+save(M4n200noCen, file = "M4n200noCen.RData")
+save(M5n200noCen, file = "M5n200noCen.RData")
 
 M2n400 <- replicate(500, do(400, "M2"))
 M3n400 <- replicate(500, do(400, "M3"))
@@ -302,6 +366,15 @@ save(M3n200c, file = "M3n200c.RData")
 save(M4n200c, file = "M4n200c.RData")
 save(M5n200c, file = "M5n200c.RData")
 
+M2n200cnoCen <- replicate(500, do(200, "M2", TRUE, noCen = TRUE))
+M3n200cnoCen <- replicate(500, do(200, "M3", TRUE, noCen = TRUE))
+M4n200cnoCen <- replicate(500, do(200, "M4", TRUE, noCen = TRUE))
+M5n200cnoCen <- replicate(500, do(200, "M5", TRUE, noCen = TRUE))
+save(M2n200cnoCen, file = "M2n200cnoCen.RData")
+save(M3n200cnoCen, file = "M3n200cnoCen.RData")
+save(M4n200cnoCen, file = "M4n200cnoCen.RData")
+save(M5n200cnoCen, file = "M5n200cnoCen.RData")
+
 M2n400c <- replicate(500, tryCatch(do(400, "M2", TRUE), error = function(e) do(400, "M2", TRUE)))
 M3n400c <- replicate(500, do(400, "M3", TRUE))
 M4n400c <- replicate(500, do(400, "M4", TRUE))
@@ -321,26 +394,55 @@ save(M6n400, file = "M6n400.RData")
 M6n400c <- replicate(500, tryCatch(do(400, "M6", TRUE), error = function(e) do(400, "M6", TRUE)))
 save(M6n400c, file = "M6n400c.RData")
 
-load("M2n200c.RData")
-load("M3n200c.RData")
-load("M4n200c.RData")
-load("M5n200c.RData")
-load("M2n400c.RData")
-load("M3n400c.RData")
-load("M4n400c.RData")
-load("M5n400c.RData")
-load("M2n200.RData")
-load("M3n200.RData")
-load("M4n200.RData")
-load("M5n200.RData")
-load("M2n400.RData")
-load("M3n400.RData")
-load("M4n400.RData")
-load("M5n400.RData")
-load("M6n200.RData")
-load("M6n400.RData")
-load("M6n200c.RData")
-load("M6n400c.RData")
+load("revision-sim/M2n200c.RData")
+load("revision-sim/M3n200c.RData")
+load("revision-sim/M4n200c.RData")
+load("revision-sim/M5n200c.RData")
+load("revision-sim/M2n400c.RData")
+load("revision-sim/M3n400c.RData")
+load("revision-sim/M4n400c.RData")
+load("revision-sim/M5n400c.RData")
+load("revision-sim/M2n200.RData")
+load("revision-sim/M3n200.RData")
+load("revision-sim/M4n200.RData")
+load("revision-sim/M5n200.RData")
+load("revision-sim/M2n400.RData")
+load("revision-sim/M3n400.RData")
+load("revision-sim/M4n400.RData")
+load("revision-sim/M5n400.RData")
+load("revision-sim/M6n200.RData")
+load("revision-sim/M6n400.RData")
+load("revision-sim/M6n200c.RData")
+load("revision-sim/M6n400c.RData")
+
+load("M2n200noCen.RData")
+load("M3n200noCen.RData")
+load("M4n200noCen.RData")
+load("M5n200noCen.RData")
+
+matrix(rowMeans(M2n200), ncol = 2) - c(.6, .8)
+matrix(rowMeans(M3n200), ncol = 2) - c(.6, .8)
+matrix(rowMeans(M4n200), ncol = 2) - c(.6, .8, rep(c(.28, .96), 6))
+matrix(rowMeans(M5n200), ncol = 2) - c(.6, .8)
+
+matrix(rowMeans(M2n200), ncol = 1) - c(.6, .8)
+matrix(rowMeans(M3n200), ncol = 1) - c(.6, .8)
+matrix(rowMeans(M4n200), ncol = 1) - c(.6, .8, rep(c(.28, .96), 6))
+matrix(rowMeans(M5n200), ncol = 1) - c(.6, .8)
+
+matrix(rowMeans(M2n200noCen), ncol = 2) - c(.6, .8)
+matrix(rowMeans(M3n200noCen), ncol = 2) - c(.6, .8)
+matrix(rowMeans(M4n200noCen), ncol = 2) - c(.6, .8, rep(c(.28, .96), 6))
+matrix(rowMeans(M5n200noCen), ncol = 2) - c(.6, .8)
+
+cbind((matrix(rowMeans(M2n200noCen), ncol = 2) - c(.6, .8))[1:12,],
+      matrix(rowMeans(M2n200), ncol = 1) - c(.6, .8))      
+cbind((matrix(rowMeans(M3n200noCen), ncol = 2) - c(.6, .8))[1:12,],
+      matrix(rowMeans(M3n200), ncol = 1) - c(.6, .8))      
+cbind((matrix(rowMeans(M4n200noCen), ncol = 2) - c(.6, .8))[1:12,],
+      matrix(rowMeans(M4n200), ncol = 1) - c(.6, .8))      
+cbind((matrix(rowMeans(M5n200noCen), ncol = 2) - c(.6, .8))[1:12,],
+      matrix(rowMeans(M5n200), ncol = 1) - c(.6, .8))      
 
 M2n200[10:11,] <- abs(M2n200[10:11,])
 M2n200c[10:11,] <- abs(M2n200c[10:11,])
@@ -433,4 +535,95 @@ print(xtable(cbind(abs(rowMeans(M4n400) - c(.6, .8, rep(c(.28, .96), 5))),
              abs(rowMeans(M4n400c) - c(.6, .8, rep(c(.28, .96), 5))), 
              apply(M4n400c, 1, sd)), digits = 3), include.rownames = FALSE)
 
+## ###############################################################################
+## Print for paper
+## ###############################################################################
+
+load("M2n200c.RData")
+load("M3n200c.RData")
+load("M4n200c.RData")
+load("M5n200c.RData")
+load("M2n400c.RData")
+load("M3n400c.RData")
+load("M4n400c.RData")
+load("M5n400c.RData")
+load("M2n200.RData")
+load("M3n200.RData")
+load("M4n200.RData")
+load("M5n200.RData")
+load("M2n400.RData")
+load("M3n400.RData")
+load("M4n400.RData")
+load("M5n400.RData")
+
+
+sumTab <- function(dat) {
+    ## "b01"     "b02"     "LSE1"    "LSE2"    "SSE1"    "SSE2"    "ESE1"   
+    ## "ESE2"    "spline1" "spline2" "MAVE1"   "MAVE2"   "EFM1"    "EFM2"   
+    rowMeans(dat)
+}
+
+rowMeans(M2n200)
+
+## ###############################################################################
+## Flip sign for LSE, SSE, and ESE
+## ###############################################################################
+
+pietg <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
+    ## Extract vectors
+    Call <- match.call()
+    if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
+    if (!missing(data)) obj <- eval(formula[[2]], data) 
+    ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
+    formula[[2]] <- NULL
+    if (formula == ~ 1) {
+        DF <- cbind(obj$reDF[, -5], zero=0)
+    } else {
+        if (!missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, data))
+        if (missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, parent.frame()))
+        DF <- DF[,-which(colnames(DF) == "(Intercept)")]
+    }
+    DF <- DF[order(DF$id, DF$Time), ]
+    DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
+    m <- aggregate(event ~ id, data = DF, sum)[,2]
+    dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
+    ## h <- .5
+    ## Different ways to find root; choose the best root    
+    ## Use beta from M-approach
+    dat$Y <- rep(dat$Time[dat$status == 1], m + 1)
+    T2 <- dat$Time[dat$status == 0]
+    C2 <- dat$Y[dat$status == 0]
+    Z <- as.matrix(subset(dat, status == 0)[,c("x1", "x2")])
+    h <- 1.06 * sd(Z %*% c(.6, .8)) * nrow(Z)^-.2
+    ht <- 1.06 * sd(T2) * length(T2)^-.2
+    ## print(c(h, ht))    
+    b2 <- optimize(f = function(x) -M(c(sin(x), cos(x)), Z, T2, C2, h, ht),
+                   interval = c(0, pi))$minimum
+    bhat <- c(sin(b2), cos(b2))
+    dat0 <- subset(dat, m > 0)
+    n <- length(unique(dat0$id)) 
+    mm <- aggregate(event ~ id, dat0, sum)[, 2] 
+    dat0$id <- rep(1:n, mm + 1)
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status, Y)))     
+    X0 <- as.matrix(subset(dat, status == 1, select = -c(Time, id, m, event, status, Y)))    
+    Fhat <- unlist(mapply(FUN = function(x, y)
+        .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
+           as.double(tij), as.double(yi),
+           as.double(X %*% bhat), as.double(x), as.double(y), as.double(h), 
+           result = double(1), PACKAGE = "SSIndex")$result,
+        X0 %*% bhat, subset(dat, status == 1)$Time))
+    Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
+    Fhat <- exp(-Fhat)
+    LSE <- ComputeLSE(X0, m / Fhat)$alpha
+    SSE <- ComputeSSE(X0, m / Fhat)$alpha
+    ESE <- ComputeESE(X0, m / Fhat)$alpha
+    spline <- Compute_spline(X0, m / Fhat)$alpha
+    MAVE <- as.numeric(mave.compute(X0, m / Fhat, method = "meanmave")$dir[[1]])
+    MAVE <- abs(MAVE)
+    suppressWarnings(EFM <- fisher(X0, m / Fhat, 1, mymodel = "none")$root)
+    list(b0 = bhat, LSE = LSE, SSE = SSE, ESE = ESE, spline = spline, MAVE = MAVE, EFM = EFM)
+}
 

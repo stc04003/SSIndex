@@ -48,6 +48,10 @@ sumPwr <- function(n, frailty, offset1, offset2) {
     } else {return(rep(NA, 3))}
 }
 
+sumPwr(200, FALSE, .1, .2)
+sumPwr(200, TRUE, .1, .2)
+sumPwr(200, TRUE, .2, .2)
+
 n <- 200
 frailty <- FALSE
 offset1 <- 1
@@ -56,9 +60,15 @@ offset2 <- .8
 sumPwr(n, frailty, offset1, offset2)
 
 m <- expand.grid(1:10/10, 1:10/10)
-m$shape <- mapply(FUN = function(x, y) sumPwr(200, FALSE, x, y)[1], m[,1], m[,2])
-m$size <- mapply(FUN = function(x, y) sumPwr(200, FALSE, x, y)[2], m[,1], m[,2])
-m$rate <- mapply(FUN = function(x, y) sumPwr(200, FALSE, x, y)[3], m[,1], m[,2])
+## ## Independent
+## m$shape <- mapply(FUN = function(x, y) sumPwr(200, FALSE, x, y)[1], m[,1], m[,2])
+## m$size <- mapply(FUN = function(x, y) sumPwr(200, FALSE, x, y)[2], m[,1], m[,2])
+## m$rate <- mapply(FUN = function(x, y) sumPwr(200, FALSE, x, y)[3], m[,1], m[,2])
+
+## Informative
+m$shape <- mapply(FUN = function(x, y) sumPwr(200, TRUE, x, y)[1], m[,1], m[,2])
+m$size <- mapply(FUN = function(x, y) sumPwr(200, TRUE, x, y)[2], m[,1], m[,2])
+m$rate <- mapply(FUN = function(x, y) sumPwr(200, TRUE, x, y)[3], m[,1], m[,2])
 
 names(m)[1:2] <- c("beta", "gamma")
 attr(m, "out.attrs") <- NULL
@@ -143,3 +153,8 @@ ggplot(m0, aes(beta, gamma)) +
           axis.title = element_text(size = 14,face="bold")) +
     theme(strip.text.x = element_text(size = 12))
 ## ggsave("all-independent.pdf")
+ggsave("all-informative.pdf")
+
+
+sumPwr(200, FALSE, 0.2, 0.2)
+sumPwr(200, TRUE, 0.2, 0.2)

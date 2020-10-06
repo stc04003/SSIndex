@@ -340,7 +340,7 @@ optSolver <- function(fn, par,
     r0 <- trans(par)
     tmp1 <- tmp2 <- NULL
     if (length(r0) > 1) {
-        tmp1 <- optimize(f = Sn, interval = interval)
+        tmp1 <- optimize(f = function(z) fn(z, ...), interval = interval)
         res <- tmp1$minimum %% (2 * pi)
     } else {
         tmp1 <- optim(par = r0 %% (2 * pi), fn = function(z) fn(z, ...),

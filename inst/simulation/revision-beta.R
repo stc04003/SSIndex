@@ -162,7 +162,7 @@ double getb(double theta,
     return(out);
 }')
 
-betaEst <- function(formula, data) {
+betaEst <- function(formula, data, a = .2) {
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
     if (!missing(data)) obj <- eval(formula[[2]], data) 
@@ -189,11 +189,12 @@ betaEst <- function(formula, data) {
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status))) ## 80 by 2
     y <- subset(dat, event == 0)$Time
-    W <- sapply(tij, function(x) sum(x <= y)) / length(y)
+    W <- sapply(tij, function(x) 1)
+    ## W <- sapply(tij, function(x) sum(x <= y)) / length(y)
     ## s <- survfit(Surv(y, y < max(y)) ~ 1)
     ## W <- approx(s$time, s$surv, tij, yleft = 1, yright = min(s$surv))$y
-    ## h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-.2
-    h <- .5
+    h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-a
+    ## h <- .5
     ## Different ways to find root; choose the best root
     b1 <- BB::spg(par = 0, fn = function(x)
         getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], W = W)^2,
@@ -215,7 +216,7 @@ betaEst <- function(formula, data) {
     b
 }
 
-betaEst2 <- function(formula, data) {
+betaEst2 <- function(formula, data, a = .2) {
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
     if (!missing(data)) obj <- eval(formula[[2]], data) 
@@ -241,7 +242,7 @@ betaEst2 <- function(formula, data) {
     yi <- subset(dat0, event == 0)$Time ## 80 by 1
     midx <- c(0, cumsum(mm)[-length(mm)])
     X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status))) ## 80 by 2
-    h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-.2
+    h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-a
     y <- subset(dat, event == 0)$Time
     W <- sapply(tij, function(x) sum(x <= y)) / length(y)
     ## h <- .5
@@ -259,83 +260,6 @@ betaEst2 <- function(formula, data) {
         getb2(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], J = c(1, 0), W = W)^2 +
         getb2(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], J = c(0, 1), W = W)^2))
     b[keep]
-}
-
-eeCurve <- function(formula, data) {
-    Call <- match.call()
-    if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
-    if (!missing(data)) obj <- eval(formula[[2]], data) 
-    ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
-    formula[[2]] <- NULL
-    if (formula == ~ 1) {
-        DF <- cbind(obj$reDF[, -5], zero=0)
-    } else {
-        if (!missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, data))
-        if (missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, parent.frame()))
-        DF <- DF[,-which(colnames(DF) == "(Intercept)")]
-    }
-    DF <- DF[order(DF$id, DF$Time), ]
-    DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
-    m <- aggregate(event ~ id, data = DF, sum)[,2]
-    dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
-    ## computation
-    dat0 <- subset(dat, m > 0)
-    n <- length(unique(dat0$id)) ## n = 80
-    mm <- aggregate(event ~ id, dat0, sum)[, 2] ## 80 by 1
-    dat0$id <- rep(1:n, mm + 1)
-    tij <- subset(dat0, event == 1)$Time ## 476 by 1
-    yi <- subset(dat0, event == 0)$Time ## 80 by 1
-    midx <- c(0, cumsum(mm)[-length(mm)])
-    y <- subset(dat, event == 0)$Time
-    W <- sapply(tij, function(x) sum(x <= y)) / length(y)    
-    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status))) ## 80 by 2
-    h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-.2
-    ## h <- .5
-    t0 <- seq(0, 2 * pi, length.out = 1000)
-    e0 <- sapply(t0, function(x)
-        getb(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], W = W))
-    e0
-}
-
-eeCurve2 <- function(formula, data) {
-    Call <- match.call()
-    if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
-    if (!missing(data)) obj <- eval(formula[[2]], data) 
-    ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
-    formula[[2]] <- NULL
-    if (formula == ~ 1) {
-        DF <- cbind(obj$reDF[, -5], zero=0)
-    } else {
-        if (!missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, data))
-        if (missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, parent.frame()))
-        DF <- DF[,-which(colnames(DF) == "(Intercept)")]
-    }
-    DF <- DF[order(DF$id, DF$Time), ]
-    DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
-    m <- aggregate(event ~ id, data = DF, sum)[,2]
-    dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
-    ## computation
-    dat0 <- subset(dat, m > 0)
-    n <- length(unique(dat0$id)) ## n = 80
-    mm <- aggregate(event ~ id, dat0, sum)[, 2] ## 80 by 1
-    dat0$id <- rep(1:n, mm + 1)
-    tij <- subset(dat0, event == 1)$Time ## 476 by 1
-    yi <- subset(dat0, event == 0)$Time ## 80 by 1
-    midx <- c(0, cumsum(mm)[-length(mm)])
-    y <- subset(dat, event == 0)$Time
-    W <- sapply(tij, function(x) sum(x <= y)) / length(y)
-    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status))) ## 80 by 2
-    h <- 1.06 * sd(X %*% c(.6, .8)) * nrow(X)^-.2
-    ## h <- .5
-    t0 <- seq(0, 2 * pi, length.out = 1000)
-    e0 <- sapply(t0, function(x)
-        getb2(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], J = c(1, 0), W = W)^2 +
-        getb2(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], J = c(0, 1), W = W)^2)
-    e1 <- sapply(t0, function(x)
-        getb2(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], J = c(1, 0), W = W))
-    e2 <- sapply(t0, function(x)
-        getb2(x, h = h, tij = tij, yi = yi[rep(1:n, mm)], X = X[rep(1:n, mm),], J = c(0, 1), W = W))
-    list(e0 = e0, e1 = e1, e2 = e2)
 }
 
 do <- function(n, model, frailty = FALSE, type1 = FALSE) {
@@ -360,6 +284,14 @@ doEE <- function(n, model, frailty = FALSE, type1 = FALSE) {
     b2 <- betaEst2(fm, data = dat)
     c(sin(b1), cos(b1), sin(b2), cos(b2))
 }
+
+doEE <- function(n, model, frailty = FALSE, type1 = FALSE, a = .2) {
+    dat <- simDat(n, model, frailty, type1)
+    fm <- reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2
+    b1 <- betaEst(fm, data = dat, a = a)
+    c(sin(b1), cos(b1))
+}
+
 
 set.seed(1); doEE(200, "M2", TRUE) # good
 set.seed(10); doEE(200, "M2", TRUE) # bad
@@ -473,87 +405,263 @@ tab400 <- rbind(cbind(n400[[1]], n400[[2]]),
 
 
 ## #################################################################################
-## M approach only
+## EE approach only
 ## #################################################################################
-set.seed(1); dat1 <- simDat(200, "M2", TRUE, FALSE)
-set.seed(10); dat2 <- simDat(200, "M2", TRUE, FALSE)
 
-with(subset(dat1, event == 0), table(x1 > 0, x2 > 0))
-with(subset(dat2, event == 0), table(x1 > 0, x2 > 0))
-summary(subset(dat1, event == 0)$x1)
-summary(subset(dat1, event == 0)$x2)
-summary(subset(dat2, event == 0)$x1)
-summary(subset(dat2, event == 0)$x2)
+M2n200 <- replicate(1000, tryCatch(doEE(200, "M2", FALSE, a = 1/3),
+                                   error = function(e) doEE(200, "M2", FALSE, a = 1/3)))
+M2n200c <- replicate(1000, tryCatch(doEE(200, "M2", TRUE, a = 1/3),
+                                    error = function(e) doEE(200, "M2", TRUE, a = 1/3)))
+M3n200 <- replicate(1000, tryCatch(doEE(200, "M3", FALSE, a = 1/3),
+                                   error = function(e) doEE(200, "M3", FALSE, a = 1/3)))
+M3n200c <- replicate(1000, tryCatch(doEE(200, "M3", TRUE, a = 1/3),
+                                    error = function(e) doEE(200, "M3", TRUE, a = 1/3)))
+M4n200 <- replicate(1000, tryCatch(doEE(200, "M4", FALSE, a = 1/3),
+                                   error = function(e) doEE(200, "M4", FALSE, a = 1/3)))
+M4n200c <- replicate(1000, tryCatch(doEE(200, "M4", TRUE, a = 1/3),
+                                    error = function(e) doEE(200, "M4", TRUE, a = 1/3)))
+M5n200 <- replicate(1000, tryCatch(doEE(200, "M5", FALSE, a = 1/3),
+                                   error = function(e) doEE(200, "M5", FALSE, a = 1/3)))
+M5n200c <- replicate(1000, tryCatch(doEE(200, "M5", TRUE, a = 1/3),
+                                    error = function(e) doEE(200, "M5", TRUE, a = 1/3)))
+n200h1 <- list(M2n200 = M2n200, M2n200c = M2n200c,
+               M3n200 = M3n200, M3n200c = M3n200c,
+               M4n200 = M4n200, M4n200c = M4n200c,
+               M5n200 = M5n200, M5n200c = M5n200c)
+save(n200h1, file = "n200h1.RData")
 
-betaEst(fm, data = dat1)
-betaEst(fm, data = dat2)
-
-dat3 <- dat2
-dat3$x1 <- dat3$x1 / max(abs(dat3$x1))
-dat3$x2 <- dat3$x2 / max(abs(dat3$x2))
-betaEst(fm, data = dat3)
-
-summary(subset(dat3, event == 0)$x1)
-summary(subset(dat3, event == 0)$x2)
-
-dat4 <- dat2
-dat4$x1 <- with(dat4, (x1 - min(x1)) / (max(x1) - min(x1)))
-dat4$x2 <- with(dat4, (x2 - min(x2)) / (max(x2) - min(x2)))
-summary(subset(dat4, event == 0)$x1)
-summary(subset(dat4, event == 0)$x2)
-betaEst(fm, data = dat4)
-                
-with(dat1, Recur(Time, id, event))
-with(dat1, Recur(Time, id, event, status))
-
-library(reReg)
-library(gridExtra)
-
-grid.arrange(plotEvents(Recur(Time, id, event) ~ 1, data = dat1,
-                        main = "Good example", legend.positive = "none"),
-             plotEvents(Recur(Time, id, event) ~ 1, data = dat2,
-                        main = "Bad example", legend.positive = "none"),
-             ncol = 2)
-## ggsave("eventPlots.pdf")
-
-set.seed(55); dat <- simDat(200, "M2", TRUE, FALSE)
-plotEvents(Recur(Time, id, event) ~ 1, data = dat, main = "", legend.positive = "none")
-
-
-set.seed(10)
-dat <- simDat(200, "M2", TRUE, FALSE)
-fm <- reSurv(time1 = Time, id = id, event = event, status = status) ~ 
-    x1 + x2
-betaEst(fm, data = dat)
-betaEst(fm, subset(dat, id %in% which(subset(dat, status == 1)$Time == 10)))
-betaEst(fm, subset(dat, id %in% which(subset(dat, status == 1)$Time < 10)))
-
-ss <- sapply(1:200, function(x) betaEst(fm, subset(dat, id <= x)))
-asin(.6)
-betaEst(fm, subset(dat, id <= 49))
-betaEst(fm, subset(dat, id <= 50))
-subset(dat, id == 50)
-
-betaEst(fm, subset(dat, !(id %in% c(50:75))))
-
-ss <- sapply(1:200, function(x) betaEst(fm, subset(dat, !(id %in% x))))
-
-plot(1:200, ss, 'l')
-
-dim(dat)
-dim(subset(dat, id %in% which(subset(dat, status == 1)$Time == 10)))
-dim(subset(dat, id %in% which(subset(dat, status == 1)$Time < 10)))
+M2n400 <- replicate(1000, doEE(400, "M2", FALSE, a = 1/3))
+M2n400c <- replicate(1000, doEE(400, "M2", TRUE, a = 1/3))
+M3n400 <- replicate(1000, doEE(400, "M3", FALSE, a = 1/3))
+M3n400c <- replicate(1000, doEE(400, "M3", TRUE, a = 1/3))
+M4n400 <- replicate(1000, doEE(400, "M4", FALSE, a = 1/3))
+M4n400c <- replicate(1000, doEE(400, "M4", TRUE, a = 1/3))
+M5n400 <- replicate(1000, doEE(400, "M5", FALSE, a = 1/3))
+M5n400c <- replicate(1000, doEE(400, "M5", TRUE, a = 1/3))
+n400h1 <- list(M2n400 = M2n400, M2n400c = M2n400c,
+               M3n400 = M3n400, M3n400c = M3n400c,
+               M4n400 = M4n400, M4n400c = M4n400c,
+               M5n400 = M5n400, M5n400c = M5n400c)
+save(n400h1, file = "n400h1.RData")
 
 
 
-bb <- matrix(NA, 500, 4)
-for (i in 1:500) {
-    set.seed(i)
-    bb[i,] <- doEE(100, "M2", TRUE)
+M2n200 <- replicate(1000, doEE(200, "M2", FALSE, a = 1/5))
+M2n200c <- replicate(1000, doEE(200, "M2", TRUE, a = 1/5))
+M3n200 <- replicate(1000, doEE(200, "M3", FALSE, a = 1/5))
+M3n200c <- replicate(1000, doEE(200, "M3", TRUE, a = 1/5))
+M4n200 <- replicate(1000, doEE(200, "M4", FALSE, a = 1/5))
+M4n200c <- replicate(1000, doEE(200, "M4", TRUE, a = 1/5))
+M5n200 <- replicate(1000, doEE(200, "M5", FALSE, a = 1/5))
+M5n200c <- replicate(1000, doEE(200, "M5", TRUE, a = 1/5))
+n200h2 <- list(M2n200 = M2n200, M2n200c = M2n200c,
+               M3n200 = M3n200, M3n200c = M3n200c,
+               M4n200 = M4n200, M4n200c = M4n200c,
+               M5n200 = M5n200, M5n200c = M5n200c)
+save(n200h2, file = "n200h2.RData")
+
+M2n400 <- replicate(1000, doEE(400, "M2", FALSE, a = 1/5))
+M2n400c <- replicate(1000, doEE(400, "M2", TRUE, a = 1/5))
+M3n400 <- replicate(1000, doEE(400, "M3", FALSE, a = 1/5))
+M3n400c <- replicate(1000, doEE(400, "M3", TRUE, a = 1/5))
+M4n400 <- replicate(1000, doEE(400, "M4", FALSE, a = 1/5))
+M4n400c <- replicate(1000, doEE(400, "M4", TRUE, a = 1/5))
+M5n400 <- replicate(1000, doEE(400, "M5", FALSE, a = 1/5))
+M5n400c <- replicate(1000, doEE(400, "M5", TRUE, a = 1/5))
+n400h2 <- list(M2n400 = M2n400, M2n400c = M2n400c,
+               M3n400 = M3n400, M3n400c = M3n400c,
+               M4n400 = M4n400, M4n400c = M4n400c,
+               M5n400 = M5n400, M5n400c = M5n400c)
+save(n400h2, file = "n400h2.RData")
+
+M2n200 <- replicate(1000, tryCatch(doEE(200, "M2", FALSE, a = 1/7),
+                                   error = function(e) doEE(200, "M2", FALSE, a = 1/7)))
+M2n200c <- replicate(1000, tryCatch(doEE(200, "M2", TRUE, a = 1/7),
+                                    error = function(e) doEE(200, "M2", TRUE, a = 1/7)))
+M3n200 <- replicate(1000, tryCatch(doEE(200, "M3", FALSE, a = 1/7),
+                                   error = function(e) doEE(200, "M3", FALSE, a = 1/7)))
+M3n200c <- replicate(1000, tryCatch(doEE(200, "M3", TRUE, a = 1/7),
+                                    error = function(e) doEE(200, "M3", TRUE, a = 1/7)))
+M4n200 <- replicate(1000, tryCatch(doEE(200, "M4", FALSE, a = 1/7),
+                                   error = function(e) doEE(200, "M4", FALSE, a = 1/7)))
+M4n200c <- replicate(1000, tryCatch(doEE(200, "M4", TRUE, a = 1/7),
+                                    error = function(e) doEE(200, "M4", TRUE, a = 1/7)))
+M5n200 <- replicate(1000, tryCatch(doEE(200, "M5", FALSE, a = 1/7),
+                                   error = function(e) doEE(200, "M5", FALSE, a = 1/7)))
+M5n200c <- replicate(1000, tryCatch(doEE(200, "M5", TRUE, a = 1/7),
+                                    error = function(e) doEE(200, "M5", TRUE, a = 1/7)))
+n200h3 <- list(M2n200 = M2n200, M2n200c = M2n200c,
+               M3n200 = M3n200, M3n200c = M3n200c,
+               M4n200 = M4n200, M4n200c = M4n200c,
+               M5n200 = M5n200, M5n200c = M5n200c)
+save(n200h3, file = "n200h3.RData")
+
+M2n400 <- replicate(1000, tryCatch(doEE(400, "M2", FALSE, a = 1/7),
+                                   error = function(e) doEE(400, "M2", FALSE, a = 1/7)))
+M2n400c <- replicate(1000, tryCatch(doEE(400, "M2", TRUE, a = 1/7),
+                                    error = function(e) doEE(400, "M2", TRUE, a = 1/7)))
+M3n400 <- replicate(1000, tryCatch(doEE(400, "M3", FALSE, a = 1/7),
+                                   error = function(e) doEE(400, "M3", FALSE, a = 1/7)))
+M3n400c <- replicate(1000, tryCatch(doEE(400, "M3", TRUE, a = 1/7),
+                                    error = function(e) doEE(400, "M3", TRUE, a = 1/7)))
+M4n400 <- replicate(1000, tryCatch(doEE(400, "M4", FALSE, a = 1/7),
+                                   error = function(e) doEE(400, "M4", FALSE, a = 1/7)))
+M4n400c <- replicate(1000, tryCatch(doEE(400, "M4", TRUE, a = 1/7),
+                                    error = function(e) doEE(400, "M4", TRUE, a = 1/7)))
+M5n400 <- replicate(1000, tryCatch(doEE(400, "M5", FALSE, a = 1/7),
+                                   error = function(e) doEE(400, "M5", FALSE, a = 1/7)))
+M5n400c <- replicate(1000, tryCatch(doEE(400, "M5", TRUE, a = 1/7),
+                                    error = function(e) doEE(400, "M5", TRUE, a = 1/7)))
+n400h3 <- list(M2n400 = M2n400, M2n400c = M2n400c,
+               M3n400 = M3n400, M3n400c = M3n400c,
+               M4n400 = M4n400, M4n400c = M4n400c,
+               M5n400 = M5n400, M5n400c = M5n400c)
+save(n400h3, file = "n400h3.RData")
+
+library(BB)
+
+gsmB <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, 
+    rIni = NULL) {
+    Call <- match.call()
+    if (missing(data)) 
+        obj <- eval(formula[[2]], parent.frame())
+    if (!missing(data)) 
+        obj <- eval(formula[[2]], data)
+    formula[[2]] <- NULL
+    if (formula == ~1) {
+        DF <- cbind(obj$reDF[, -5], zero = 0)
+    }
+    else {
+        if (!missing(data)) 
+            DF <- cbind(obj$reDF[, -5], model.matrix(formula, 
+                data))
+        if (missing(data)) 
+            DF <- cbind(obj$reDF[, -5], model.matrix(formula, 
+                parent.frame()))
+        DF <- DF[, -which(colnames(DF) == "(Intercept)")]
+    }
+    DF <- DF[order(DF$id, DF$Time), ]
+    DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
+    m <- aggregate(event ~ id, data = DF, sum)[, 2]
+    dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
+    tmp <- getb0(dat, bIni, 2, TRUE)
+    bhat1 <- tmp$bhat1
+    bhat2 <- tmp$bhat2
+    list(b0 = bhat2, b00 = bhat1)
 }
 
-set.seed(1); doEE(100, "M2", TRUE)
-set.seed(1); dim(simDat(100, "M2", TRUE, FALSE))
+doGSM <- function(n, model, frailty = FALSE, type1 = FALSE) {
+    dat <- simDat(n, model, frailty, type1)
+    fm <- reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2
+    b1 <- gsmB(fm, data = dat)
+    c(b1$b0, b1$b00)
+}
+
+M2n200 <- replicate(1000, tryCatch(doGSM(200, "M2", FALSE),
+                                   error = function(e) doGSM(200, "M2", FALSE)))
+M2n200c <- replicate(1000, tryCatch(doGSM(200, "M2", TRUE),
+                                    error = function(e) doGSM(200, "M2", TRUE)))
+M3n200 <- replicate(1000, tryCatch(doGSM(200, "M3", FALSE),
+                                   error = function(e) doGSM(200, "M3", FALSE)))
+M3n200c <- replicate(1000, tryCatch(doGSM(200, "M3", TRUE),
+                                    error = function(e) doGSM(200, "M3", TRUE)))
+M4n200 <- replicate(1000, tryCatch(doGSM(200, "M4", FALSE),
+                                   error = function(e) doGSM(200, "M4", FALSE)))
+M4n200c <- replicate(1000, tryCatch(doGSM(200, "M4", TRUE),
+                                    error = function(e) doGSM(200, "M4", TRUE)))
+M5n200 <- replicate(1000, tryCatch(doGSM(200, "M5", FALSE),
+                                   error = function(e) doGSM(200, "M5", FALSE)))
+M5n200c <- replicate(1000, tryCatch(doGSM(200, "M5", TRUE),
+                                    error = function(e) doGSM(200, "M5", TRUE)))
+
+n200h2betaGSM <- list(M2n200 = M2n200, M2n200c = M2n200c,
+                      M3n200 = M3n200, M3n200c = M3n200c,
+                      M4n200 = M4n200, M4n200c = M4n200c,
+                      M5n200 = M5n200, M5n200c = M5n200c)
+save(n200h2betaGSM, file = "n200h2betaGSM.RData")
+
+M2n400 <- replicate(1000, tryCatch(doGSM(400, "M2", FALSE),
+                                   error = function(e) doGSM(400, "M2", FALSE)))
+M2n400c <- replicate(1000, tryCatch(doGSM(400, "M2", TRUE),
+                                    error = function(e) doGSM(400, "M2", TRUE)))
+M3n400 <- replicate(1000, tryCatch(doGSM(400, "M3", FALSE),
+                                   error = function(e) doGSM(400, "M3", FALSE)))
+M3n400c <- replicate(1000, tryCatch(doGSM(400, "M3", TRUE),
+                                    error = function(e) doGSM(400, "M3", TRUE)))
+M4n400 <- replicate(1000, tryCatch(doGSM(400, "M4", FALSE),
+                                   error = function(e) doGSM(400, "M4", FALSE)))
+M4n400c <- replicate(1000, tryCatch(doGSM(400, "M4", TRUE),
+                                    error = function(e) doGSM(400, "M4", TRUE)))
+M5n400 <- replicate(1000, tryCatch(doGSM(400, "M5", FALSE),
+                                   error = function(e) doGSM(400, "M5", FALSE)))
+M5n400c <- replicate(1000, tryCatch(doGSM(400, "M5", TRUE),
+                                    error = function(e) doGSM(400, "M5", TRUE)))
+n400h2betaGSM <- list(M2n400 = M2n400, M2n400c = M2n400c,
+                      M3n400 = M3n400, M3n400c = M3n400c,
+                      M4n400 = M4n400, M4n400c = M4n400c,
+                      M5n400 = M5n400, M5n400c = M5n400c)
+save(n400h2betaGSM, file = "n400h2betaGSM.RData")
 
 
-doEE(50, "M2", TRUE)
+
+## Parallel
+library(parallel)
+
+cl <- makePSOCKcluster(detectCores())
+setDefaultCluster(cl)
+invisible(clusterExport(NULL, "gsmB"))
+invisible(clusterExport(NULL, "doGSM"))
+invisible(clusterEvalQ(NULL, library(BB)))
+invisible(clusterEvalQ(NULL, library(survival)))
+invisible(clusterEvalQ(NULL, library(SSIndex)))
+invisible(clusterEvalQ(NULL, library(tidyverse)))
+
+M2n200 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M2", FALSE), error = function(e) doGSM(200, "M2", FALSE)))
+M2n200c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M2", TRUE), error = function(e) doGSM(200, "M2", TRUE)))
+M3n200 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M3", FALSE), error = function(e) doGSM(200, "M3", FALSE)))
+M3n200c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M3", TRUE), error = function(e) doGSM(200, "M3", TRUE)))
+M4n200 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M4", FALSE), error = function(e) doGSM(200, "M4", FALSE)))
+M4n200c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M4", TRUE), error = function(e) doGSM(200, "M4", TRUE)))
+M5n200 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M5", FALSE), error = function(e) doGSM(200, "M5", FALSE)))
+M5n200c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(200, "M5", TRUE), error = function(e) doGSM(200, "M5", TRUE)))
+
+n200h2betaGSM <- list(M2n200 = M2n200, M2n200c = M2n200c,
+                      M3n200 = M3n200, M3n200c = M3n200c,
+                      M4n200 = M4n200, M4n200c = M4n200c,
+                      M5n200 = M5n200, M5n200c = M5n200c)
+save(n200h2betaGSM, file = "n200h2betaGSM.RData")
+
+
+
+M2n400 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M2", FALSE), error = function(e) doGSM(400, "M2", FALSE)))
+M2n400c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M2", TRUE), error = function(e) doGSM(400, "M2", TRUE)))
+M3n400 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M3", FALSE), error = function(e) doGSM(400, "M3", FALSE)))
+M3n400c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M3", TRUE), error = function(e) doGSM(400, "M3", TRUE)))
+M4n400 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M4", FALSE), error = function(e) doGSM(400, "M4", FALSE)))
+M4n400c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M4", TRUE), error = function(e) doGSM(400, "M4", TRUE)))
+M5n400 <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M5", FALSE), error = function(e) doGSM(400, "M5", FALSE)))
+M5n400c <- parSapply(NULL, 1:1e3, function(z)
+    tryCatch(doGSM(400, "M5", TRUE), error = function(e) doGSM(400, "M5", TRUE)))
+
+n400h2betaGSM <- list(M2n400 = M2n400, M2n400c = M2n400c,
+                      M3n400 = M3n400, M3n400c = M3n400c,
+                      M4n400 = M4n400, M4n400c = M4n400c,
+                      M5n400 = M5n400, M5n400c = M5n400c)
+save(n400h2betaGSM, file = "n400h2betaGSM.RData")
+
+stopCluster(cl)
