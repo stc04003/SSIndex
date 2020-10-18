@@ -146,7 +146,8 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
         rhat1 <- NULL
         rhat2 <- optSolver(fn = Sn, par = rIni, optMethod = optMethod)
     }
-    info <- list(mm = mm, midx = midx, tij = tij, yi = yi, xb = xb, h = h)
+    info <- list(mm = mm, midx = midx, tij = tij, yi = yi,
+                 xb = as.numeric(xb), xg = as.numeric(X %*% rhat2), h = h)
     ## b0 and r0 are smooth estimator
     ## b00 and r00 are nonsmooth
     list(b0 = bhat1, r0 = rhat1, b00 = bhat2, r00 = rhat2,
@@ -339,7 +340,7 @@ optSolver <- function(fn, par,
     if (is.null(optMethod)) optMethod <- ifelse(p <= 2, 1, 3)
     r0 <- trans(par)
     tmp1 <- tmp2 <- NULL
-    if (length(r0) > 1) {
+    if (length(r0) <= 1) {
         tmp1 <- optimize(f = function(z) fn(z, ...), interval = interval)
         res <- tmp1$minimum %% (2 * pi)
     } else {

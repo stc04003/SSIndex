@@ -59,8 +59,7 @@ system.time(k02 <- sapply(1:NROW(bi), function(x)
 
 B <- 1000
 mm <- aggregate(event ~ id, dat.HSCT, sum)[, 2]
-n <- length(unique(dat.HSCT$id)
-            )
+n <- length(unique(dat.HSCT$id))
 getBootk <- function(dat.HSCT) {
     ind <- sample(1:n, replace = TRUE)
     dat.HSCT0 <- dat.HSCT[unlist(sapply(ind, function(x) which(dat.HSCT$id %in% x))),]
