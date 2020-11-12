@@ -158,3 +158,10 @@ ggsave("all-informative.pdf")
 
 sumPwr(200, FALSE, 0.2, 0.2)
 sumPwr(200, TRUE, 0.2, 0.2)
+
+
+
+
+b <- matrix(c(d[-(1:2),]), 2)
+mean(d[1,1] > b[1,])
+mean(d[2,1] > b[2,])

@@ -62,7 +62,7 @@ simDat <- function(n, model, frailty = FALSE, type1 = FALSE,
             x <- c(runif(1, -1, 1), rexp(1))
         tau <- 10
         if (model %in% c("M4", "M24", "M34")) tau <- 1
-        if (model %in% c("M5", "M25", "M35")) tau <- 1
+        ## if (model %in% c("M5", "M25", "M35")) tau <- 1
         if (noCen) y <- tau
         else y <- min(rexp(1, zz / (10 * (1 + abs(x[1])))), tau)
         x_beta <- as.numeric(x %*% beta0)
@@ -110,7 +110,8 @@ Lam.f <- function(t, r, b, model, zz){
     ## if (model == "M2") return(zz * (exp(t / 10) * 1 + t * exp(b) - 1))
     if (model == "M3") return(zz * ((1 - exp(-t * exp(b) / 2)) * 2 * exp(-b)))
     if (model == "M4") return(zz * 4 * (pbeta(t, 2, 1 + exp(b)) * exp(r)))
-    if (model == "M5") return(zz * (10 * (1 + t) ^ (exp(b / 2) / 2) - 10))
+    ## if (model == "M5") return(zz * (10 * (1 + t) ^ (exp(b / 100) * .2) - 10))
+    if (model == "M5") return(zz * .5 * ((1 + .5 * t) ^ (log(exp(b) + 1)) - 1))
     if (model == "M6") return(zz * 0.01 * ((0.15 * t * exp(b) + 1)^3 / 3 / exp(b) / 0.15 - t - exp(-b) / 3 / 0.15))
     ## Old settings, under Pico's draft
     ## if (model == "M1") return(5 * exp(-b) * t^2 * exp(2 * b) / (1 + exp(2 * b) * t^2) * exp(r))

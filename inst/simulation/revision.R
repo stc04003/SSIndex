@@ -627,3 +627,98 @@ pietg <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
     list(b0 = bhat, LSE = LSE, SSE = SSE, ESE = ESE, spline = spline, MAVE = MAVE, EFM = EFM)
 }
 
+library(SSIndex)
+
+n <- 100
+sum(simDat(n, "M2", TRUE)$event) / n ## 6.9931
+sum(simDat(n, "M2", FALSE)$event) / n ## 8.4387
+
+sum(simDat(n, "M3", TRUE)$event) / n ## 1.8758
+sum(simDat(n, "M3", FALSE)$event) / n ## 2.1208
+
+sum(simDat(n, "M5", TRUE)$event) / n ## 4.9093
+sum(simDat(n, "M5", FALSE)$event) / n ## 5.0761
+
+sum(simDat(n, "M4", TRUE)$event) / n ## 6.2866
+sum(simDat(n, "M4", FALSE)$event) / n ## 6.3037
+
+
+d <- simDat(1e4, "M5", TRUE)
+summary(unlist(lapply(split(d$event, d$id), sum)))
+sum(d$event) / 1e4
+summary(d$Time)
+
+x0 <- rexp(1)
+b0 <- seq(-10, 10, .01)
+
+
+rh <- lam(x0, b0) * exp(-Lam(x0, b0)) / (1 - exp(-Lam(x0, b0)))
+plot(b0, rh, 'l')
+
+rh2 <- lam(x0, b0) / Lam(x0, b0)
+plot(b0, rh2, 'l')
+lines(b0, rh, col = 2)
+
+
+library(SSIndex)
+
+## M1 
+lam <- function(x, b) 1 / (1 + x) + .5 * exp(b)
+Lam <- function(x, b) (2 * log(1 + x) + x * exp(b))/2
+
+## M2
+lam <- function(x, b) exp(-.5 * x * exp(b))
+Lam <- function(x, b) ((1 - exp(-x * exp(b)/2)) * 2 * exp(-b))
+
+## M3
+lam <- function(x, b)
+    5 * exp(b / 2) * (1 + x) ^ (exp(b / 2) / 2)
+Lam <- function(x, b)
+    10 * ((1 + x)^ (exp(b / 2) / 2) - 1)
+
+## M4
+lam <- function(x, b) dbeta(x, 2, 1 + exp(b))
+Lam <- function(x, b, r) 4 * (pbeta(x, 2, 1 + exp(b)) * exp(r))
+
+
+
+library(SSIndex)
+
+xb <- matrix(rnorm(1e6), ncol = 2) %*% c(.6, .8)
+summary(xb)
+summary(exp(xb))
+summary(exp(-xb))
+summary(1.2^(xb))
+summary(log(abs(xb)))
+summary(exp(xb - 2))
+summary(exp(xb - 3))
+
+summary(replicate(100, max(10 * (1 + rexp(1)) ^ (-exp(xb) / 2) - 10)))
+summary(replicate(100, max(10 * (1 + rexp(1)) ^ (log(abs(xb))) - 10)))
+
+summary(replicate(100, min(5 * (1 + rexp(1)) ^ (exp(xb - 2)) - 5)))
+
+t0 <- seq(0, 10, .001)
+plot(t0, .1 * ((1 + t0)^exp(4) - 1), 'l')
+
+n <- 100
+sum(simDat(n, "M5", TRUE)$event) / n 
+sum(simDat(n, "M5", FALSE)$event) / n 
+
+d <- simDat(1e4, "M5", TRUE)
+summary(unlist(lapply(split(d$event, d$id), sum)))
+sum(d$event) / 1e4
+summary(d$Time)
+
+do <- function(n) {
+    d <- simDat(n, "M5", TRUE)
+    f <- gsm(reSurv(Time, id, event, status) ~ x1 + x2, data = d)
+    c(f$b0, f$b00)
+}
+
+do(200)
+
+foo <- replicate(100, do(200))
+summary(t(foo))
+apply(foo, 1, mean)
+apply(foo, 1, sd)
