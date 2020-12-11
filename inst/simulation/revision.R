@@ -9,7 +9,6 @@ library(tidyverse)
 library(Rcpp)
 library(xtable)
 
-
 source('pietg/fpigsim.R')
 source('pietg/fisher.R')
 library(locfit)
@@ -17,8 +16,11 @@ library(MAVE)
 library(EDR)
 library(MASS)
 sourceCpp("pietg/SSE.cpp")
+sourceCpp("pietg/SSE2.cpp")
 sourceCpp("pietg/ESE.cpp")
+sourceCpp("pietg/ESE2.cpp")
 sourceCpp("pietg/LSE.cpp")
+sourceCpp("pietg/LSE2.cpp")
 sourceCpp("pietg/spline.cpp")
 
 #######################################################################
@@ -629,15 +631,15 @@ pietg <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
 
 library(SSIndex)
 
-n <- 100
+n <- 10000
 sum(simDat(n, "M2", TRUE)$event) / n ## 6.9931
 sum(simDat(n, "M2", FALSE)$event) / n ## 8.4387
 
 sum(simDat(n, "M3", TRUE)$event) / n ## 1.8758
 sum(simDat(n, "M3", FALSE)$event) / n ## 2.1208
 
-sum(simDat(n, "M5", TRUE)$event) / n ## 4.9093
-sum(simDat(n, "M5", FALSE)$event) / n ## 5.0761
+sum(simDat(n, "M5", TRUE)$event) / n ## 2.27
+sum(simDat(n, "M5", FALSE)$event) / n ## 2.1
 
 sum(simDat(n, "M4", TRUE)$event) / n ## 6.2866
 sum(simDat(n, "M4", FALSE)$event) / n ## 6.3037
@@ -671,10 +673,12 @@ lam <- function(x, b) exp(-.5 * x * exp(b))
 Lam <- function(x, b) ((1 - exp(-x * exp(b)/2)) * 2 * exp(-b))
 
 ## M3
-lam <- function(x, b)
-    5 * exp(b / 2) * (1 + x) ^ (exp(b / 2) / 2)
-Lam <- function(x, b)
-    10 * ((1 + x)^ (exp(b / 2) / 2) - 1)
+lam <- function(x, b) .5 * log(exp(b) + 1) * (1 + .5 * x)^(log(exp(b) + 1) - 1)
+Lam <- function(x, b) .5 * (1 + .5 * x)^log(exp(b) + 1)
+## lam <- function(x, b)
+##     5 * exp(b / 2) * (1 + x) ^ (exp(b / 2) / 2)
+## Lam <- function(x, b)
+##     10 * ((1 + x)^ (exp(b / 2) / 2) - 1)
 
 ## M4
 lam <- function(x, b) dbeta(x, 2, 1 + exp(b))
@@ -722,3 +726,233 @@ foo <- replicate(100, do(200))
 summary(t(foo))
 apply(foo, 1, mean)
 apply(foo, 1, sd)
+
+#######################################################################
+## Check direction
+#######################################################################
+library(SSIndex)
+
+fo <- function(n, m) {
+    d <- simDat(n, m, FALSE)
+    d$id <- d$id / 100
+    f <- gsm(reSurv(Time, id, event, status) ~ x1 + x2, data = d)
+    c(f$b0, f$b00, f$r0, f$r00)
+}
+
+set.seed(1); fo(200, "M2") ## ++
+set.seed(1); fo(200, "M3") ## --
+set.seed(1); fo(200, "M5") ## ++
+set.seed(1); fo(200, "M4") ## -+
+
+
+d <- simDat(200, "M4", FALSE)
+head(d)
+summary(d)
+f <- gsm(reSurv(Time, id, event, status) ~ x1 + x2, data = d)
+
+debug(gsm)
+
+
+
+d2 <- simDat(200, "M3", FALSE)
+f <- gsm(reSurv(Time, id, event, status) ~ x1 + x2, data = d2)
+
+str(f)
+
+#######################################################################
+## Reading from ESE.cpp and modify lines
+#######################################################################
+root <- "https://raw.githubusercontent.com/pietg/single_index/master/Comparisons/"
+txtSSE <- readLines(paste0(root, "SSE.cpp"))
+txtSSE[46] <- "List ComputeSSE2(NumericMatrix X, NumericVector y)"
+txtSSE[91] <- "    beta1 = golden(0,2*pi,criterion);"
+sourceCpp(code = paste0(txtSSE, collapse="\n"))
+
+txtESE <- readLines("pietg/ESE.cpp")
+txtESE[47] <- "List ComputeESE2(NumericMatrix X, NumericVector y)"
+txtESE[93] <- "    beta1 = golden(0,2*pi,criterion);"
+sourceCpp(code = paste0(txtESE, collapse="\n"))
+
+txtLSE <- readLines(paste0(root, "LSE.cpp"))
+txtLSE[44] <- "List ComputeLSE2(NumericMatrix X, NumericVector y)"
+txtLSE[90] <- "    beta1 = golden(0,2*pi,criterion);"
+sourceCpp(code = paste0(txtLSE, collapse="\n"))
+
+do1 <- function(n, m) {
+    dat <- simDat(n, model = m)
+    m <- unlist(lapply(split(dat$Time, dat$id), function(x) sum(!is.na(x))))
+    X0 <- as.matrix(subset(dat, select = c(x1, x2))[!duplicated(dat$id),])
+    list(LSE = ComputeLSE2(X0, m)$alpha,
+         SSE = ComputeSSE2(X0, m)$alpha,
+         ESE = ComputeESE2(X0, m)$alpha)
+}
+
+set.seed(1); do1(200)
+
+pietg3 <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
+    ## Extract vectors
+    Call <- match.call()
+    if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
+    if (!missing(data)) obj <- eval(formula[[2]], data) 
+    ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
+    formula[[2]] <- NULL
+    if (formula == ~ 1) {
+        DF <- cbind(obj$reDF[, -5], zero=0)
+    } else {
+        if (!missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, data))
+        if (missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, parent.frame()))
+        DF <- DF[,-which(colnames(DF) == "(Intercept)")]
+    }
+    DF <- DF[order(DF$id, DF$Time), ]
+    DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
+    m <- aggregate(event ~ id, data = DF, sum)[,2]
+    dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
+    ## h <- .5
+    ## Different ways to find root; choose the best root    
+    ## Use beta from M-approach
+    dat$Y <- rep(dat$Time[dat$status == 1], m + 1)
+    T2 <- dat$Time[dat$status == 0]
+    C2 <- dat$Y[dat$status == 0]
+    Z <- as.matrix(subset(dat, status == 0)[,c("x1", "x2")])
+    h <- 1.06 * sd(Z %*% c(.6, .8)) * nrow(Z)^-.2
+    ht <- 1.06 * sd(T2) * length(T2)^-.2
+    ## print(c(h, ht))
+    bhat <- c(.6, .8)
+    dat0 <- subset(dat, m > 0)
+    n <- length(unique(dat0$id)) 
+    mm <- aggregate(event ~ id, dat0, sum)[, 2] 
+    dat0$id <- rep(1:n, mm + 1)
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status, Y)))     
+    X0 <- as.matrix(subset(dat, status == 1, select = -c(Time, id, m, event, status, Y)))    
+    LSE <- ComputeLSE2(X0, m)$alpha
+    SSE <- ComputeSSE2(X0, m)$alpha
+    ESE <- ComputeESE2(X0, m)$alpha
+    list(LSE = LSE, SSE = SSE, ESE = ESE)
+}
+
+do3 <- function(n, model, frailty = FALSE, type1 = FALSE, noCen = FALSE) {
+    dat <- simDat(n, model, frailty, type1, noCen = noCen)
+    fit <- pietg3(reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2,
+                 data = dat)
+    unlist(fit)
+}
+
+set.seed(1); f1 <- replicate(50, do3(200, "M2"))
+set.seed(1); f2 <- replicate(50, do3(200, "M3"))
+set.seed(1); f3 <- replicate(50, do3(200, "M5"))
+set.seed(1); f4 <- replicate(50, do3(200, "M4"))
+
+
+library(ggplot2)
+library(reshape2)
+tmp <- do.call(rbind, foo[1:50 * 3])
+ggplot(melt(tmp), aes(x = value, group = Var2)) +
+    geom_boxplot() + coord_flip()
+
+
+boxplot(tmp)
+qplot(tmp[,1], geom = "boxplot")
+qplot(tmp[,2], geom = "boxplot")
+
+
+## ####################################################################################
+
+pietg2 <- function(formula, data, B = 100, bIni = NULL, rIni = NULL) {
+    ## Extract vectors
+    Call <- match.call()
+    if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
+    if (!missing(data)) obj <- eval(formula[[2]], data) 
+    ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
+    formula[[2]] <- NULL
+    if (formula == ~ 1) {
+        DF <- cbind(obj$reDF[, -5], zero=0)
+    } else {
+        if (!missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, data))
+        if (missing(data)) DF <- cbind(obj$reDF[,-5], model.matrix(formula, parent.frame()))
+        DF <- DF[,-which(colnames(DF) == "(Intercept)")]
+    }
+    DF <- DF[order(DF$id, DF$Time), ]
+    DF$id <- rep(1:length(unique(DF$id)), table(DF$id))
+    m <- aggregate(event ~ id, data = DF, sum)[,2]
+    dat <- DF %>% add_column(m = rep(m, m + 1), .after = 4)
+    ## h <- .5
+    ## Different ways to find root; choose the best root    
+    ## Use beta from M-approach
+    dat$Y <- rep(dat$Time[dat$status == 1], m + 1)
+    T2 <- dat$Time[dat$status == 0]
+    C2 <- dat$Y[dat$status == 0]
+    Z <- as.matrix(subset(dat, status == 0)[,c("x1", "x2")])
+    h <- 1.06 * sd(Z %*% c(.6, .8)) * nrow(Z)^-.2
+    ht <- 1.06 * sd(T2) * length(T2)^-.2
+    dat0 <- subset(dat, m > 0)
+    n <- length(unique(dat0$id)) 
+    mm <- aggregate(event ~ id, dat0, sum)[, 2] 
+    dat0$id <- rep(1:n, mm + 1)
+    tij <- subset(dat0, event == 1)$Time
+    yi <- subset(dat0, event == 0)$Time
+    midx <- c(0, cumsum(mm)[-length(mm)])
+    X <- as.matrix(subset(dat0, event == 0, select = -c(Time, id, m, event, status, Y)))     
+    X0 <- as.matrix(subset(dat, status == 1, select = -c(Time, id, m, event, status, Y)))    
+    ## SSE1 <- ComputeSSE(X0, m)$alpha
+    ## SSE2 <- ComputeSSE2(X0, m)$alpha
+    ## c(SSE1, SSE2)
+    ESE1 <- ComputeESE(X0, m)$alpha
+    ESE2 <- ComputeESE2(X0, m)$alpha
+    c(ESE1, ESE2)
+}
+
+do2 <- function(n, model, frailty = FALSE, type1 = FALSE, noCen = FALSE) {
+    dat <- simDat(n, model, frailty, type1, noCen = noCen)
+    fit <- pietg2(reSurv(time1 = Time, id = id, event = event, status = status) ~ x1 + x2,
+                  data = dat)
+    unlist(fit)
+}
+
+set.seed(1); do2(200, "M2", noCen = TRUE)
+set.seed(1); do2(200, "M3", noCen = TRUE)
+
+do2(200, "M1", noCen = TRUE)
+do2(200, "M2", noCen = TRUE)
+do2(200, "M3", noCen = TRUE)
+f <- replicate(100, do2(200, "M3", noCen = TRUE))
+summary(t(f))
+
+M2n200noCen <- replicate(500, do2(200, "M2", noCen = TRUE))
+M3n200noCen <- replicate(500, do2(200, "M3", noCen = TRUE))
+M4n200noCen <- replicate(500, do2(200, "M4", noCen = TRUE))
+M5n200noCen <- replicate(500, do2(200, "M5", noCen = TRUE))
+M2n200cnoCen <- replicate(500, do2(200, "M2", TRUE, noCen = TRUE))
+M3n200cnoCen <- replicate(500, do2(200, "M3", TRUE, noCen = TRUE))
+M4n200cnoCen <- replicate(500, do2(200, "M4", TRUE, noCen = TRUE))
+M5n200cnoCen <- replicate(500, do2(200, "M5", TRUE, noCen = TRUE))
+
+optESE200 <- list(M2n200noCen = M2n200noCen, M3n200noCen = M3n200noCen,
+                  M4n200noCen = M4n200noCen, M5n200noCen = M5n200noCen,
+                  M2n200cnoCen = M2n200cnoCen, M3n200cnoCen = M3n200cnoCen,
+                  M4n200cnoCen = M4n200cnoCen, M5n200cnoCen = M5n200cnoCen)
+save(optESE200, file = "optESE200.RData")
+
+
+M2n400noCen <- replicate(500, do2(400, "M2", noCen = TRUE))
+M3n400noCen <- replicate(500, do2(400, "M3", noCen = TRUE))
+M4n400noCen <- replicate(500, do2(400, "M4", noCen = TRUE))
+M5n400noCen <- replicate(500, do2(400, "M5", noCen = TRUE))
+M2n400cnoCen <- replicate(500, do2(400, "M2", TRUE, noCen = TRUE))
+M3n400cnoCen <- replicate(500, do2(400, "M3", TRUE, noCen = TRUE))
+M4n400cnoCen <- replicate(500, do2(400, "M4", TRUE, noCen = TRUE))
+M5n400cnoCen <- replicate(500, do2(400, "M5", TRUE, noCen = TRUE))
+
+optESE400 <- list(M2n400noCen = M2n400noCen, M3n400noCen = M3n400noCen,
+                  M4n400noCen = M4n400noCen, M5n400noCen = M5n400noCen,
+                  M2n400cnoCen = M2n400cnoCen, M3n400cnoCen = M3n400cnoCen,
+                  M4n400cnoCen = M4n400cnoCen, M5n400cnoCen = M5n400cnoCen)
+save(optESE400, file = "optESE400.RData")
+
+
+do2(200, "M3")
+foo <- replicate(500, do2(200, "M3"))
+rowMeans(foo)
+

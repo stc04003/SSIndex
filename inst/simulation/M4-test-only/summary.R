@@ -106,22 +106,24 @@ ggplot(m, aes(beta, gamma)) +
 p1 <- ggplot(m, aes(beta, gamma)) +
     geom_tile(aes(fill = shape), color = "white") +
     scale_fill_gradient("Rejection \nproportion", low = "gray", high = "gray50", limits = c(0,1)) +
-    xlab(expression(paste("||", beta, "||"))) +
-    ylab(expression(paste("||", gamma, "||"))) + ggtitle("Shape test") +
+    xlab(expression(paste("||", beta[0], "||"))) +
+    ylab(expression(paste("||", gamma[0], "||"))) +
+    ggtitle("Shape test") +
     scale_y_continuous(breaks = seq(0, 1, by = .1)) +
     scale_x_continuous(breaks = seq(0, 1, by = .1)) 
 p2 <- ggplot(m, aes(beta, gamma)) +
     geom_tile(aes(fill = size), color = "white") +
     scale_fill_gradient("Rejection \nproportion", low = "gray", high = "gray50", limits = c(0,1)) +
-    xlab(expression(paste("||", beta, "||"))) +
-    ylab(expression(paste("||", gamma, "||"))) + ggtitle("Size test") +
+    xlab(expression(paste("||", beta[0], "||"))) +
+    ylab(expression(paste("||", gamma[0], "||"))) +
+    ggtitle("Size test") +
     scale_y_continuous(breaks = seq(0, 1, by = .1)) +
     scale_x_continuous(breaks = seq(0, 1, by = .1)) 
 p3 <- ggplot(m, aes(beta, gamma)) +
     geom_tile(aes(fill = rate), color = "white") +
     scale_fill_gradient("Rejection \nproportion", low = "gray", high = "gray50", limits = c(0,1)) +
-    xlab(expression(paste("||", beta, "||"))) +
-    ylab(expression(paste("||", gamma, "||"))) + ggtitle("Rate test") +
+    xlab(expression(paste("||", beta[0], "||"))) +
+    ylab(expression(paste("||", gamma[0], "||"))) + ggtitle("Rate test") +
     scale_y_continuous(breaks = seq(0, 1, by = .1)) +
     scale_x_continuous(breaks = seq(0, 1, by = .1)) 
 
@@ -145,15 +147,15 @@ m0$test <- ordered(m0$test, levels = c("shape", "size", "rate"))
 ggplot(m0, aes(beta, gamma)) +
     geom_tile(aes(fill = power), color = "white") + facet_wrap(~test, nrow = 1) +
     scale_fill_gradient("Rejection \nproportion", low = "gray", high = "gray50", limits = c(0,1)) +
-    xlab(expression(paste("|| ", beta, " ||"))) +
-    ylab(expression(paste("|| ", gamma, " ||"))) +
+    xlab(expression(paste("|| ", beta[0], " ||"))) +
+    ylab(expression(paste("|| ", gamma[0], " ||"))) +
     scale_y_continuous(breaks = seq(0, 1, by = .1)) +
     scale_x_continuous(breaks = seq(0, 1, by = .1)) +
     theme(axis.text = element_text(size = 12),
           axis.title = element_text(size = 14,face="bold")) +
     theme(strip.text.x = element_text(size = 12))
 ## ggsave("all-independent.pdf")
-ggsave("all-informative.pdf")
+## ggsave("all-informative.pdf")
 
 
 sumPwr(200, FALSE, 0.2, 0.2)
