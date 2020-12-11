@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 
 Install and load the package from GitHub using 
 ```{r github, eval = FALSE}
-devtools::install_github("stc04003/SSIndex")
+devtools::install_github("stc04003/SSIndex", ref = "main")
 library(SSIndex)
 ```
 

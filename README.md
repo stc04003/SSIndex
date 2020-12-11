@@ -17,7 +17,7 @@ Installation
 Install and load the package from GitHub using
 
 ``` r
-devtools::install_github("stc04003/SSIndex")
+devtools::install_github("stc04003/SSIndex", ref = "main")
 library(SSIndex)
 ```
 
