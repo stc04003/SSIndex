@@ -1,5 +1,4 @@
 #' Testing \eqn{H_0: \beta_0 = 0}
-#' @export
 getd <- function(dat2, tilde.b) {
     n2 <- length(unique(dat2$id))
     mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
@@ -26,7 +25,6 @@ getd <- function(dat2, tilde.b) {
     ## (sum(d1) - sum(d2)) / n2
 }
 
-#' @export
 boot.d <- function(dat2, tilde.b) {
     n2 <- length(unique(dat2$id))
     mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
@@ -37,7 +35,6 @@ boot.d <- function(dat2, tilde.b) {
 }
 
 #' Using ranks
-#' @export
 getk <- function(dat, b) {
     dat0 <- subset(dat, m > 0)
     n <- length(unique(dat0$id))
@@ -53,7 +50,6 @@ getk <- function(dat, b) {
     return(K0)
 }
 
-#' @export
 boot.k <- function(dat2, b) {
     n2 <- length(unique(dat2$id))
     mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
@@ -63,7 +59,6 @@ boot.k <- function(dat2, b) {
     getk(dat22, b)
 }
 
-#' @export
 getk0s <- function(dat, bi) {
     if (any(dat$m == 0)) {
         tmp <- subset(dat, m == 0)
@@ -99,12 +94,5 @@ getk0s <- function(dat, bi) {
              as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(mat1), as.double(mat2),
              result = double(2 * NROW(bi)), PACKAGE = "SSIndex")$result
     k0 <- matrix(k0, 2)   
-    ## ## need betas here
-    ## k0 <- sapply(1:NROW(bi), function(x) {
-    ##     xb <- c(Xij0 %*% bi[x,])
-    ##     bxSgn0 <- outer(xb, xb, function(x, y) sign(x - y))
-    ##     c(sum((m0 %*% t(m0)) * bxSgn0[tid, tid] * mat1),
-    ##       sum(bxSgn0 * mat2))
-    ## })
     return(k0 / n / (n - 1))
 }

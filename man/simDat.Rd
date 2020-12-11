@@ -4,37 +4,22 @@
 \alias{simDat}
 \title{Function to generate simulated data}
 \usage{
-simDat(
-  n,
-  model,
-  frailty = FALSE,
-  type1 = FALSE,
-  offset1 = 1,
-  offset2 = NULL,
-  noCen = FALSE
-)
+simDat(n, model, frailty = FALSE, ...)
+}
+\arguments{
+\item{n}{is the sample size}
+
+\item{model}{is a character string indicating the scenario;
+available options are M1, M2, M3, and M4, corresponding to models M1, M2, M3, and M4
+described in the manuscript.}
+
+\item{frailty}{is a logical value indicating whether to generate
+the data under informative censoring}
 }
 \description{
-We formulate the proposed rate function as
-\deqn{\mu(t|Z) = f(t, \beta_0^\top Z) g(\gamma_0^\top Z), 0\le t \le \tau}.
-See Details.
+The function \code{simDat} is used to generate recurrent event data used in the simulation of the manuscript.
 }
 \details{
-The function \code{simDat} generates simulated recurrent event data from our model's special cases.
-The following model are implemented.
-\describe{
-  \item{\code{type = "M1"}}{generates recurrent event data from the proportional rate model.
-    \deqn{\mu(t|Z) = \mu_0(t) e^{\gamma_0^\top Z}.}
-     This model implies \eqn{\beta_0 = 0}.}
-  \item{\code{type = "M2"}}{generates recurrent event data from the additive model.
-    \deqn{\mu(t|Z) = \mu_0(t) + \alpha_0^\top Z.}
-     This model implies \eqn{\beta_0 = \gamma_0}.}
-  \item{\code{type = "M3"}}{generates recurrent event data from the accelerated rate model.
-    \deqn{\mu(t|Z) = \mu_0(t e^{\alpha_0^\top Z}).}
-     This model implies \eqn{\beta_0 = \gamma_0}.}
-  \item{\code{type = "M4"}}{generates recurrent event data from the two-sample model.
-    \deqn{\mu(t|Z) = \mu_0(t e^{\beta_0^\top Z})e^{\gamma_0^\top Z}.}}
-}
 The data frame is similar to the one used in \code{reReg}.
 The data consists of the following columns:
 \describe{
@@ -45,6 +30,4 @@ The data consists of the following columns:
   \item{event}{recurrent event indicator; 1 = recurrent event, 0 = not a recurrent event}
   \item{status}{censoring indicator; this is only meanful for when event = 0}
 }
-For all scenarios, we set \eqn{\tau = 10}, \eqn{\beta_0 = (0.6, 0.8)} and \eqn{\gamma_0 = (7/25, 24/25)}.
-We also set \eqn{\mu_0(t) = \frac{2}{1 + t}}, then \eqn{m_0(t) = 2\log(1 + t)}.
 }

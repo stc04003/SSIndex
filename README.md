@@ -1,2 +1,2 @@
 # GSM
-R codes for manuscript "estimating shape and size indexes for recurrent events"
+R codes for manuscript "Statistical inference on shape- and size-indexes for counting processes"

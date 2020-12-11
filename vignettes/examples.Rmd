@@ -1,0 +1,170 @@
+---
+title: "Using the SSIndex package"
+author: Sy Han (Steven) Chiou
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Using the SSIndex package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}{inputenc}
+---
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+
+```{r default, include = FALSE}
+knitr::opts_chunk$set(prompt = TRUE, comment = "")
+```
+In this vignette, we demonstrate the usage of the  __`SSIndex`__ package. 
+The implementations provided in the __`SSIndex`__ package are based on the working manuscript
+titled "Statistical inference on shape- and size-indexes for counting processes".
+
+## Notations
+Let $N^\ast(t)$ be the number of events occurring at or before time $t$ and $X$ is a $p\times1$ vector of baseline covariate. 
+We consider a semi-parametric model for the conditional rate function of $N^\ast(\cdot)$:
+$$\lambda(t|X) = f(t, \beta_0^\top X) g(\gamma_0^\top X), 0\le t \le \tau, $$
+where $[0, \tau]$ is the study period of interest, $f(\cdot, a)$ is an unspecified density function for $a\in\mathcal R$, and $g(\cdot)$ is an unspecified function. 
+We denote the regression parameters $\beta_0$ and $\gamma_0$ the shape and size parameters, respectively.
+Similar, we denote the linear combinations $\beta_0^\top X$ and $\gamma_0^\top X$ the shape-index and size-index, respectively.
+Let $F(t, a) = \int_0^tf(u, a)du$, we impose the assumptions: 
+
+1. $g(\gamma_0^\top X)$ is increasing in $\gamma_0^\top X$.
+2. For any $t\in[0, \tau]$, the the reversed hazard function corresponding to the shape function, defined as $r(t, \beta_0^\top X) = f(t, \beta_0^\top X) / F(t, \beta_0^\top X)$ is decreasing in $\beta_0^\top X$.
+
+We use the `simDat()` to generate simulated data descriptive in the manuscript and use the `gsm()` to obtain the point estimators for $\beta_0$ and $\gamma_0$.
+
+## Simulating recurrent event data
+
+We use the `simDat()` function to generate the simulated data used in the manuscript. 
+The syntax of `simDat()` is 
+```{R}
+args(SSIndex::simDat)
+```
+The arguments are:
+
+  - `n` is an integer value representing sample size
+  - `model` is a character string indicating the models described below.
+  - `frailty` is a logical value indicating whether to generate the data under informative censoring
+
+We consider generating recurrent events from the following rate functions as proposed in the simulation study of the manuscript.
+
+(M1) $\lambda(t|X,Z) = Z(1 + t)^{-1} + 0.5Z\exp{(b^\intercal X)}$, $\beta_0 = -b$, $\gamma_0 = b$; 
+
+(M2) $\lambda(t|X,Z) =Z\exp\{-0.5t\exp({-b^\intercal X})\}$, $\beta_0 = b$, $\gamma_0 = -b$;
+
+(M3) $\lambda(t | X, Z) = 0.5Z\log[\exp(b^\intercal X) + 1](1 + 0.5t)^{\{\log[\exp(b^\intercal X) + 1] - 1\}}$, 
+$\beta_0 = -b$, $\gamma_0 = b$;
+
+(M4) $\lambda(t|X,Z) = Zf_B(t,\beta_0^\intercal X)\exp(\gamma_0^\intercal X)$, for $t \in[0, 1]$,
+where $f_B(\cdot,a) \propto x(1-x)^{\exp(a)}$ is a Beta density function, $\beta_0 = (0.6, 0.8)^\top$, and $\gamma_0 = (0.28, 0.96)^\top$.
+
+We set $b = (0.6, 0.8)$ in (M1)-(M3).
+For each setting, we consider two covariates and $X = (X_1, X_2)^\intercal$, 
+where $X_1$ and $X_2$ are independent standard normal random variables. 
+The censoring time was generated from an exponential distribution with mean $10 (1 + |X_1|) / Z$,
+where the subject-specific latent variable $Z$ was either set as $Z \equiv 1$ (`frailty = TRUE`) 
+or generated from an exponential distribution with mean 1 (`frailty = FALSE`). 
+Thus, in the latter case, the censoring time is correlated with the recurrent event process through both $X$ and $Z$.
+The following code provides an simulated data set with 200 samples under model (M4) and the non-informative censoring assumption.
+```{R}
+library(SSIndex)
+set.seed(0); dat <- simDat(200, "M4", FALSE)
+head(dat)
+```
+The `simDat()` returns a data.frame with 7 columns. 
+The variables (columns) are defined below:
+
+  - `id` is subject's identity
+  - `time` marks the recurrent event time when `event = 1` or censoring time when `event = 0`
+  - `m` is the number of recurrent events observed by the subject during the study period
+  - `x1` and `x2` are the covaraites
+  - `event` is the recurrent event indicator; `event = 1` denotes a recurrent event, and `event = 0` otherwise.
+  - `status` is 1 - `event`
+
+## Estimating the shape and size parameters
+
+The main function in __`SSIndex`__ package is `ssfit()`. 
+The arguments for the `ssfit()` function are
+```{R}
+args(ssfit)
+```
+
+  - `formula` is a formula object, with the response on the left of a `~` operator.
+  - `data` is an optional argument for data.
+  - `shp.ind` is a character string indicating either to proceed with shape-independence assumption.
+  - `B` is a numerical value specifying number of bootstrap in shape independence testing.
+  - `bIni` is the initial value for estimating the shape parameter
+  - `rIni` is the initial value for estimating the size parameter
+  - `smoothFirst` estimate the smooth estimator first and use it to guide?
+          Default: `FALSE` when $p = 1$, `TRUE` when $p > 1$
+  - `opt` how many optimization methods to try? 1: `optim` 2: `optim` + `BB::spg` Default: 1 when $p = 1$, 2 when $p > 1$
+
+Since the proposed estimating procedure is a two-step rank-based estimation procedure that esitmates 
+the shape parameter first, 
+setting `shp.ind = TRUE` would assume $\beta = 0$.
+The default initial values used in the estimation are 0-vectors and other initial values could be specified via 
+`bIni` and `rIni`. 
+The proposed estimating procedure involves optimizing non-smooth objective functions. 
+When `smoothFirst = TRUE`, an induced smoothing technique is applied to the non-smooth objective functions
+and the optimization will be applied to the smoothed objective functions.
+The parameter estimates obtained from optimizing the smoothed objective functions will be used as the initial values 
+in the optimization of the proposed non-smooth objective functions.
+In our simulation study, we found setting `smoothFirst = TRUE` could yield a slightly more stable results when $p > 1$.
+
+
+The following gives an example code to fit the simulated data `dat`:
+```{R, tidy = TRUE}
+fm <- reSurv(time1 = Time, id = id, event = event, status =  status) ~ x1 + x2
+fit <- ssfit(fm, data = dat, shp.ind = FALSE, smoothFirst = TRUE, optMethod = 2)
+```
+The above example defines the `formula` using the `reSurv()` function from the `reReg` package.
+The `reSurv()` is used to create a recurrent event object, see `?reReg::reSurv`. 
+While `reSurv()` serves the propose here, it is deprecated in `reReg` version 1.1.6. 
+```{R}
+names(fit)
+```
+The `ssfit()` function returns a list of five elements. They are
+
+  - `b0` is the shape parameter estimate obtained by optimizing the smooth objective functions; this is `NULL` if `smoothFirst = FALSE`.
+  - `r0` is the size parameter estimate obtained by optimizing the smooth objective functions; this is `NULL` if `smoothFirst = FALSE`.
+  - `b00` is the shape parameter estimate obtained by optimizing the nonsmooth objective functions using the smoothed estimator as the initial value (if it is available).
+  - `b00` is the size parameter estimate obtained by optimizing the nonsmooth objective functions using the smoothed estimator as the initial value (if it is available).
+  - `Fhat` is the estimate of $\widehat F(Y_i, \widehat\beta^\top X_i)$, where $Y_i$ is the censoring time for the $i$th subject and $\widehat\beta$ is the shape parameter estimate from `b00`.
+
+In this case, the point estimates are
+```{R}
+tab <- matrix(with(fit, c(b0, r0, b00, r00)), 4)
+rownames(tab) <- c("b1", "b2", "r1", "r2")
+knitr::kable(tab, col.names = c("smooth", "non-smooth"))
+```
+
+## Inference
+Non-parametric bootstrap is applied to obtain the standard errors for the shape and size esitmates.
+For example, the following implementation can be used to obtain the standard errors with 100 bootstrap samples:
+```{R}
+bootSE <- function(dat) {
+  n <- length(unique(dat$id))
+  mm <- aggregate(event ~ id, dat, sum)[, 2]
+  ind <- sample(1:n, replace = TRUE)
+  dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
+  ## Break ties
+  dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] <-
+    dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
+    rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .001)
+  dat0$id <- rep(1:n, mm[ind] + 1)
+  fit0 <- ssfit(fm, data = dat0, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, smoothFirst = TRUE, optMethod = 2)
+  with(fit0, c(b0, r0, b00, r00))
+} 
+b <- replicate(100, bootSE(dat))
+tab <- matrix(apply(b, 1, sd), 4)
+rownames(tab) <- c("b1", "b2", "r1", "r2")
+knitr::kable(tab, col.names = c("smooth", "non-smooth"))
+```
+
