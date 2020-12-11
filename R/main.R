@@ -23,7 +23,7 @@
 #' @export
 #' 
 ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
-                optMethod = NULL, smoothFirst = NULL) {
+                  optMethod = NULL, smoothFirst = NULL, interval = c(0, 2 * pi)) {
     ## Extract vectors
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
@@ -113,11 +113,11 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
     }
     if (is.null(rIni)) rIni <- rep(1 / sqrt(p), p)
     if (smoothFirst) {
-        rhat1 <- optSolver(fn = Sn2, par = rIni, optMethod = optMethod)
-        rhat2 <- optSolver(fn = Sn, par = rhat1, optMethod = optMethod)
+        rhat1 <- optSolver(fn = Sn2, par = rIni, optMethod = optMethod, interval = interval)
+        rhat2 <- optSolver(fn = Sn, par = rhat1, optMethod = optMethod, interval = interval)
     } else {
         rhat1 <- NULL
-        rhat2 <- optSolver(fn = Sn, par = rIni, optMethod = optMethod)
+        rhat2 <- optSolver(fn = Sn, par = rIni, optMethod = optMethod, interval = interval)
     }
     info <- list(mm = mm, midx = midx, tij = tij, yi = yi,
                  xb = as.numeric(xb), xg = as.numeric(X %*% rhat2), h = h)
