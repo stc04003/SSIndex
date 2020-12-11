@@ -26,4 +26,4 @@ library(SSIndex)
 [Online document](https://www.sychiou.com/SSIndex/index.html) includes:
 
 -   Examples on [generating data and fitting the proposed
-    model](https://www.sychiou.com/tranSurv/articles/examples.html)
+    model](https://www.sychiou.com/SSIndex/articles/examples.html)
