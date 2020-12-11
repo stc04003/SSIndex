@@ -2,8 +2,8 @@
 #'
 #' Implementations are done in C
 #'
+#' @noRd
 #' @export
-
 Douglas06 <- function(dat) {
     n <- length(unique(dat$id))
     mm <- aggregate(event ~ id, dat, sum)[,2]

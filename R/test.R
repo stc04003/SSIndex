@@ -1,4 +1,5 @@
 #' Testing \eqn{H_0: \beta_0 = 0}
+#' @noRd
 getd <- function(dat2, tilde.b) {
     n2 <- length(unique(dat2$id))
     mm2 <- aggregate(event ~ id, dat2, sum)[, 2]
@@ -35,6 +36,7 @@ boot.d <- function(dat2, tilde.b) {
 }
 
 #' Using ranks
+#' @noRd
 getk <- function(dat, b) {
     dat0 <- subset(dat, m > 0)
     n <- length(unique(dat0$id))

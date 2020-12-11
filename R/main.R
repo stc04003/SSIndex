@@ -240,6 +240,7 @@ getk04 <- function(dat, b) {
 }
 
 #' Function to compute Fhat given data and beta
+#' @noRd
 getFhat <- function(formula, data, b) {
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
