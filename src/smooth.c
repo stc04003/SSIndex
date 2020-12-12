@@ -22,9 +22,9 @@ double get_rikjl(double *X, double *sigma,
   return(rikjl);
 }
 
-void rankSmooth(int *n, int *p, int *m, int *midx,
-		double *sigma, 
-		double *tij, double *yi, double *xb, double *xx, double *result) {
+void rankSmooth(int *n, int *p, int *m, int *midx, double *sigma, 
+		double *tij, double *yi, double *xb, double *xx, double *w, 
+		double *result) {
   int i, j, k, l; // id index
   double rijkl;
   for (i = 0; i < *n; i++) {
@@ -35,10 +35,10 @@ void rankSmooth(int *n, int *p, int *m, int *midx,
 	    for (l = 0; l < m[j]; l++) {
 	      if (tij[midx[j] + l] <= yi[i] && tij[midx[i] + k] > tij[midx[j] + l]) {
 		rijkl = 0;
-		rijkl = get_rikjl(xx, sigma, n, p, i, j);
+		rijkl = w[i] * w[j] * get_rikjl(xx, sigma, n, p, i, j);
 		// result[0] += pnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 1, 0);
 		if (rijkl != 0) {
-		  result[0] += pnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 1, 0);
+		  result[0] += w[i] * w[j] * pnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 1, 0);
 		}
 	      }
 	    }
@@ -51,9 +51,9 @@ void rankSmooth(int *n, int *p, int *m, int *midx,
 }
 
 
-void sizeEqSmooth(int *n, int *p, double *xr,
-		   double *xx, double *sigma, 
-		   double *mFhat, double *result) {
+void sizeEqSmooth(int *n, int *p, double *xr, double *xx, double *sigma, 
+		  double *mFhat, double *w,
+		  double *result) {
   int i, j;
   double rijkl;
   for (i = 0; i < *n; i++) {
@@ -61,15 +61,15 @@ void sizeEqSmooth(int *n, int *p, double *xr,
       rijkl = 0;
       rijkl = get_rikjl(xx, sigma, n, p, i, j);
       if (rijkl != 0) {
-	result[0] += pnorm(sqrt(n[0]) * (xr[i] - xr[j]) / rijkl, 0.0, 1.0, 1, 0) * mFhat[i];
+	result[0] += w[i] * w[j] * pnorm(sqrt(n[0]) * (xr[i] - xr[j]) / rijkl, 0.0, 1.0, 1, 0) * mFhat[i];
       }
     }
   }
 }
 
-void drankSmooth(int *n, int *p, int *m, int *midx,
-		 double *sigma, 
-		 double *tij, double *yi, double *xb, double *xx, double *result) {
+void drankSmooth(int *n, int *p, int *m, int *midx, double *sigma, 
+		 double *tij, double *yi, double *xb, double *xx, double *w,
+		 double *result) {
   int i, j, k, l; // id index
   double rijkl;
   for (i = 0; i < *n; i++) {
@@ -83,7 +83,7 @@ void drankSmooth(int *n, int *p, int *m, int *midx,
 		rijkl = get_rikjl(xx, sigma, n, p, i, j);
 		// result[0] += pnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 1, 0);
 		if (rijkl != 0) {
-		  result[0] += sqrt(n[0]) * dnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 0) * ((xx[i] - xx[j]) / rijkl);
+		  result[0] += w[i] * w[j] * sqrt(n[0]) * dnorm(sqrt(n[0]) * (xb[i] - xb[j]) / rijkl, 0.0, 1.0, 0) * ((xx[i] - xx[j]) / rijkl);
 		}
 	      }
 	    }

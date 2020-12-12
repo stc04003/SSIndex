@@ -23,11 +23,11 @@
 #' @export
 #' 
 ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
-                  optMethod = NULL, smoothFirst = NULL, interval = c(0, 2 * pi), h = NULL) {
+                  optMethod = NULL, smoothFirst = NULL, interval = c(0, 2 * pi), h = NULL, weights = NULL) {
     ## Extract vectors
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
-    if (!missing(data)) obj <- eval(formula[[2]], data) 
+    if (!missing(data)) obj <- eval(formula[[2]], data)
     ## if (!is.reSurv(obj)) stop("Response must be a reSurv object")
     formula[[2]] <- NULL
       if (formula == ~ 1) {
@@ -53,8 +53,10 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
     if (is.null(smoothFirst)) smoothFirst <- ifelse(p > 2, TRUE, FALSE)
     ## assuming data is generated from simDat
     ## estimate \beta first
+    if (is.null(weights)) w <- rep(1, nrow(dat))
+    else w <- weights
     if (is.logical(shp.ind) && !shp.ind) {
-        tmp <- getb0(dat, bIni, optMethod, smoothFirst)
+        tmp <- getb0(dat, bIni, optMethod, smoothFirst, w)
         bhat1 <- tmp$bhat1
         bhat2 <- tmp$bhat2
     }
@@ -70,7 +72,7 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
            as.double(tij), as.double(yi),
-           as.double(xb), as.double(x), as.double(y), as.double(h), 
+           as.double(xb), as.double(x), as.double(y), as.double(h), as.double(w), 
            result = double(1), PACKAGE = "SSIndex")$result,
         X %*% bhat, yi))
     Fhat <- ifelse(is.na(Fhat), 0, Fhat) ## assign 0/0, Inf/Inf to 0
@@ -99,16 +101,18 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
     Sn <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
-        -.C("sizeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
+        -.C("sizeEq", as.integer(n), as.double(xr), as.double(mm / Fhat), as.double(w), 
+            ## as.double((mm + .0001) / (Fhat + .0001)),
             result = double(1), PACKAGE = "SSIndex")$result
-        ## -.C("sizeEq2", as.integer(n), as.double(xr), as.double(mm / Fhat), as.double(yi),
-        ##     result = double(1), PACKAGE = "SSIndex")$result
+        ## -.C("sizeEq2", as.integer(n), as.double(xr), as.double(mm / Fhat),
+        ##     as.double(yi), result = double(1), PACKAGE = "SSIndex")$result
     }
     Sn2 <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
-        -.C("sizeEqSmooth", as.integer(n), as.integer(p), as.double(xr), as.double(X),
-            as.double(diag(p)), as.double(mm / Fhat),
+        -.C("sizeEqSmooth", as.integer(n), as.integer(p), as.double(xr), as.double(X), 
+            as.double(diag(p)), as.double(mm / Fhat), as.double(w), 
+            ## as.double((mm + .0001) / (Fhat + .0001)),
             result = double(1), PACKAGE = "SSIndex")$result        
     }
     if (is.null(rIni)) rIni <- rep(1 / sqrt(p), p)
@@ -129,7 +133,7 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
 
 #' Function to get beta_0 estiamte
 #' @noRd
-getb0 <- function(dat, bIni, optMethod, smoothFirst) {
+getb0 <- function(dat, bIni, optMethod, smoothFirst, w) {
     dat0 <- subset(dat, m > 0)
     n <- length(unique(dat0$id))
     mm <- aggregate(event ~ id, dat0, sum)[,2]
@@ -141,7 +145,7 @@ getb0 <- function(dat, bIni, optMethod, smoothFirst) {
     Cn <- function(b) {
         b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
         -.C("rank", as.integer(n), as.integer(mm), as.integer(midx),
-            as.double(tij), as.double(yi), as.double(X %*% b),
+            as.double(tij), as.double(yi), as.double(X %*% b), as.double(w), 
             result = double(1), PACKAGE = "SSIndex")$result
     }
     p <- ncol(X)
@@ -149,14 +153,14 @@ getb0 <- function(dat, bIni, optMethod, smoothFirst) {
         b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
         -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
             as.double(solve(t(X) %*% X)), ## as.double(diag(p)), 
-            as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
+            as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), as.double(w), 
             result = double(1), PACKAGE = "SSIndex")$result
     }
     dCn2 <- function(b) {
         b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
         .C("drankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
             as.double(diag(p)), 
-            as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), 
+            as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), as.double(w), 
             result = double(1), PACKAGE = "SSIndex")$result
     }
     if (is.null(bIni)) bIni <- rep(1 / sqrt(p), p)

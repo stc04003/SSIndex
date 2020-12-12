@@ -11,7 +11,10 @@ ssfit(
   bIni = NULL,
   rIni = NULL,
   optMethod = NULL,
-  smoothFirst = NULL
+  smoothFirst = NULL,
+  interval = c(0, 2 * pi),
+  h = NULL,
+  weights = NULL
 )
 }
 \arguments{

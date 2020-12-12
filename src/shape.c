@@ -27,7 +27,7 @@ double kernal(double dx) {
 // This function implements \hat{F}(t, x, \hat\beta)
 // returns one value at \hat{F}(t, x, \hat\beta)
 void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
-	      double *x, double *t, double *h, double *result) {
+	      double *x, double *t, double *h, double *w, double *result) {
   int i, j, k, l;
   double nu = 0.0;
   double de = 0.0;
@@ -36,19 +36,19 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
       if (tij[midx[i] + k] >= t[0]) {
   	de = 0.0;
   	nu = 0.0;
-        // nu = kernal((x[0] - xb[i]) / h[0]) / h[0];
+	// nu = kernal((x[0] - xb[i]) / h[0]) / h[0];
   	for (j = 0; j < *n; j++) {
   	  for (l = 0; l < m[j]; l++) {
-	    if (tij[midx[i] + k] == tij[midx[j] + l]) 
-	      nu += kernal((x[0] - xb[j]) / h[0]) / h[0]; 
+	    if (tij[midx[i] + k] == tij[midx[j] + l])  
+	      nu += w[j] * kernal((x[0] - xb[j]) / h[0]) / h[0];   
 	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
-  	      de += kernal((x[0] - xb[j]) / h[0]) / h[0];
+  	      de += w[j] * kernal((x[0] - xb[j]) / h[0]) / h[0];
   	  }
   	}
   	if(de == 0) {
   	  result[0] += 0;
   	} else {
-  	  result[0] += nu / de;
+  	  result[0] += w[i] * nu / de; 
   	}
       }
     }
@@ -89,15 +89,15 @@ void shapeFun2(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
 }
 
 // return the estimating equation for \gamma_0
-void sizeEq(int *n, double *xr, double *mFhat, double *result) {
+void sizeEq(int *n, double *xr, double *mFhat, double *w, double *result) {
   int i, j;
   for (i = 0; i < *n; i++) {
     // tmp = shapeFun(n, m, midx, tij, yi, xb, xb[i], yi[i]);    
     for (j = 0; j < *n; j++) {
       if (xr[i] > xr[j]) {
-	result[0] += mFhat[i];
+	result[0] += w[i] * w[j] * mFhat[i];
       }
-      if (xr[i] == xr[j] & i != j) result[0] += 0.25 * (mFhat[i] + mFhat[j]);
+      if (xr[i] == xr[j] && i != j) result[0] += 0.25 * w[i] * w[j] * (mFhat[i] + mFhat[j]);
     }
   }
 }

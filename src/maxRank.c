@@ -6,7 +6,8 @@
 // Equation (2.1) in the paper
 
 void rank(int *n, int *m, int *midx,
-	  double *tij, double *yi, double *xb, double *result) {
+	  double *tij, double *yi, double *xb, double *w,
+	  double *result) {
   int i, j, k, l; // id index
   for (i = 0; i < *n; i++) {
     for (j = 0; j < *n; j++) {
@@ -15,10 +16,10 @@ void rank(int *n, int *m, int *midx,
 	  if (tij[midx[i] + k] <= yi[j]) {
 	    for (l = 0; l < m[j]; l++) {
 	      if (tij[midx[j] + l] <= yi[i] && xb[i] > xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
-		  result[0] += 1;
+		  result[0] += w[i] * w[j];
 	      }
 	      if (tij[midx[j] + l] <= yi[i] && xb[i] == xb[j] && tij[midx[i] + k] > tij[midx[j] + l]) {
-		result[0] += 0.5;
+		result[0] += 0.5 * w[i] * w[j];
 	      } // accomdiate bootstrap
 	    }
 	  } // end l
