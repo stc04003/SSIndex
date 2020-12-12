@@ -97,6 +97,7 @@ void sizeEq(int *n, double *xr, double *mFhat, double *result) {
       if (xr[i] > xr[j]) {
 	result[0] += mFhat[i];
       }
+      if (xr[i] == xr[j] & i != j) result[0] += 0.25 * (mFhat[i] + mFhat[j]);
     }
   }
 }

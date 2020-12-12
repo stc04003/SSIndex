@@ -92,7 +92,8 @@ getk0s <- function(dat, bi) {
            PACKAGE = "SSIndex")$result
     mat2 <- t(mat2)
     mat2 <- mat2 - t(mat2)
-    k0 <- .C("givek0s", as.integer(n), as.integer(mm), as.integer(midx), as.double(m0), as.integer(length(m0)), 
+    k0 <- .C("givek0s", as.integer(n), as.integer(mm), as.integer(midx),
+             as.double(m0), as.integer(length(m0)), 
              as.double(Xij0 %*% t(bi)), as.integer(NROW(bi)), as.double(mat1), as.double(mat2),
              result = double(2 * NROW(bi)), PACKAGE = "SSIndex")$result
     k0 <- matrix(k0, 2)   

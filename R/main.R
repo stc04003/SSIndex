@@ -23,7 +23,7 @@
 #' @export
 #' 
 ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
-                  optMethod = NULL, smoothFirst = NULL, interval = c(0, 2 * pi)) {
+                  optMethod = NULL, smoothFirst = NULL, interval = c(0, 2 * pi), h = NULL) {
     ## Extract vectors
     Call <- match.call()
     if (missing(data)) obj <- eval(formula[[2]], parent.frame()) 
@@ -66,7 +66,7 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
     ## The estimating equation Sn needs Yi even for the m = 0's
     xb <- X %*% bhat
     ## h <- 1.06 * sd(xb) * n^-.2
-    h <- 2.78 * sd(xb) * n^(-1/3)
+    if (is.null(h)) h <- 2.78 * sd(xb) * n^(-1/3)
     Fhat <- unlist(mapply(FUN = function(x, y)
         .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx),
            as.double(tij), as.double(yi),
@@ -99,10 +99,10 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
     Sn <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
-        ## -.C("shapeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
-        ##     result = double(1), PACKAGE = "SSIndex")$result
-        -.C("sizeEq2", as.integer(n), as.double(xr), as.double(mm / Fhat), as.double(yi),
+        -.C("sizeEq", as.integer(n), as.double(xr), as.double(mm / Fhat),
             result = double(1), PACKAGE = "SSIndex")$result
+        ## -.C("sizeEq2", as.integer(n), as.double(xr), as.double(mm / Fhat), as.double(yi),
+        ##     result = double(1), PACKAGE = "SSIndex")$result
     }
     Sn2 <- function(r) {
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
