@@ -11,9 +11,9 @@
 #' @param opt how many optimization methods to try?
 #' 1: optim
 #' 2: 1 + spg
-#' Default: 1 when p = 1, 2 when p > 1
+#' Default: 1 when p <= 2, 2 when p > 2
 #' @param smoothFirst estimate the smooth estimator first and use it to guide?
-#' Default: FALSE when p = 1,  TRUE when p > 1
+#' Default: FALSE when p <= 2,  TRUE when p > 2
 #' 
 #' @importFrom BB spg
 #' @importFrom tibble add_column
@@ -111,7 +111,8 @@ ssfit <- function(formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL,
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
         -.C("sizeEqSmooth", as.integer(n), as.integer(p), as.double(xr), as.double(X), 
-            as.double(diag(p)), as.double(mm / Fhat), as.double(w), 
+            as.double(diag(p)),
+            as.double(mm / Fhat), as.double(w), 
             ## as.double((mm + .0001) / (Fhat + .0001)),
             result = double(1), PACKAGE = "SSIndex")$result        
     }
@@ -152,7 +153,8 @@ getb0 <- function(dat, bIni, optMethod, smoothFirst, w) {
     Cn2 <- function(b) {
         b <- cumprod(c(1, sin(b))) * c(cos(b), 1)
         -.C("rankSmooth", as.integer(n), as.integer(p), as.integer(mm), as.integer(midx),
-            as.double(solve(t(X) %*% X)), ## as.double(diag(p)), 
+            ## as.double(solve(t(X) %*% X)),
+            as.double(diag(p)), 
             as.double(tij), as.double(yi), as.double(X %*% b), as.double(X), as.double(w), 
             result = double(1), PACKAGE = "SSIndex")$result
     }
@@ -425,7 +427,7 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
     ##     .C("shapeFun", as.integer(n), as.integer(mm), as.integer(midx), as.double(tij), as.double(yi),
     ##        as.double(xb), as.double(x), as.double(y), as.double(h), 
     ##        result = double(1), PACKAGE = "SSIndex")$result,
-    ##     t(replicate(nrow(X), colMeans(X))) %*% bhat, yi))
+    ##     t(replicate(nrow(X), colMeans(X))) %*% bhat, yi)) 
     ## #####################################################################################
     ## F(t, a), with a = X %*% bhat,
     ## ## outputs a list with yi being each yi
@@ -452,7 +454,8 @@ gsm <- function(formula, data, shp.ind = FALSE, B = 100, bIni = NULL, rIni = NUL
         r <- cumprod(c(1, sin(r))) * c(cos(r), 1)
         xr <- X %*% r
         -.C("sizeEqSmooth", as.integer(n), as.integer(p), as.double(xr), as.double(X),
-            as.double(diag(p)), as.double(mm / Fhat),
+            as.double(diag(p)),
+            as.double(mm / Fhat),
             result = double(1), PACKAGE = "SSIndex")$result        
     }
     if (is.null(rIni)) rIni <- rep(1 / sqrt(p), p)
