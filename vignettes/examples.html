@@ -11,7 +11,7 @@
 
 <meta name="author" content="Sy Han (Steven) Chiou" />
 
-<meta name="date" content="2020-12-11" />
+<meta name="date" content="2020-12-20" />
 
 <title>Using the SSIndex package</title>
 
@@ -1573,7 +1573,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Using the SSIndex package</h1>
 <h4 class="author">Sy Han (Steven) Chiou</h4>
-<h4 class="date">2020-12-11</h4>
+<h4 class="date">2020-12-20</h4>
 
 </div>
 
@@ -1638,7 +1638,8 @@ NULL</code></pre>
 <p>The main function in <strong><code>SSIndex</code></strong> package is <code>ssfit()</code>. The arguments for the <code>ssfit()</code> function are</p>
 <pre class="r"><code>&gt; args(ssfit)</code></pre>
 <pre><code>function (formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL, 
-    optMethod = NULL, smoothFirst = NULL) 
+    optMethod = NULL, smoothFirst = NULL, interval = c(0, 2 * 
+        pi), h = NULL, weights = NULL) 
 NULL</code></pre>
 <ul>
 <li><code>formula</code> is a formula object, with the response on the left of a <code>~</code> operator.</li>
@@ -1647,8 +1648,9 @@ NULL</code></pre>
 <li><code>B</code> is a numerical value specifying number of bootstrap in shape independence testing.</li>
 <li><code>bIni</code> is the initial value for estimating the shape parameter</li>
 <li><code>rIni</code> is the initial value for estimating the size parameter</li>
-<li><code>smoothFirst</code> estimate the smooth estimator first and use it to guide? Default: <code>FALSE</code> when <span class="math inline">\(p = 1\)</span>, <code>TRUE</code> when <span class="math inline">\(p &gt; 1\)</span></li>
-<li><code>opt</code> how many optimization methods to try? 1: <code>optim</code> 2: <code>optim</code> + <code>BB::spg</code> Default: 1 when <span class="math inline">\(p = 1\)</span>, 2 when <span class="math inline">\(p &gt; 1\)</span></li>
+<li><code>smoothFirst</code> estimate the smooth estimator first and use it to guide? Default: <code>FALSE</code> when <span class="math inline">\(p \le 2\)</span>, <code>TRUE</code> when <span class="math inline">\(p &gt; 2\)</span></li>
+<li><code>opt</code> how many optimization methods to try? 1: <code>optim</code> 2: <code>optim</code> + <code>BB::spg</code> Default: 1 when <span class="math inline">\(p \le 2\)</span>, 2 when <span class="math inline">\(p &gt; 2\)</span></li>
+<li><code>weights</code> is an optional weight vector used for multiplier bootstrap.</li>
 </ul>
 <p>Since the proposed estimating procedure is a two-step rank-based estimation procedure that esitmates the shape parameter first, setting <code>shp.ind = TRUE</code> would assume <span class="math inline">\(\beta = 0\)</span>. The default initial values used in the estimation are 0-vectors and other initial values could be specified via <code>bIni</code> and <code>rIni</code>. The proposed estimating procedure involves optimizing non-smooth objective functions. When <code>smoothFirst = TRUE</code>, an induced smoothing technique is applied to the non-smooth objective functions and the optimization will be applied to the smoothed objective functions. The parameter estimates obtained from optimizing the smoothed objective functions will be used as the initial values in the optimization of the proposed non-smooth objective functions. In our simulation study, we found setting <code>smoothFirst = TRUE</code> could yield a slightly more stable results when <span class="math inline">\(p &gt; 1\)</span>.</p>
 <p>The following gives an example code to fit the simulated data <code>dat</code>:</p>
@@ -1703,18 +1705,15 @@ NULL</code></pre>
 </div>
 <div id="inference" class="section level2">
 <h2>Inference</h2>
-<p>Non-parametric bootstrap is applied to obtain the standard errors for the shape and size esitmates. For example, the following implementation can be used to obtain the standard errors with 100 bootstrap samples:</p>
+<p>Non-parametric bootstrap or multiplier boostratp can be applied to obtain the standard errors for the shape and size esitmates. For example, the following implementation can be used to obtain the standard errors with 100 bootstrap samples:</p>
 <pre class="r"><code>&gt; bootSE &lt;- function(dat) {
 +   n &lt;- length(unique(dat$id))
 +   mm &lt;- aggregate(event ~ id, dat, sum)[, 2]
 +   ind &lt;- sample(1:n, replace = TRUE)
 +   dat0 &lt;- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-+   ## Break ties
-+   dat0$Time[duplicated(dat0$Time) &amp; dat0$Time &lt; max(dat0$Time)] &lt;-
-+     dat0$Time[duplicated(dat0$Time) &amp; dat0$Time &lt; max(dat0$Time)] +
-+     rnorm(sum(duplicated(dat0$Time) &amp; dat0$Time &lt; max(dat0$Time)), sd = .001)
 +   dat0$id &lt;- rep(1:n, mm[ind] + 1)
-+   fit0 &lt;- ssfit(fm, data = dat0, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, smoothFirst = TRUE, optMethod = 2)
++   fit0 &lt;- ssfit(fm, data = dat0, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, 
++                 smoothFirst = TRUE, optMethod = 2)
 +   with(fit0, c(b0, r0, b00, r00))
 + } 
 &gt; b &lt;- replicate(100, bootSE(dat))
@@ -1732,23 +1731,66 @@ NULL</code></pre>
 <tbody>
 <tr class="odd">
 <td align="left">b1</td>
-<td align="right">0.0442714</td>
-<td align="right">0.0450000</td>
+<td align="right">0.0443303</td>
+<td align="right">0.0449343</td>
 </tr>
 <tr class="even">
 <td align="left">b2</td>
-<td align="right">0.0275350</td>
-<td align="right">0.0279316</td>
+<td align="right">0.0281086</td>
+<td align="right">0.0285024</td>
 </tr>
 <tr class="odd">
 <td align="left">r1</td>
-<td align="right">0.0287365</td>
-<td align="right">0.0314870</td>
+<td align="right">0.0291086</td>
+<td align="right">0.0321512</td>
 </tr>
 <tr class="even">
 <td align="left">r2</td>
-<td align="right">0.0084522</td>
-<td align="right">0.0093636</td>
+<td align="right">0.0084608</td>
+<td align="right">0.0091776</td>
+</tr>
+</tbody>
+</table>
+<p>The multiplier bootstrap approach can be carried out by using the optional <code>weights</code> argument.</p>
+<pre class="r"><code>&gt; resampSE &lt;- function(dat) {
++   n &lt;- length(unique(dat$id))
++   w &lt;- rexp(n)
++   fit0 &lt;- ssfit(fm, data = dat, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, 
++                 smoothFirst = TRUE, optMethod = 2, weights = w / mean(w))
++   with(fit0, c(b0, r0, b00, r00))
++ } 
+&gt; m &lt;- replicate(100, resampSE(dat))
+&gt; tab &lt;- matrix(apply(m, 1, sd), 4)
+&gt; rownames(tab) &lt;- c(&quot;b1&quot;, &quot;b2&quot;, &quot;r1&quot;, &quot;r2&quot;)
+&gt; knitr::kable(tab, col.names = c(&quot;smooth&quot;, &quot;non-smooth&quot;))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">smooth</th>
+<th align="right">non-smooth</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">b1</td>
+<td align="right">0.0405031</td>
+<td align="right">0.0401187</td>
+</tr>
+<tr class="even">
+<td align="left">b2</td>
+<td align="right">0.0258562</td>
+<td align="right">0.0254922</td>
+</tr>
+<tr class="odd">
+<td align="left">r1</td>
+<td align="right">0.0265239</td>
+<td align="right">0.0284091</td>
+</tr>
+<tr class="even">
+<td align="left">r2</td>
+<td align="right">0.0075676</td>
+<td align="right">0.0082463</td>
 </tr>
 </tbody>
 </table>

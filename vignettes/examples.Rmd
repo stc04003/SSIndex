@@ -103,8 +103,9 @@ args(ssfit)
   - `bIni` is the initial value for estimating the shape parameter
   - `rIni` is the initial value for estimating the size parameter
   - `smoothFirst` estimate the smooth estimator first and use it to guide?
-          Default: `FALSE` when $p = 1$, `TRUE` when $p > 1$
-  - `opt` how many optimization methods to try? 1: `optim` 2: `optim` + `BB::spg` Default: 1 when $p = 1$, 2 when $p > 1$
+          Default: `FALSE` when $p \le 2$, `TRUE` when $p > 2$
+  - `opt` how many optimization methods to try? 1: `optim` 2: `optim` + `BB::spg` Default: 1 when $p \le 2$, 2 when $p > 2$
+  - `weights` is an optional weight vector used for multiplier bootstrap.
 
 Since the proposed estimating procedure is a two-step rank-based estimation procedure that esitmates 
 the shape parameter first, 
@@ -146,20 +147,18 @@ knitr::kable(tab, col.names = c("smooth", "non-smooth"))
 ```
 
 ## Inference
-Non-parametric bootstrap is applied to obtain the standard errors for the shape and size esitmates.
+Non-parametric bootstrap or multiplier boostratp can be applied to obtain the standard errors for 
+the shape and size esitmates.
 For example, the following implementation can be used to obtain the standard errors with 100 bootstrap samples:
-```{R}
+```{R, cache = TRUE}
 bootSE <- function(dat) {
   n <- length(unique(dat$id))
   mm <- aggregate(event ~ id, dat, sum)[, 2]
   ind <- sample(1:n, replace = TRUE)
   dat0 <- dat[unlist(sapply(ind, function(x) which(dat$id %in% x))),]
-  ## Break ties
-  dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] <-
-    dat0$Time[duplicated(dat0$Time) & dat0$Time < max(dat0$Time)] +
-    rnorm(sum(duplicated(dat0$Time) & dat0$Time < max(dat0$Time)), sd = .001)
   dat0$id <- rep(1:n, mm[ind] + 1)
-  fit0 <- ssfit(fm, data = dat0, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, smoothFirst = TRUE, optMethod = 2)
+  fit0 <- ssfit(fm, data = dat0, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, 
+                smoothFirst = TRUE, optMethod = 2)
   with(fit0, c(b0, r0, b00, r00))
 } 
 b <- replicate(100, bootSE(dat))
@@ -167,4 +166,17 @@ tab <- matrix(apply(b, 1, sd), 4)
 rownames(tab) <- c("b1", "b2", "r1", "r2")
 knitr::kable(tab, col.names = c("smooth", "non-smooth"))
 ```
-
+The multiplier bootstrap approach can be carried out by using the optional `weights` argument.
+```{R, cache = TRUE}
+resampSE <- function(dat) {
+  n <- length(unique(dat$id))
+  w <- rexp(n)
+  fit0 <- ssfit(fm, data = dat, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, 
+                smoothFirst = TRUE, optMethod = 2, weights = w / mean(w))
+  with(fit0, c(b0, r0, b00, r00))
+} 
+m <- replicate(100, resampSE(dat))
+tab <- matrix(apply(m, 1, sd), 4)
+rownames(tab) <- c("b1", "b2", "r1", "r2")
+knitr::kable(tab, col.names = c("smooth", "non-smooth"))
+```

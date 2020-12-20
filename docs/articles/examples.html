@@ -76,7 +76,7 @@
       <h1 data-toc-skip>Using the SSIndex package</h1>
                         <h4 class="author">Sy Han (Steven) Chiou</h4>
             
-            <h4 class="date">2020-12-11</h4>
+            <h4 class="date">2020-12-20</h4>
       
       
       <div class="hidden name"><code>examples.Rmd</code></div>
@@ -159,7 +159,8 @@ NULL</code></pre>
 <p>The main function in <strong><code>SSIndex</code></strong> package is <code><a href="../reference/ssfit.html">ssfit()</a></code>. The arguments for the <code><a href="../reference/ssfit.html">ssfit()</a></code> function are</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="op">&gt;</span><span class="st"> </span><span class="kw">args</span>(ssfit)</span></code></pre></div>
 <pre><code>function (formula, data, shp.ind = FALSE, bIni = NULL, rIni = NULL, 
-    optMethod = NULL, smoothFirst = NULL) 
+    optMethod = NULL, smoothFirst = NULL, interval = c(0, 2 * 
+        pi), h = NULL, weights = NULL) 
 NULL</code></pre>
 <ul>
 <li>
@@ -175,11 +176,13 @@ NULL</code></pre>
 <li>
 <code>rIni</code> is the initial value for estimating the size parameter</li>
 <li>
-<code>smoothFirst</code> estimate the smooth estimator first and use it to guide? Default: <code>FALSE</code> when <span class="math inline">\(p = 1\)</span>, <code>TRUE</code> when <span class="math inline">\(p &gt; 1\)</span>
+<code>smoothFirst</code> estimate the smooth estimator first and use it to guide? Default: <code>FALSE</code> when <span class="math inline">\(p \le 2\)</span>, <code>TRUE</code> when <span class="math inline">\(p &gt; 2\)</span>
 </li>
 <li>
-<code>opt</code> how many optimization methods to try? 1: <code>optim</code> 2: <code>optim</code> + <code><a href="https://rdrr.io/pkg/BB/man/spg.html">BB::spg</a></code> Default: 1 when <span class="math inline">\(p = 1\)</span>, 2 when <span class="math inline">\(p &gt; 1\)</span>
+<code>opt</code> how many optimization methods to try? 1: <code>optim</code> 2: <code>optim</code> + <code><a href="https://rdrr.io/pkg/BB/man/spg.html">BB::spg</a></code> Default: 1 when <span class="math inline">\(p \le 2\)</span>, 2 when <span class="math inline">\(p &gt; 2\)</span>
 </li>
+<li>
+<code>weights</code> is an optional weight vector used for multiplier bootstrap.</li>
 </ul>
 <p>Since the proposed estimating procedure is a two-step rank-based estimation procedure that esitmates the shape parameter first, setting <code>shp.ind = TRUE</code> would assume <span class="math inline">\(\beta = 0\)</span>. The default initial values used in the estimation are 0-vectors and other initial values could be specified via <code>bIni</code> and <code>rIni</code>. The proposed estimating procedure involves optimizing non-smooth objective functions. When <code>smoothFirst = TRUE</code>, an induced smoothing technique is applied to the non-smooth objective functions and the optimization will be applied to the smoothed objective functions. The parameter estimates obtained from optimizing the smoothed objective functions will be used as the initial values in the optimization of the proposed non-smooth objective functions. In our simulation study, we found setting <code>smoothFirst = TRUE</code> could yield a slightly more stable results when <span class="math inline">\(p &gt; 1\)</span>.</p>
 <p>The following gives an example code to fit the simulated data <code>dat</code>:</p>
@@ -238,24 +241,21 @@ NULL</code></pre>
 <div id="inference" class="section level2">
 <h2 class="hasAnchor">
 <a href="#inference" class="anchor"></a>Inference</h2>
-<p>Non-parametric bootstrap is applied to obtain the standard errors for the shape and size esitmates. For example, the following implementation can be used to obtain the standard errors with 100 bootstrap samples:</p>
+<p>Non-parametric bootstrap or multiplier boostratp can be applied to obtain the standard errors for the shape and size esitmates. For example, the following implementation can be used to obtain the standard errors with 100 bootstrap samples:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="op">&gt;</span><span class="st"> </span>bootSE &lt;-<span class="st"> </span><span class="cf">function</span>(dat) {</span>
 <span id="cb11-2"><a href="#cb11-2"></a><span class="op">+</span><span class="st">   </span>n &lt;-<span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(dat<span class="op">$</span>id))</span>
 <span id="cb11-3"><a href="#cb11-3"></a><span class="op">+</span><span class="st">   </span>mm &lt;-<span class="st"> </span><span class="kw">aggregate</span>(event <span class="op">~</span><span class="st"> </span>id, dat, sum)[, <span class="dv">2</span>]</span>
 <span id="cb11-4"><a href="#cb11-4"></a><span class="op">+</span><span class="st">   </span>ind &lt;-<span class="st"> </span><span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span>n, <span class="dt">replace =</span> <span class="ot">TRUE</span>)</span>
 <span id="cb11-5"><a href="#cb11-5"></a><span class="op">+</span><span class="st">   </span>dat0 &lt;-<span class="st"> </span>dat[<span class="kw">unlist</span>(<span class="kw">sapply</span>(ind, <span class="cf">function</span>(x) <span class="kw">which</span>(dat<span class="op">$</span>id <span class="op">%in%</span><span class="st"> </span>x))),]</span>
-<span id="cb11-6"><a href="#cb11-6"></a><span class="op">+</span><span class="st">   </span><span class="co">## Break ties</span></span>
-<span id="cb11-7"><a href="#cb11-7"></a><span class="op">+</span><span class="st">   </span>dat0<span class="op">$</span>Time[<span class="kw">duplicated</span>(dat0<span class="op">$</span>Time) <span class="op">&amp;</span><span class="st"> </span>dat0<span class="op">$</span>Time <span class="op">&lt;</span><span class="st"> </span><span class="kw">max</span>(dat0<span class="op">$</span>Time)] &lt;-</span>
-<span id="cb11-8"><a href="#cb11-8"></a><span class="op">+</span><span class="st">     </span>dat0<span class="op">$</span>Time[<span class="kw">duplicated</span>(dat0<span class="op">$</span>Time) <span class="op">&amp;</span><span class="st"> </span>dat0<span class="op">$</span>Time <span class="op">&lt;</span><span class="st"> </span><span class="kw">max</span>(dat0<span class="op">$</span>Time)] <span class="op">+</span></span>
-<span id="cb11-9"><a href="#cb11-9"></a><span class="op">+</span><span class="st">     </span><span class="kw">rnorm</span>(<span class="kw">sum</span>(<span class="kw">duplicated</span>(dat0<span class="op">$</span>Time) <span class="op">&amp;</span><span class="st"> </span>dat0<span class="op">$</span>Time <span class="op">&lt;</span><span class="st"> </span><span class="kw">max</span>(dat0<span class="op">$</span>Time)), <span class="dt">sd =</span> <span class="fl">.001</span>)</span>
-<span id="cb11-10"><a href="#cb11-10"></a><span class="op">+</span><span class="st">   </span>dat0<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="dv">1</span><span class="op">:</span>n, mm[ind] <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)</span>
-<span id="cb11-11"><a href="#cb11-11"></a><span class="op">+</span><span class="st">   </span>fit0 &lt;-<span class="st"> </span><span class="kw">ssfit</span>(fm, <span class="dt">data =</span> dat0, <span class="dt">shp.ind =</span> <span class="ot">FALSE</span>, <span class="dt">bIni =</span> fit<span class="op">$</span>b00, <span class="dt">rIni =</span> fit<span class="op">$</span>r00, <span class="dt">smoothFirst =</span> <span class="ot">TRUE</span>, <span class="dt">optMethod =</span> <span class="dv">2</span>)</span>
-<span id="cb11-12"><a href="#cb11-12"></a><span class="op">+</span><span class="st">   </span><span class="kw">with</span>(fit0, <span class="kw">c</span>(b0, r0, b00, r00))</span>
-<span id="cb11-13"><a href="#cb11-13"></a><span class="op">+</span><span class="st"> </span>} </span>
-<span id="cb11-14"><a href="#cb11-14"></a><span class="op">&gt;</span><span class="st"> </span>b &lt;-<span class="st"> </span><span class="kw">replicate</span>(<span class="dv">100</span>, <span class="kw">bootSE</span>(dat))</span>
-<span id="cb11-15"><a href="#cb11-15"></a><span class="op">&gt;</span><span class="st"> </span>tab &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">apply</span>(b, <span class="dv">1</span>, sd), <span class="dv">4</span>)</span>
-<span id="cb11-16"><a href="#cb11-16"></a><span class="op">&gt;</span><span class="st"> </span><span class="kw">rownames</span>(tab) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">"b1"</span>, <span class="st">"b2"</span>, <span class="st">"r1"</span>, <span class="st">"r2"</span>)</span>
-<span id="cb11-17"><a href="#cb11-17"></a><span class="op">&gt;</span><span class="st"> </span>knitr<span class="op">::</span><span class="kw">kable</span>(tab, <span class="dt">col.names =</span> <span class="kw">c</span>(<span class="st">"smooth"</span>, <span class="st">"non-smooth"</span>))</span></code></pre></div>
+<span id="cb11-6"><a href="#cb11-6"></a><span class="op">+</span><span class="st">   </span>dat0<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="dv">1</span><span class="op">:</span>n, mm[ind] <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)</span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="op">+</span><span class="st">   </span>fit0 &lt;-<span class="st"> </span><span class="kw">ssfit</span>(fm, <span class="dt">data =</span> dat0, <span class="dt">shp.ind =</span> <span class="ot">FALSE</span>, <span class="dt">bIni =</span> fit<span class="op">$</span>b00, <span class="dt">rIni =</span> fit<span class="op">$</span>r00, </span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="op">+</span><span class="st">                 </span><span class="dt">smoothFirst =</span> <span class="ot">TRUE</span>, <span class="dt">optMethod =</span> <span class="dv">2</span>)</span>
+<span id="cb11-9"><a href="#cb11-9"></a><span class="op">+</span><span class="st">   </span><span class="kw">with</span>(fit0, <span class="kw">c</span>(b0, r0, b00, r00))</span>
+<span id="cb11-10"><a href="#cb11-10"></a><span class="op">+</span><span class="st"> </span>} </span>
+<span id="cb11-11"><a href="#cb11-11"></a><span class="op">&gt;</span><span class="st"> </span>b &lt;-<span class="st"> </span><span class="kw">replicate</span>(<span class="dv">100</span>, <span class="kw">bootSE</span>(dat))</span>
+<span id="cb11-12"><a href="#cb11-12"></a><span class="op">&gt;</span><span class="st"> </span>tab &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">apply</span>(b, <span class="dv">1</span>, sd), <span class="dv">4</span>)</span>
+<span id="cb11-13"><a href="#cb11-13"></a><span class="op">&gt;</span><span class="st"> </span><span class="kw">rownames</span>(tab) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">"b1"</span>, <span class="st">"b2"</span>, <span class="st">"r1"</span>, <span class="st">"r2"</span>)</span>
+<span id="cb11-14"><a href="#cb11-14"></a><span class="op">&gt;</span><span class="st"> </span>knitr<span class="op">::</span><span class="kw">kable</span>(tab, <span class="dt">col.names =</span> <span class="kw">c</span>(<span class="st">"smooth"</span>, <span class="st">"non-smooth"</span>))</span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
 <th align="left"></th>
@@ -265,23 +265,64 @@ NULL</code></pre>
 <tbody>
 <tr class="odd">
 <td align="left">b1</td>
-<td align="right">0.0442714</td>
-<td align="right">0.0450000</td>
+<td align="right">0.0443303</td>
+<td align="right">0.0449343</td>
 </tr>
 <tr class="even">
 <td align="left">b2</td>
-<td align="right">0.0275350</td>
-<td align="right">0.0279316</td>
+<td align="right">0.0281086</td>
+<td align="right">0.0285024</td>
 </tr>
 <tr class="odd">
 <td align="left">r1</td>
-<td align="right">0.0287365</td>
-<td align="right">0.0314870</td>
+<td align="right">0.0291086</td>
+<td align="right">0.0321512</td>
 </tr>
 <tr class="even">
 <td align="left">r2</td>
-<td align="right">0.0084522</td>
-<td align="right">0.0093636</td>
+<td align="right">0.0084608</td>
+<td align="right">0.0091776</td>
+</tr>
+</tbody>
+</table>
+<p>The multiplier bootstrap approach can be carried out by using the optional <code>weights</code> argument.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="op">&gt;</span><span class="st"> </span>resampSE &lt;-<span class="st"> </span><span class="cf">function</span>(dat) {</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="op">+</span><span class="st">   </span>n &lt;-<span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(dat<span class="op">$</span>id))</span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="op">+</span><span class="st">   </span>w &lt;-<span class="st"> </span><span class="kw">rexp</span>(n)</span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="op">+</span><span class="st">   </span>fit0 &lt;-<span class="st"> </span><span class="kw">ssfit</span>(fm, <span class="dt">data =</span> dat, <span class="dt">shp.ind =</span> <span class="ot">FALSE</span>, <span class="dt">bIni =</span> fit<span class="op">$</span>b00, <span class="dt">rIni =</span> fit<span class="op">$</span>r00, </span>
+<span id="cb12-5"><a href="#cb12-5"></a><span class="op">+</span><span class="st">                 </span><span class="dt">smoothFirst =</span> <span class="ot">TRUE</span>, <span class="dt">optMethod =</span> <span class="dv">2</span>, <span class="dt">weights =</span> w <span class="op">/</span><span class="st"> </span><span class="kw">mean</span>(w))</span>
+<span id="cb12-6"><a href="#cb12-6"></a><span class="op">+</span><span class="st">   </span><span class="kw">with</span>(fit0, <span class="kw">c</span>(b0, r0, b00, r00))</span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="op">+</span><span class="st"> </span>} </span>
+<span id="cb12-8"><a href="#cb12-8"></a><span class="op">&gt;</span><span class="st"> </span>m &lt;-<span class="st"> </span><span class="kw">replicate</span>(<span class="dv">100</span>, <span class="kw">resampSE</span>(dat))</span>
+<span id="cb12-9"><a href="#cb12-9"></a><span class="op">&gt;</span><span class="st"> </span>tab &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">apply</span>(m, <span class="dv">1</span>, sd), <span class="dv">4</span>)</span>
+<span id="cb12-10"><a href="#cb12-10"></a><span class="op">&gt;</span><span class="st"> </span><span class="kw">rownames</span>(tab) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">"b1"</span>, <span class="st">"b2"</span>, <span class="st">"r1"</span>, <span class="st">"r2"</span>)</span>
+<span id="cb12-11"><a href="#cb12-11"></a><span class="op">&gt;</span><span class="st"> </span>knitr<span class="op">::</span><span class="kw">kable</span>(tab, <span class="dt">col.names =</span> <span class="kw">c</span>(<span class="st">"smooth"</span>, <span class="st">"non-smooth"</span>))</span></code></pre></div>
+<table class="table">
+<thead><tr class="header">
+<th align="left"></th>
+<th align="right">smooth</th>
+<th align="right">non-smooth</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">b1</td>
+<td align="right">0.0405031</td>
+<td align="right">0.0401187</td>
+</tr>
+<tr class="even">
+<td align="left">b2</td>
+<td align="right">0.0258562</td>
+<td align="right">0.0254922</td>
+</tr>
+<tr class="odd">
+<td align="left">r1</td>
+<td align="right">0.0265239</td>
+<td align="right">0.0284091</td>
+</tr>
+<tr class="even">
+<td align="left">r2</td>
+<td align="right">0.0075676</td>
+<td align="right">0.0082463</td>
 </tr>
 </tbody>
 </table>
