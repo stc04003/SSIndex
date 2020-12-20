@@ -36,11 +36,11 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
       if (tij[midx[i] + k] >= t[0]) {
   	de = 0.0;
   	nu = 0.0;
-	// nu = kernal((x[0] - xb[i]) / h[0]) / h[0];
+	nu = w[i] * kernal((x[0] - xb[i]) / h[0]) / h[0];
   	for (j = 0; j < *n; j++) {
   	  for (l = 0; l < m[j]; l++) {
-	    if (tij[midx[i] + k] == tij[midx[j] + l])  
-	      nu += w[j] * kernal((x[0] - xb[j]) / h[0]) / h[0];   
+	    /* if (tij[midx[i] + k] == tij[midx[j] + l])   */
+	    /*   nu += w[j] * kernal((x[0] - xb[j]) / h[0]) / h[0];    */
 	    if (tij[midx[i] + k] >= tij[midx[j] + l] && tij[midx[i] + k] <= yi[j])
   	      de += w[j] * kernal((x[0] - xb[j]) / h[0]) / h[0];
   	  }
@@ -48,7 +48,7 @@ void shapeFun(int *n, int *m, int *midx, double *tij, double *yi, double *xb,
   	if(de == 0) {
   	  result[0] += 0;
   	} else {
-  	  result[0] += w[i] * nu / de; 
+  	  result[0] += nu / de; 
   	}
       }
     }
