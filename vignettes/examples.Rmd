@@ -159,7 +159,7 @@ bootSE <- function(dat) {
   dat0$id <- rep(1:n, mm[ind] + 1)
   fit0 <- ssfit(fm, data = dat0, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, 
                 smoothFirst = TRUE, optMethod = 2)
-  with(fit0, c(b0, r0, b00, r00))
+  with(fit0, c(b0, r0, b00, r00)) 
 } 
 b <- replicate(100, bootSE(dat))
 tab <- matrix(apply(b, 1, sd), 4)
@@ -173,7 +173,7 @@ resampSE <- function(dat) {
   w <- rexp(n)
   fit0 <- ssfit(fm, data = dat, shp.ind = FALSE, bIni = fit$b00, rIni = fit$r00, 
                 smoothFirst = TRUE, optMethod = 2, weights = w / mean(w))
-  with(fit0, c(b0, r0, b00, r00))
+  with(fit0, c(b0, r0, b00, r00)) 
 } 
 m <- replicate(100, resampSE(dat))
 tab <- matrix(apply(m, 1, sd), 4)
